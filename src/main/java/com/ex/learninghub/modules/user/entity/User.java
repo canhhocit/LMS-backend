@@ -13,9 +13,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import share.enums.Role;
-import share.enums.UserStatus;
-import share.model.BaseEntity;
+import com.ex.learninghub.common.enums.Role;
+import com.ex.learninghub.common.enums.UserStatus;
+import com.ex.learninghub.common.model.BaseEntity;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -23,7 +24,7 @@ import share.model.BaseEntity;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User extends BaseEntity{
+public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,17 +32,22 @@ public class User extends BaseEntity{
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String password;
+
+    @Column(name = "full_name", nullable = false)
     private String fullName;
-    private String avatarUrl;//in_interview
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role = Role.LEARNER;
-    
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserStatus status = UserStatus.ACTIVE;
-    
-
 }
