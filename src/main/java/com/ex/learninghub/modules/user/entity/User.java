@@ -23,9 +23,6 @@ import java.time.LocalDate;
 @Table(name = "users")
 public class User extends BaseEntity {
 
-    @Column(unique = true, length = 100)
-    private String username;
-
     @Column(nullable = false)
     private String password;
 

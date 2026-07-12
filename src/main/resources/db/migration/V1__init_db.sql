@@ -5,7 +5,6 @@ CREATE TABLE users (
     full_name VARCHAR(100) NOT NULL,
     avatar_url VARCHAR(255),
     date_of_birth DATE,
-    email VARCHAR(100) UNIQUE NOT NULL,
     role VARCHAR(20) NOT NULL,
     student_code VARCHAR(50) UNIQUE,
     lecturer_code VARCHAR(50) UNIQUE,
@@ -124,7 +123,7 @@ CREATE TABLE questions (
     option_b VARCHAR(255),
     option_c VARCHAR(255),
     option_d VARCHAR(255),
-    correct_answer CHAR(1),
+    correct_answer VARCHAR(1),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE

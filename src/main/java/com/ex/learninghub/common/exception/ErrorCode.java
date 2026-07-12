@@ -31,7 +31,8 @@ public enum ErrorCode {
     MENTOR_REQUEST_PENDING(4002, "There is already a pending request to become a mentor", HttpStatus.BAD_REQUEST),
     REVIEW_EXISTS(5001, "You have already reviewed this course", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_FOUND(5002, "Review not found", HttpStatus.NOT_FOUND),
-    CHAT_ROOM_NOT_FOUND(6001, "Chat room not found", HttpStatus.NOT_FOUND);
+    CHAT_ROOM_NOT_FOUND(6001, "Chat room not found", HttpStatus.NOT_FOUND),
+    EXCEL_PARSE_ERROR(7001, "Failed to parse Excel file. Please check the file format", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

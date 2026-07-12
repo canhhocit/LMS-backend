@@ -1,6 +1,9 @@
 package com.ex.learninghub.common.exception;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -32,23 +35,59 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
     }
 
+    /** Token missing, expired, or invalid → 401 */
+    @ExceptionHandler(value = AuthenticationException.class)
+    ResponseEntity<ApiResponse<Object>> handlingAuthenticationException(AuthenticationException ex) {
+        ApiResponse<Object> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.UNAUTHORIZED.getCode())
+                .message(ErrorCode.UNAUTHORIZED.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+    }
+
+    /** Authenticated but not enough role → 403 */
+    @ExceptionHandler(value = AccessDeniedException.class)
+    ResponseEntity<ApiResponse<Object>> handlingAccessDeniedException(AccessDeniedException ex) {
+        ApiResponse<Object> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.FORBIDDEN.getCode())
+                .message(ErrorCode.FORBIDDEN.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiResponse);
+    }
+
+    /** NullPointerException on userPrincipal = unauthenticated request slipped through → 401 */
+    @ExceptionHandler(value = NullPointerException.class)
+    ResponseEntity<ApiResponse<Object>> handlingNullPointerException(NullPointerException ex) {
+        log.warn("NullPointerException — possibly unauthenticated request: {}", ex.getMessage());
+        ApiResponse<Object> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.UNAUTHORIZED.getCode())
+                .message(ErrorCode.UNAUTHORIZED.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+    }
+
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse<Object>> handlingValidationException(MethodArgumentNotValidException ex) {
         var fieldErr = ex.getBindingResult().getFieldError();
         if (fieldErr == null) {
             return ResponseEntity.badRequest().build();
         }
-        String errorKey = fieldErr.getDefaultMessage();
-        ErrorCode errorCode = ErrorCode.KEY_INVALID;
+        String message = fieldErr.getDefaultMessage();
+        // Try to resolve as an ErrorCode key first, fall back to raw message
         try {
-            errorCode = ErrorCode.valueOf(errorKey);
+            ErrorCode errorCode = ErrorCode.valueOf(message);
+            return ResponseEntity.status(errorCode.getStatusCode())
+                    .body(ApiResponse.builder()
+                            .code(errorCode.getCode())
+                            .message(errorCode.getMessage())
+                            .build());
         } catch (IllegalArgumentException e) {
-            log.error("Unknown validation error key: {}", errorKey);
+            // Plain-text validation message (e.g. @Pattern message)
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.builder()
+                            .code(HttpStatus.BAD_REQUEST.value())
+                            .message(message)
+                            .build());
         }
-        return ResponseEntity.status(errorCode.getStatusCode())
-                .body(ApiResponse.builder()
-                        .code(errorCode.getCode())
-                        .message(errorCode.getMessage())
-                        .build());
     }
 }
