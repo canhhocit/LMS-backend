@@ -40,7 +40,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return user.getStatus() != com.ex.learninghub.common.enums.UserStatus.BANNED;
+        return true;
     }
 
     @Override
@@ -50,6 +50,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getStatus() == com.ex.learninghub.common.enums.UserStatus.ACTIVE;
+        return true;
     }
 }

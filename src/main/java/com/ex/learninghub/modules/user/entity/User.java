@@ -1,53 +1,60 @@
 package com.ex.learninghub.modules.user.entity;
 
+import com.ex.learninghub.common.enums.Role;
+import com.ex.learninghub.common.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import com.ex.learninghub.common.enums.Role;
-import com.ex.learninghub.common.enums.UserStatus;
-import com.ex.learninghub.common.model.BaseEntity;
+import java.time.LocalDate;
 
-@Entity
-@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
+@Table(name = "users")
 public class User extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String email;
+    @Column(unique = true, length = 100)
+    private String username;
 
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    @Column(name = "avatar_url")
-    private String avatarUrl;
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role = Role.LEARNER;
+    @Column(unique = true, nullable = false, length = 100)
+    private String email;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserStatus status = UserStatus.ACTIVE;
+    @Column(nullable = false, length = 20)
+    private Role role;
+
+    @Column(name = "student_code", unique = true, length = 50)
+    private String studentCode;
+
+    @Column(name = "lecturer_code", unique = true, length = 50)
+    private String lecturerCode;
+
+    @Column(length = 100)
+    private String faculty;
+
+    @Column(length = 100)
+    private String major;
+
+    @Column(name = "is_first_login", columnDefinition = "boolean default true")
+    @Builder.Default
+    private Boolean isFirstLogin = true;
 }

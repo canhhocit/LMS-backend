@@ -4,45 +4,67 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     avatar_url VARCHAR(255),
+    date_of_birth DATE,
+    email VARCHAR(100) UNIQUE NOT NULL,
     role VARCHAR(20) NOT NULL,
-    status VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE mentor_requests (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    bio TEXT,
-    experience TEXT,
-    skills VARCHAR(255),
-    status VARCHAR(20) NOT NULL,
-    rejection_reason VARCHAR(255),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_mentor_requests_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    student_code VARCHAR(50) UNIQUE,
+    lecturer_code VARCHAR(50) UNIQUE,
+    faculty VARCHAR(100),
+    major VARCHAR(100),
+    is_first_login BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_email (email),
+    INDEX idx_user_student_code (student_code),
+    INDEX idx_user_lecturer_code (lecturer_code)
 );
 
 CREATE TABLE courses (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
+    course_code VARCHAR(50) UNIQUE NOT NULL,
+    course_name VARCHAR(255) NOT NULL,
+    credits INT NOT NULL,
     description TEXT,
-    price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    mentor_id BIGINT NOT NULL,
-    status VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_courses_mentor FOREIGN KEY (mentor_id) REFERENCES users(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_course_code (course_code)
+);
+
+CREATE TABLE classes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    class_code VARCHAR(50) UNIQUE NOT NULL,
+    class_name VARCHAR(255) NOT NULL,
+    semester VARCHAR(50),
+    academic_year VARCHAR(50),
+    course_id BIGINT NOT NULL,
+    lecturer_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (lecturer_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_class_code (class_code)
+);
+
+CREATE TABLE enrollments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    class_id BIGINT NOT NULL,
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_student_class (student_id, class_id)
 );
 
 CREATE TABLE chapters (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    course_id BIGINT NOT NULL,
+    class_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
-    sort_order INT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_chapters_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE lessons (
@@ -50,58 +72,111 @@ CREATE TABLE lessons (
     chapter_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT,
-    video_url VARCHAR(255),
-    duration INT,
-    sort_order INT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_lessons_chapter FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+    video_url VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
 );
 
-CREATE TABLE enrollments (
+CREATE TABLE assignments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    learner_id BIGINT NOT NULL,
-    course_id BIGINT NOT NULL,
+    class_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_date DATETIME,
+    max_score DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE submissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    assignment_id BIGINT NOT NULL,
+    student_id BIGINT NOT NULL,
+    file_url VARCHAR(500),
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    score DECIMAL(5,2),
+    feedback TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_assignment_student (assignment_id, student_id)
+);
+
+CREATE TABLE quizzes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    class_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    duration_minutes INT,
+    total_score DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE questions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    quiz_id BIGINT NOT NULL,
+    question_text TEXT NOT NULL,
+    option_a VARCHAR(255),
+    option_b VARCHAR(255),
+    option_c VARCHAR(255),
+    option_d VARCHAR(255),
+    correct_answer CHAR(1),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quiz_attempts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    quiz_id BIGINT NOT NULL,
+    student_id BIGINT NOT NULL,
+    score DECIMAL(5,2),
+    started_at DATETIME NOT NULL,
+    submitted_at DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE grades (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    class_id BIGINT NOT NULL,
+    student_id BIGINT NOT NULL,
+    midterm_score DECIMAL(5,2),
+    final_score DECIMAL(5,2),
+    total_score DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_class_student_grade (class_id, student_id)
+);
+
+CREATE TABLE attendance (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    class_id BIGINT NOT NULL,
+    student_id BIGINT NOT NULL,
+    attendance_date DATE NOT NULL,
     status VARCHAR(20) NOT NULL,
-    enrolled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP NULL,
-    CONSTRAINT fk_enrollments_learner FOREIGN KEY (learner_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_enrollments_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-    CONSTRAINT uq_learner_course UNIQUE (learner_id, course_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_class_student_date (class_id, student_id, attendance_date)
 );
 
-CREATE TABLE progress (
+CREATE TABLE announcements (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    enrollment_id BIGINT NOT NULL,
-    lesson_id BIGINT NOT NULL,
-    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
-    completed_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_progress_enrollment FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE,
-    CONSTRAINT fk_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
-    CONSTRAINT uq_enrollment_lesson UNIQUE (enrollment_id, lesson_id)
-);
-
-CREATE TABLE reviews (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    course_id BIGINT NOT NULL,
-    learner_id BIGINT NOT NULL,
-    rating INT NOT NULL,
-    comment TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_reviews_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-    CONSTRAINT fk_reviews_learner FOREIGN KEY (learner_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT uq_course_learner_review UNIQUE (course_id, learner_id)
-);
-
-CREATE TABLE messages (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    sender_id BIGINT NOT NULL,
-    receiver_id BIGINT NOT NULL,
+    class_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
-    is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_messages_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
 );
+

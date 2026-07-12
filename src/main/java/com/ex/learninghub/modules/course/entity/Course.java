@@ -1,37 +1,33 @@
 package com.ex.learninghub.modules.course.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
 import com.ex.learninghub.common.model.BaseEntity;
-import com.ex.learninghub.modules.user.entity.User;
-import java.math.BigDecimal;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Entity
-@Table(name = "courses")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
+@Table(name = "courses")
 public class Course extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+
+    @Column(name = "course_code", unique = true, nullable = false, length = 50)
+    private String courseCode;
+
+    @Column(name = "course_name", nullable = false)
+    private String courseName;
 
     @Column(nullable = false)
-    private String title;
+    private Integer credits;
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Builder.Default
-    @Column(nullable = false)
-    private BigDecimal price = BigDecimal.ZERO;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "mentor_id", nullable = false)
-    private User mentor;
-
-    @Column(nullable = false)
-    private String status; // DRAFT, PUBLISHED, ARCHIVED
 }

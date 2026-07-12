@@ -1,28 +1,30 @@
 package com.ex.learninghub.modules.user.dto.request;
 
+import com.ex.learninghub.common.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import java.time.LocalDate;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class UserCreateRequest {
-    @NotBlank(message = "EMAIL_REQUIRED")
-    @Email(message = "KEY_INVALID")
-    private String email;
 
-    @NotBlank(message = "KEY_INVALID")
-    @Size(min = 6, message = "KEY_INVALID")
-    private String password;
-
-    @NotBlank(message = "KEY_INVALID")
+    @NotBlank(message = "Full name cannot be blank")
     private String fullName;
 
-    private String avatarUrl;
+    @NotBlank(message = "Email cannot be blank")
+    @Email(message = "Invalid email format")
+    private String email;
+
+    @NotNull(message = "Role is required")
+    private Role role;
+
+    private String studentCode;
+    private String lecturerCode;
+    private LocalDate dateOfBirth;
+    private String faculty;
+    private String major;
 }

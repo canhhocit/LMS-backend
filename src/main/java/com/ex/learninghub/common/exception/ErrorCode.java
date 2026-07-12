@@ -16,8 +16,9 @@ public enum ErrorCode {
     // Validation Errors
     EMAIL_REQUIRED(1002, "Email is required", HttpStatus.BAD_REQUEST),
     EMAIL_EXISTS(1003, "Email already exists", HttpStatus.BAD_REQUEST),
-    USER_NOT_FOUND(1004, "User not found", HttpStatus.NOT_FOUND),
-    INVALID_CREDENTIALS(1005, "Invalid email or password", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_EXISTS(1004, "User already exists", HttpStatus.BAD_REQUEST),
+    USER_NOT_FOUND(1005, "User not found", HttpStatus.NOT_FOUND),
+    INVALID_CREDENTIALS(1006, "Invalid email or password", HttpStatus.BAD_REQUEST),
     
     // Module specific errors
     COURSE_NOT_FOUND(2001, "Course not found", HttpStatus.NOT_FOUND),

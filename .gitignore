@@ -34,3 +34,7 @@ build/
 
 # Ignore local environment file
 .env
+
+# Custom docs
+plan_future.md
+api.md

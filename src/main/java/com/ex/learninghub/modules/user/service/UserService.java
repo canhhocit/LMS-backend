@@ -1,13 +1,12 @@
 package com.ex.learninghub.modules.user.service;
 
 import com.ex.learninghub.modules.user.dto.request.UserCreateRequest;
-import com.ex.learninghub.modules.user.dto.request.UserUpdateRequest;
-import com.ex.learninghub.modules.user.dto.response.UserResponse;
+import com.ex.learninghub.modules.user.entity.User;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 public interface UserService {
-    UserResponse createUser(UserCreateRequest request);
-    UserResponse updateUser(Long id, UserUpdateRequest request);
-    UserResponse getUserById(Long id);
-    UserResponse getUserByEmail(String email);
-    void deleteUser(Long id);
+    User createUser(UserCreateRequest request);
+    List<User> importStudentsFromExcel(MultipartFile file);
+    List<User> importLecturersFromExcel(MultipartFile file);
 }

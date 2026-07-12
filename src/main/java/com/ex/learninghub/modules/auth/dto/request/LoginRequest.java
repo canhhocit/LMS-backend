@@ -1,21 +1,15 @@
 package com.ex.learninghub.modules.auth.dto.request;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class LoginRequest {
-    @NotBlank(message = "EMAIL_REQUIRED")
-    @Email(message = "KEY_INVALID")
-    private String email;
+    @NotBlank(message = "Username/Email cannot be blank")
+    private String identifier; // Can be email, student_code, or lecturer_code
 
-    @NotBlank(message = "KEY_INVALID")
+    @NotBlank(message = "Password cannot be blank")
     private String password;
 }
