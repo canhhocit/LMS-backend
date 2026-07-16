@@ -18,4 +18,5 @@ JWT_EXPIRATION=86400000
 # Default Admin Credentials (Auto-generated on startup if no admin exists)
 # APP_ADMIN_DEFAULT_EMAIL=admin@university.edu.vn
 # APP_ADMIN_DEFAULT_PASSWORD=123456
+# OTHER_DEFAULT_PASSWORD = Password@123
 ```

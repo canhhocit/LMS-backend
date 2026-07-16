@@ -182,6 +182,9 @@ public class UserServiceImpl implements UserService {
 
                 if (code.isEmpty() || firstName.isEmpty()) continue;
 
+                // Skip nếu code trông như header (chứa chữ cái không phải mã SV/GV)
+                if (!code.matches(".*\\d.*")) continue;
+
                 String fullName = (lastName + " " + firstName).trim();
                 String email = code.toLowerCase() + (role == Role.STUDENT ? "@student.edu.vn" : "@lecturer.edu.vn");
 

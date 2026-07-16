@@ -1,0 +1,176 @@
+package com.ex.learninghub.modules.content.service.impl;
+
+import com.ex.learninghub.common.exception.AppException;
+import com.ex.learninghub.common.exception.ErrorCode;
+import com.ex.learninghub.common.security.UserPrincipal;
+import com.ex.learninghub.modules.content.dto.request.AnnouncementRequest;
+import com.ex.learninghub.modules.content.dto.request.ChapterRequest;
+import com.ex.learninghub.modules.content.dto.request.LessonRequest;
+import com.ex.learninghub.modules.content.dto.response.AnnouncementResponse;
+import com.ex.learninghub.modules.content.dto.response.ChapterResponse;
+import com.ex.learninghub.modules.content.dto.response.LessonResponse;
+import com.ex.learninghub.modules.content.entity.Announcement;
+import com.ex.learninghub.modules.content.entity.Chapter;
+import com.ex.learninghub.modules.content.entity.Lesson;
+import com.ex.learninghub.modules.content.repository.AnnouncementRepository;
+import com.ex.learninghub.modules.content.repository.ChapterRepository;
+import com.ex.learninghub.modules.content.repository.LessonRepository;
+import com.ex.learninghub.modules.content.service.ContentService;
+import com.ex.learninghub.modules.course.entity.Clazz;
+import com.ex.learninghub.modules.course.repository.ClazzRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ContentServiceImpl implements ContentService {
+
+    private final ClazzRepository clazzRepository;
+    private final ChapterRepository chapterRepository;
+    private final LessonRepository lessonRepository;
+    private final AnnouncementRepository announcementRepository;
+
+    // ─── Helpers ────────────────────────────────────────────────────────────────
+
+    private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
+        if (clazz.getLecturer() == null ||
+                !clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    // ─── Chapter ────────────────────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public ChapterResponse createChapter(Long classId, ChapterRequest request, UserPrincipal userPrincipal) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
+        Chapter chapter = Chapter.builder()
+                .clazz(clazz)
+                .title(request.getTitle())
+                .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
+                .build();
+        return ChapterResponse.from(chapterRepository.save(chapter));
+    }
+
+    @Override
+    @Transactional
+    public ChapterResponse updateChapter(Long chapterId, ChapterRequest request, UserPrincipal userPrincipal) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        verifyLecturerOwnsClazz(chapter.getClazz(), userPrincipal);
+        chapter.setTitle(request.getTitle());
+        chapter.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : chapter.getSortOrder());
+        return ChapterResponse.from(chapterRepository.save(chapter));
+    }
+
+    @Override
+    @Transactional
+    public void deleteChapter(Long chapterId, UserPrincipal userPrincipal) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        verifyLecturerOwnsClazz(chapter.getClazz(), userPrincipal);
+        chapterRepository.delete(chapter);
+    }
+
+    @Override
+    public List<ChapterResponse> getChaptersByClass(Long classId) {
+        return chapterRepository.findByClazzIdOrderBySortOrderAsc(classId).stream()
+                .map(ChapterResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // ─── Lesson ─────────────────────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public LessonResponse createLesson(Long chapterId, LessonRequest request, UserPrincipal userPrincipal) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        verifyLecturerOwnsClazz(chapter.getClazz(), userPrincipal);
+        Lesson lesson = Lesson.builder()
+                .chapter(chapter)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .videoUrl(request.getVideoUrl())
+                .build();
+        return LessonResponse.from(lessonRepository.save(lesson));
+    }
+
+    @Override
+    @Transactional
+    public LessonResponse updateLesson(Long lessonId, LessonRequest request, UserPrincipal userPrincipal) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+        verifyLecturerOwnsClazz(lesson.getChapter().getClazz(), userPrincipal);
+        lesson.setTitle(request.getTitle());
+        lesson.setContent(request.getContent());
+        lesson.setVideoUrl(request.getVideoUrl());
+        return LessonResponse.from(lessonRepository.save(lesson));
+    }
+
+    @Override
+    @Transactional
+    public void deleteLesson(Long lessonId, UserPrincipal userPrincipal) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+        verifyLecturerOwnsClazz(lesson.getChapter().getClazz(), userPrincipal);
+        lessonRepository.delete(lesson);
+    }
+
+    @Override
+    public List<LessonResponse> getLessonsByChapter(Long chapterId) {
+        return lessonRepository.findByChapterId(chapterId).stream()
+                .map(LessonResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // ─── Announcement ────────────────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public AnnouncementResponse createAnnouncement(Long classId, AnnouncementRequest request, UserPrincipal userPrincipal) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
+        Announcement announcement = Announcement.builder()
+                .clazz(clazz)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .build();
+        return AnnouncementResponse.from(announcementRepository.save(announcement));
+    }
+
+    @Override
+    @Transactional
+    public AnnouncementResponse updateAnnouncement(Long announcementId, AnnouncementRequest request, UserPrincipal userPrincipal) {
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new AppException(ErrorCode.ANNOUNCEMENT_NOT_FOUND));
+        verifyLecturerOwnsClazz(announcement.getClazz(), userPrincipal);
+        announcement.setTitle(request.getTitle());
+        announcement.setContent(request.getContent());
+        return AnnouncementResponse.from(announcementRepository.save(announcement));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAnnouncement(Long announcementId, UserPrincipal userPrincipal) {
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new AppException(ErrorCode.ANNOUNCEMENT_NOT_FOUND));
+        verifyLecturerOwnsClazz(announcement.getClazz(), userPrincipal);
+        announcementRepository.delete(announcement);
+    }
+
+    @Override
+    public List<AnnouncementResponse> getAnnouncementsByClass(Long classId) {
+        return announcementRepository.findByClazzIdOrderByCreatedAtDesc(classId).stream()
+                .map(AnnouncementResponse::from)
+                .collect(Collectors.toList());
+    }
+}

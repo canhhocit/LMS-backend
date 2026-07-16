@@ -32,7 +32,14 @@ public enum ErrorCode {
     REVIEW_EXISTS(5001, "You have already reviewed this course", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_FOUND(5002, "Review not found", HttpStatus.NOT_FOUND),
     CHAT_ROOM_NOT_FOUND(6001, "Chat room not found", HttpStatus.NOT_FOUND),
-    EXCEL_PARSE_ERROR(7001, "Failed to parse Excel file. Please check the file format", HttpStatus.BAD_REQUEST);
+    EXCEL_PARSE_ERROR(7001, "Failed to parse Excel file. Please check the file format", HttpStatus.BAD_REQUEST),
+    CLAZZ_NOT_FOUND(2004, "Class not found", HttpStatus.NOT_FOUND),
+    CLAZZ_ALREADY_EXISTS(2005, "Class code already exists", HttpStatus.BAD_REQUEST),
+    COURSE_ALREADY_EXISTS(2006, "Course code already exists", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_NOT_FOUND(3004, "Assignment not found", HttpStatus.NOT_FOUND),
+    SUBMISSION_EXISTS(3005, "You have already submitted this assignment", HttpStatus.BAD_REQUEST),
+    SUBMISSION_NOT_FOUND(3006, "Submission not found", HttpStatus.NOT_FOUND),
+    ANNOUNCEMENT_NOT_FOUND(3007, "Announcement not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;
