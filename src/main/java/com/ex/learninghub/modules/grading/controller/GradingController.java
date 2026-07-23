@@ -23,7 +23,7 @@ public class GradingController {
 
     private final GradingService gradingService;
 
-    // ─── Grades ──────────────────────────────────────────────────────────────────
+    // Grades 
 
     @PostMapping("/classes/{classId}/grades")
     @PreAuthorize("hasRole('LECTURER')")
