@@ -67,4 +67,9 @@ public class AdminClazzController {
     public ApiResponse<List<UserResponse>> getStudentsInClazz(@PathVariable Long id) {
         return ApiResponse.success(enrollmentService.getStudentsInClazz(id));
     }
+
+    @GetMapping("/lecturer/{lecturerId}")
+    public ApiResponse<List<ClazzResponse>> getClazzesByLecturer(@PathVariable Long lecturerId) {
+        return ApiResponse.success(clazzService.getClazzesByLecturer(lecturerId));
+    }
 }

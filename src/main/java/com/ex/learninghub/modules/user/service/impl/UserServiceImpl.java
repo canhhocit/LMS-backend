@@ -3,6 +3,8 @@ package com.ex.learninghub.modules.user.service.impl;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
+import com.ex.learninghub.common.security.UserPrincipal;
+import com.ex.learninghub.modules.user.dto.request.UpdateProfileRequest;
 import com.ex.learninghub.modules.user.dto.request.UserCreateRequest;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
 import com.ex.learninghub.modules.user.entity.User;
@@ -232,5 +234,58 @@ public class UserServiceImpl implements UserService {
             case NUMERIC: return String.valueOf((long) cell.getNumericCellValue());
             default: return "";
         }
+    }
+
+    // ---- Profile ----
+
+    @Override
+    public UserResponse getProfile(UserPrincipal userPrincipal) {
+        return UserResponse.from(userPrincipal.getUser());
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateProfile(UserPrincipal userPrincipal, UpdateProfileRequest request) {
+        User user = userRepository.findById(userPrincipal.getUser().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setFullName(request.getFullName());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setFaculty(request.getFaculty());
+        user.setMajor(request.getMajor());
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    // ---- Admin operations ----
+
+    @Override
+    @Transactional
+    public void resetPassword(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setPassword(passwordEncoder.encode("Password@123"));
+        user.setIsFirstLogin(true);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateUser(Long id, UserCreateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setFullName(request.getFullName());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setFaculty(request.getFaculty());
+        user.setMajor(request.getMajor());
+        user.setStudentCode(request.getStudentCode());
+        user.setLecturerCode(request.getLecturerCode());
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        userRepository.delete(user);
     }
 }

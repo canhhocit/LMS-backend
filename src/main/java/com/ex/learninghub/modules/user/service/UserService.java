@@ -1,5 +1,7 @@
 package com.ex.learninghub.modules.user.service;
 
+import com.ex.learninghub.common.security.UserPrincipal;
+import com.ex.learninghub.modules.user.dto.request.UpdateProfileRequest;
 import com.ex.learninghub.modules.user.dto.request.UserCreateRequest;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
 import com.ex.learninghub.modules.user.entity.User;
@@ -21,4 +23,13 @@ public interface UserService {
 
     byte[] exportStudentsToExcel(String keyword) throws IOException;
     byte[] exportLecturersToExcel(String keyword) throws IOException;
+
+    // Profile
+    UserResponse getProfile(UserPrincipal userPrincipal);
+    UserResponse updateProfile(UserPrincipal userPrincipal, UpdateProfileRequest request);
+
+    // Admin operations
+    void resetPassword(Long userId);
+    UserResponse updateUser(Long id, UserCreateRequest request);
+    void deleteUser(Long id);
 }
