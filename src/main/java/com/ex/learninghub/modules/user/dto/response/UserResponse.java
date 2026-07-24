@@ -21,10 +21,18 @@ public class UserResponse {
     private LocalDate dateOfBirth;
     private String faculty;
     private String major;
+    private Long adminClassId;
+    private String adminClassName;
     private Boolean isFirstLogin;
     private LocalDateTime createdAt;
 
     public static UserResponse from(User user) {
+        // Với sinh viên: faculty lấy từ adminClass nếu không có faculty riêng
+        String faculty = user.getFaculty();
+        if (faculty == null && user.getAdminClass() != null) {
+            faculty = user.getAdminClass().getFaculty();
+        }
+
         return UserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
@@ -33,8 +41,10 @@ public class UserResponse {
                 .studentCode(user.getStudentCode())
                 .lecturerCode(user.getLecturerCode())
                 .dateOfBirth(user.getDateOfBirth())
-                .faculty(user.getFaculty())
+                .faculty(faculty)
                 .major(user.getMajor())
+                .adminClassId(user.getAdminClass() != null ? user.getAdminClass().getId() : null)
+                .adminClassName(user.getAdminClass() != null ? user.getAdminClass().getClassName() : null)
                 .isFirstLogin(user.getIsFirstLogin())
                 .createdAt(user.getCreatedAt())
                 .build();

@@ -39,7 +39,9 @@ public enum ErrorCode {
     ASSIGNMENT_NOT_FOUND(3004, "Assignment not found", HttpStatus.NOT_FOUND),
     SUBMISSION_EXISTS(3005, "You have already submitted this assignment", HttpStatus.BAD_REQUEST),
     SUBMISSION_NOT_FOUND(3006, "Submission not found", HttpStatus.NOT_FOUND),
-    ANNOUNCEMENT_NOT_FOUND(3007, "Announcement not found", HttpStatus.NOT_FOUND);
+    ANNOUNCEMENT_NOT_FOUND(3007, "Announcement not found", HttpStatus.NOT_FOUND),
+    ADMIN_CLASS_NOT_FOUND(2007, "Administrative class not found", HttpStatus.NOT_FOUND),
+    ADMIN_CLASS_ALREADY_EXISTS(2008, "Administrative class already exists", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

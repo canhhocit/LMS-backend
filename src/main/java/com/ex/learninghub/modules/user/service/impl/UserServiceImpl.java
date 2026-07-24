@@ -7,7 +7,9 @@ import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.user.dto.request.UpdateProfileRequest;
 import com.ex.learninghub.modules.user.dto.request.UserCreateRequest;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
+import com.ex.learninghub.modules.user.entity.AdministrativeClass;
 import com.ex.learninghub.modules.user.entity.User;
+import com.ex.learninghub.modules.user.repository.AdministrativeClassRepository;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import com.ex.learninghub.modules.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AdministrativeClassRepository adminClassRepository;
 
     @Override
     @Transactional
@@ -55,9 +58,15 @@ public class UserServiceImpl implements UserService {
                 .dateOfBirth(request.getDateOfBirth())
                 .faculty(request.getFaculty())
                 .major(request.getMajor())
-                .password(passwordEncoder.encode("Password@123")) // Default password
+                .password(passwordEncoder.encode("Password@123"))
                 .isFirstLogin(true)
                 .build();
+
+        if (request.getAdminClassId() != null) {
+            AdministrativeClass adminClass = adminClassRepository.findById(request.getAdminClassId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
+            user.setAdminClass(adminClass);
+        }
 
         return userRepository.save(user);
     }
@@ -203,10 +212,22 @@ public class UserServiceImpl implements UserService {
                         .role(role)
                         .studentCode(role == Role.STUDENT ? code : null)
                         .lecturerCode(role == Role.LECTURER ? code : null)
-                        .faculty(className.isEmpty() ? null : className)
                         .password(passwordEncoder.encode("Password@123"))
                         .isFirstLogin(true)
                         .build();
+
+                // Sinh viên: gán lớp hành chính (tạo mới nếu chưa có)
+                if (role == Role.STUDENT && !className.isEmpty()) {
+                    AdministrativeClass adminClass = adminClassRepository.findByClassName(className)
+                            .orElseGet(() -> adminClassRepository.save(
+                                    AdministrativeClass.builder().className(className).build()));
+                    user.setAdminClass(adminClass);
+                }
+
+                // Giảng viên: gán faculty trực tiếp
+                if (role == Role.LECTURER && !className.isEmpty()) {
+                    user.setFaculty(className);
+                }
 
                 try {
                     if (!dobStr.isEmpty()) {

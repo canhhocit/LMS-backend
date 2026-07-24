@@ -27,4 +27,5 @@ public class UserCreateRequest {
     private LocalDate dateOfBirth;
     private String faculty;
     private String major;
+    private Long adminClassId;
 }

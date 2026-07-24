@@ -6,6 +6,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -50,6 +53,10 @@ public class User extends BaseEntity {
 
     @Column(length = 100)
     private String major;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_class_id")
+    private AdministrativeClass adminClass;
 
     @Column(name = "is_first_login", columnDefinition = "boolean default true")
     @Builder.Default
