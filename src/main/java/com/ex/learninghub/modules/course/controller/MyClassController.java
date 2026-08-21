@@ -5,7 +5,7 @@ import com.ex.learninghub.common.response.ApiResponse;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.course.dto.response.ClazzResponse;
 import com.ex.learninghub.modules.course.service.ClazzService;
-import com.ex.learninghub.modules.enrollment.service.EnrollmentService;
+import com.ex.learninghub.modules.enrollment.service.ClazzEnrollmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MyClassController {
 
-    private final EnrollmentService enrollmentService;
+    private final ClazzEnrollmentService enrollmentService;
     private final ClazzService clazzService;
 
     @GetMapping("/classes")

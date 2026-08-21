@@ -38,3 +38,4 @@ build/
 # Custom docs
 plan_future.md
 api.md
+docs/**

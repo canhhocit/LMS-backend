@@ -5,7 +5,7 @@ import com.ex.learninghub.modules.course.dto.request.ClazzRequest;
 import com.ex.learninghub.modules.course.dto.response.ClazzResponse;
 import com.ex.learninghub.modules.course.service.ClazzService;
 import com.ex.learninghub.modules.enrollment.dto.request.EnrollStudentsRequest;
-import com.ex.learninghub.modules.enrollment.service.EnrollmentService;
+import com.ex.learninghub.modules.enrollment.service.ClazzEnrollmentService;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.List;
 public class AdminClazzController {
 
     private final ClazzService clazzService;
-    private final EnrollmentService enrollmentService;
+    private final ClazzEnrollmentService enrollmentService;
 
     @PostMapping
     public ApiResponse<ClazzResponse> createClazz(@Valid @RequestBody ClazzRequest request) {

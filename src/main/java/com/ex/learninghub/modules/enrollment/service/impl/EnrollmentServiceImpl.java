@@ -8,7 +8,7 @@ import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.enrollment.dto.request.EnrollStudentsRequest;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
-import com.ex.learninghub.modules.enrollment.service.EnrollmentService;
+import com.ex.learninghub.modules.enrollment.service.ClazzEnrollmentService;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class EnrollmentServiceImpl implements EnrollmentService {
+public class EnrollmentServiceImpl implements ClazzEnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository;
     private final ClazzRepository clazzRepository;

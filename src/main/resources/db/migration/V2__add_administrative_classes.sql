@@ -13,3 +13,4 @@ CREATE TABLE administrative_classes (
 ALTER TABLE users ADD COLUMN admin_class_id BIGINT;
 ALTER TABLE users ADD CONSTRAINT fk_user_admin_class
     FOREIGN KEY (admin_class_id) REFERENCES administrative_classes(id) ON DELETE SET NULL;
+

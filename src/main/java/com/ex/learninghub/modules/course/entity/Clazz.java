@@ -2,44 +2,42 @@ package com.ex.learninghub.modules.course.entity;
 
 import com.ex.learninghub.common.model.BaseEntity;
 import com.ex.learninghub.modules.user.entity.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Entity representing a class (Clazz) where learners enroll.
+ */
+@Entity
+@Table(name = "classes")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(name = "classes")
 public class Clazz extends BaseEntity {
 
-    @Column(name = "class_code", unique = true, nullable = false, length = 50)
+    @Column(name = "class_code", nullable = false, length = 50)
     private String classCode;
 
-    @Column(name = "class_name", nullable = false)
+    @Column(name = "class_name", nullable = false, length = 100)
     private String className;
 
-    @Column(length = 50)
+    @Column(length = 20)
     private String semester;
 
-    @Column(name = "academic_year", length = 50)
+    @Column(name = "academic_year", length = 20)
     private String academicYear;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
+    @JoinColumn(name = "course_id", foreignKey = @ForeignKey(name = "FK_CLASS_COURSE"))
     private Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lecturer_id")
+    @JoinColumn(name = "lecturer_id", foreignKey = @ForeignKey(name = "FK_CLASS_LECTURER"))
     private User lecturer;
 }

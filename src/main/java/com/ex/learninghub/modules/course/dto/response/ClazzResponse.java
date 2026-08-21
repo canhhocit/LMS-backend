@@ -6,6 +6,9 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO for returning class (Clazz) information.
+ */
 @Getter
 @Builder
 public class ClazzResponse {

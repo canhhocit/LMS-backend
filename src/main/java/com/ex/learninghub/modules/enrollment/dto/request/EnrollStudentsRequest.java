@@ -1,17 +1,21 @@
 package com.ex.learninghub.modules.enrollment.dto.request;
 
-import jakarta.validation.constraints.NotEmpty;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 
-@Getter
-@Setter
+/**
+ * DTO for enrolling multiple students into a class (Clazz).
+ */
+@Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class EnrollStudentsRequest {
 
-    @NotEmpty(message = "Student IDs must not be empty")
+    /** List of student (User) IDs to enroll */
     private List<Long> studentIds;
 }

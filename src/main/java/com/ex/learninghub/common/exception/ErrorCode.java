@@ -41,7 +41,18 @@ public enum ErrorCode {
     SUBMISSION_NOT_FOUND(3006, "Submission not found", HttpStatus.NOT_FOUND),
     ANNOUNCEMENT_NOT_FOUND(3007, "Announcement not found", HttpStatus.NOT_FOUND),
     ADMIN_CLASS_NOT_FOUND(2007, "Administrative class not found", HttpStatus.NOT_FOUND),
-    ADMIN_CLASS_ALREADY_EXISTS(2008, "Administrative class already exists", HttpStatus.BAD_REQUEST);
+    ADMIN_CLASS_ALREADY_EXISTS(2008, "Administrative class already exists", HttpStatus.BAD_REQUEST),
+    
+    // SRS Online Learning Platform Errors
+    COURSE_NOT_PUBLISHED(2009, "Course is not published yet", HttpStatus.BAD_REQUEST),
+    LESSON_LOCKED(2010, "Lesson is locked. Complete previous lessons first", HttpStatus.BAD_REQUEST),
+    COURSE_NOT_OWNED_BY_MENTOR(2011, "You do not own this course", HttpStatus.FORBIDDEN),
+    USER_NOT_ENROLLED(3008, "User is not enrolled in this course", HttpStatus.BAD_REQUEST),
+    ENROLLMENT_ALREADY_COMPLETED(3009, "Enrollment is already completed", HttpStatus.BAD_REQUEST),
+    MENTOR_REQUEST_ALREADY_EXISTS(4003, "You already have a mentor request", HttpStatus.BAD_REQUEST),
+    MENTOR_REQUEST_ALREADY_PROCESSED(4004, "Mentor request already processed", HttpStatus.BAD_REQUEST),
+    CANNOT_REVIEW_NOT_COMPLETED(5003, "You must complete the course before reviewing", HttpStatus.BAD_REQUEST),
+    INVALID_RATING(5004, "Rating must be between 1 and 5", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;
