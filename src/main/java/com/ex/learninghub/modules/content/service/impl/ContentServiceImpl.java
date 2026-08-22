@@ -10,14 +10,14 @@ import com.ex.learninghub.modules.content.dto.response.AnnouncementResponse;
 import com.ex.learninghub.modules.content.dto.response.ChapterResponse;
 import com.ex.learninghub.modules.content.dto.response.LessonResponse;
 import com.ex.learninghub.modules.content.entity.Announcement;
-import com.ex.learninghub.modules.content.entity.Chapter;
-import com.ex.learninghub.modules.content.entity.Lesson;
 import com.ex.learninghub.modules.content.repository.AnnouncementRepository;
-import com.ex.learninghub.modules.content.repository.ChapterRepository;
-import com.ex.learninghub.modules.content.repository.LessonRepository;
 import com.ex.learninghub.modules.content.service.ContentService;
+import com.ex.learninghub.modules.course.entity.Chapter;
 import com.ex.learninghub.modules.course.entity.Clazz;
+import com.ex.learninghub.modules.course.entity.Lesson;
+import com.ex.learninghub.modules.course.repository.ChapterRepository;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
+import com.ex.learninghub.modules.course.repository.LessonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,16 +34,12 @@ public class ContentServiceImpl implements ContentService {
     private final LessonRepository lessonRepository;
     private final AnnouncementRepository announcementRepository;
 
-    // ─── Helpers ────────────────────────────────────────────────────────────────
-
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
         if (clazz.getLecturer() == null ||
                 !clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
     }
-
-    // ─── Chapter ────────────────────────────────────────────────────────────────
 
     @Override
     @Transactional
@@ -52,7 +48,7 @@ public class ContentServiceImpl implements ContentService {
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
         verifyLecturerOwnsClazz(clazz, userPrincipal);
         Chapter chapter = Chapter.builder()
-                .clazz(clazz)
+                .clazzId(classId)
                 .title(request.getTitle())
                 .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
                 .build();
@@ -64,7 +60,9 @@ public class ContentServiceImpl implements ContentService {
     public ChapterResponse updateChapter(Long chapterId, ChapterRequest request, UserPrincipal userPrincipal) {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
-        verifyLecturerOwnsClazz(chapter.getClazz(), userPrincipal);
+        Clazz clazz = clazzRepository.findById(chapter.getClazzId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
         chapter.setTitle(request.getTitle());
         chapter.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : chapter.getSortOrder());
         return ChapterResponse.from(chapterRepository.save(chapter));
@@ -75,7 +73,9 @@ public class ContentServiceImpl implements ContentService {
     public void deleteChapter(Long chapterId, UserPrincipal userPrincipal) {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
-        verifyLecturerOwnsClazz(chapter.getClazz(), userPrincipal);
+        Clazz clazz = clazzRepository.findById(chapter.getClazzId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
         chapterRepository.delete(chapter);
     }
 
@@ -86,16 +86,16 @@ public class ContentServiceImpl implements ContentService {
                 .collect(Collectors.toList());
     }
 
-    // ─── Lesson ─────────────────────────────────────────────────────────────────
-
     @Override
     @Transactional
     public LessonResponse createLesson(Long chapterId, LessonRequest request, UserPrincipal userPrincipal) {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
-        verifyLecturerOwnsClazz(chapter.getClazz(), userPrincipal);
+        Clazz clazz = clazzRepository.findById(chapter.getClazzId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
         Lesson lesson = Lesson.builder()
-                .chapter(chapter)
+                .chapterId(chapterId)
                 .title(request.getTitle())
                 .content(request.getContent())
                 .videoUrl(request.getVideoUrl())
@@ -108,7 +108,11 @@ public class ContentServiceImpl implements ContentService {
     public LessonResponse updateLesson(Long lessonId, LessonRequest request, UserPrincipal userPrincipal) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
-        verifyLecturerOwnsClazz(lesson.getChapter().getClazz(), userPrincipal);
+        Chapter chapter = chapterRepository.findById(lesson.getChapterId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        Clazz clazz = clazzRepository.findById(chapter.getClazzId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
         lesson.setTitle(request.getTitle());
         lesson.setContent(request.getContent());
         lesson.setVideoUrl(request.getVideoUrl());
@@ -120,18 +124,20 @@ public class ContentServiceImpl implements ContentService {
     public void deleteLesson(Long lessonId, UserPrincipal userPrincipal) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
-        verifyLecturerOwnsClazz(lesson.getChapter().getClazz(), userPrincipal);
+        Chapter chapter = chapterRepository.findById(lesson.getChapterId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        Clazz clazz = clazzRepository.findById(chapter.getClazzId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
         lessonRepository.delete(lesson);
     }
 
     @Override
     public List<LessonResponse> getLessonsByChapter(Long chapterId) {
-        return lessonRepository.findByChapterId(chapterId).stream()
+        return lessonRepository.findByChapterIdOrderBySortOrderAsc(chapterId).stream()
                 .map(LessonResponse::from)
                 .collect(Collectors.toList());
     }
-
-    // ─── Announcement ────────────────────────────────────────────────────────────
 
     @Override
     @Transactional

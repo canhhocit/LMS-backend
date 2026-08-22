@@ -20,12 +20,12 @@ import java.util.List;
 @Table(name = "chapters")
 public class Chapter extends BaseEntity {
 
-    @Column(name = "course_id", nullable = false)
-    private Long courseId;
+    @Column(name = "clazz_id", nullable = false)
+    private Long clazzId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", insertable = false, updatable = false)
-    private Course course;
+    @JoinColumn(name = "clazz_id", insertable = false, updatable = false)
+    private Clazz clazz;
 
     @Column(nullable = false)
     private String title;

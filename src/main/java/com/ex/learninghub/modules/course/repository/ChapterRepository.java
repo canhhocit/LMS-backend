@@ -12,13 +12,13 @@ import java.util.Optional;
 @Repository
 public interface ChapterRepository extends JpaRepository<Chapter, Long> {
 
-    List<Chapter> findByCourseIdOrderBySortOrderAsc(Long courseId);
+    List<Chapter> findByClazzIdOrderBySortOrderAsc(Long clazzId);
 
     @Query("SELECT c FROM Chapter c LEFT JOIN FETCH c.lessons WHERE c.id = :id")
     Optional<Chapter> findByIdWithLessons(@Param("id") Long id);
 
-    @Query("SELECT c FROM Chapter c LEFT JOIN FETCH c.lessons WHERE c.courseId = :courseId ORDER BY c.sortOrder")
-    List<Chapter> findByCourseIdWithLessons(@Param("courseId") Long courseId);
+    @Query("SELECT c FROM Chapter c LEFT JOIN FETCH c.lessons WHERE c.clazzId = :clazzId ORDER BY c.sortOrder")
+    List<Chapter> findByClazzIdWithLessons(@Param("clazzId") Long clazzId);
 
-    void deleteByCourseId(Long courseId);
+    void deleteByClazzId(Long clazzId);
 }

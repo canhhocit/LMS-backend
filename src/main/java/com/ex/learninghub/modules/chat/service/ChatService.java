@@ -38,15 +38,8 @@ public class ChatService {
         User receiver = userRepository.findById(dto.getReceiverId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Check if sender is enrolled in the course (for learner-mentor chat)
-        if (dto.getCourseId() != null) {
-            boolean isEnrolled = enrollmentRepository.existsByLearnerIdAndCourseId(senderId, dto.getCourseId());
-            boolean isMentorOfCourse = enrollmentRepository.existsByCourseIdAndMentorId(dto.getCourseId(), senderId);
-            
-            if (!isEnrolled && !isMentorOfCourse) {
-                throw new AppException(ErrorCode.FORBIDDEN);
-            }
-        }
+        // Optional: check if sender and receiver are in the same class if needed
+        // For now, allow any user to send message to any other user
 
         Message message = Message.builder()
                 .senderId(senderId)

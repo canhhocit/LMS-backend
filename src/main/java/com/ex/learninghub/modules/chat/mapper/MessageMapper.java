@@ -38,7 +38,7 @@ public class MessageMapper {
             dto.setReceiverName(receiver.getFullName());
         }
         if (course != null) {
-            dto.setCourseName(course.getCourseName());
+            dto.setCourseName(course.getTitle()); // using getTitle() for course name
         }
         return dto;
     }

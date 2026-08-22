@@ -23,13 +23,13 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional
     public CourseResponse createCourse(CourseRequest request) {
-        if (courseRepository.existsByCourseCode(request.getCourseCode())) {
+        if (courseRepository.findByCode(request.getCode()).isPresent()) {
             throw new AppException(ErrorCode.COURSE_ALREADY_EXISTS);
         }
         Course course = Course.builder()
-                .courseCode(request.getCourseCode())
-                .courseName(request.getCourseName())
-                .credits(request.getCredits())
+                .code(request.getCode())
+                .title(request.getTitle())
+                .credit(request.getCredit())
                 .description(request.getDescription())
                 .build();
         return CourseResponse.from(courseRepository.save(course));
@@ -40,9 +40,9 @@ public class CourseServiceImpl implements CourseService {
     public CourseResponse updateCourse(Long id, CourseRequest request) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
-        course.setCourseCode(request.getCourseCode());
-        course.setCourseName(request.getCourseName());
-        course.setCredits(request.getCredits());
+        course.setCode(request.getCode());
+        course.setTitle(request.getTitle());
+        course.setCredit(request.getCredit());
         course.setDescription(request.getDescription());
         return CourseResponse.from(courseRepository.save(course));
     }

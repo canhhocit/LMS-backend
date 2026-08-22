@@ -18,13 +18,13 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     List<Lesson> findLessonsByChapterIdOrdered(@Param("chapterId") Long chapterId);
 
     @Query("SELECT l FROM Lesson l WHERE l.chapterId IN " +
-           "(SELECT c.id FROM Chapter c WHERE c.courseId = :courseId) " +
+           "(SELECT c.id FROM Chapter c WHERE c.clazzId = :clazzId) " +
            "ORDER BY c.sortOrder, l.sortOrder")
-    List<Lesson> findByCourseId(@Param("courseId") Long courseId);
+    List<Lesson> findByClazzId(@Param("clazzId") Long clazzId);
 
     @Query("SELECT l FROM Lesson l WHERE l.chapterId IN " +
-           "(SELECT c.id FROM Chapter c WHERE c.courseId = :courseId)")
-    List<Lesson> findByChapterCourseId(@Param("courseId") Long courseId);
+           "(SELECT c.id FROM Chapter c WHERE c.clazzId = :clazzId)")
+    List<Lesson> findByChapterClazzId(@Param("clazzId") Long clazzId);
 
     Optional<Lesson> findByChapterIdAndSortOrder(Long chapterId, Integer sortOrder);
 
