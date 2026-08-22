@@ -1,67 +1,67 @@
-# LearningHub Environment Configuration Guide
+# Hướng dẫn cấu hình biến môi trường LearningHub
 
-## Overview
+## Tổng quan
 
-This guide explains how to configure all environment variables required to run the LearningHub backend. All sensitive configuration is externalized to environment variables — **never hardcode secrets in source code**.
+Tài liệu này hướng dẫn cách cấu hình tất cả biến môi trường cần thiết để chạy backend LearningHub. Toàn bộ cấu hình nhạy cảm được tách ra biến môi trường — **tuyệt đối không hardcode secret trong source code**.
 
 ---
 
-## Quick Start
+## Khởi động nhanh
 
 ```bash
-# 1. Copy the template
+# 1. Sao chép file mẫu
 cp .env.example .env
 
-# 2. Edit with your values
-nano .env   # or use your preferred editor
+# 2. Chỉnh sửa với giá trị của bạn
+nano .env   # hoặc editor bất kỳ
 
-# 3. Load environment variables (choose one):
-# Option A: Export manually before running
+# 3. Nạp biến môi trường (chọn 1 cách):
+# Cách A: Export thủ công trước khi chạy
 export $(cat .env | xargs) && ./mvnw spring-boot:run
 
-# Option B: Use direnv (auto-loads .env on cd)
+# Cách B: Dùng direnv (tự động nạp khi cd vào thư mục)
 direnv allow
 
-# Option C: IDE run configuration — add all vars from .env
+# Cách C: Cấu hình trong IDE run configuration
 ```
 
 ---
 
-## Required Variables
+## Biến bắt buộc
 
-| Variable | Description | Required | Default | Example |
+| Biến | Mô tả | Bắt buộc | Giá trị mặc định | Ví dụ |
 |----------|-------------|----------|---------|---------|
-| `DB_URL` | MySQL JDBC connection string | ✅ | `jdbc:mysql://localhost:3306/learninghub?...` | `jdbc:mysql://db:3306/learninghub?...` |
-| `DB_USERNAME` | Database username | ✅ | `root` | `learninghub_user` |
-| `DB_PASSWORD` | Database password | ✅ | `123456` | `Str0ngP@ssw0rd!` |
-| `JWT_SECRET` | HS256 signing key (≥32 chars) | ✅ | (hardcoded fallback) | `openssl rand -base64 32` |
-| `MAIL_USERNAME` | Brevo SMTP login | ✅ | — | `user@domain.com` |
-| `MAIL_PASSWORD` | Brevo SMTP password | ✅ | — | `xkeysib-xxxxxxxxx` |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | ✅ | — | `my-cloud` |
-| `CLOUDINARY_API_KEY` | Cloudinary API key | ✅ | — | `123456789012345` |
-| `CLOUDINARY_API_SECRET` | Cloudinary API secret | ✅ | — | `abcdefghijklmnopqrstuvwxyz` |
+| `DB_URL` | Chuỗi kết nối JDBC tới MySQL | ✅ | `jdbc:mysql://localhost:3306/learninghub?...` | `jdbc:mysql://db:3306/learninghub?...` |
+| `DB_USERNAME` | Tên đăng nhập database | ✅ | `root` | `learninghub_user` |
+| `DB_PASSWORD` | Mật khẩu database | ✅ | `123456` | `MatKhauMan_2026!` |
+| `JWT_SECRET` | Khóa ký HS256 (≥32 ký tự) | ✅ | (giá trị dự phòng hardcoded) | `openssl rand -base64 32` |
+| `MAIL_USERNAME` | Tài khoản SMTP Brevo | ✅ | — | `user@domain.com` |
+| `MAIL_PASSWORD` | Mật khẩu SMTP Brevo | ✅ | — | `xkeysib-xxxxxxxxx` |
+| `CLOUDINARY_CLOUD_NAME` | Tên cloud Cloudinary | ✅ | — | `my-cloud` |
+| `CLOUDINARY_API_KEY` | API key Cloudinary | ✅ | — | `123456789012345` |
+| `CLOUDINARY_API_SECRET` | API secret Cloudinary | ✅ | — | `abcdefghijklmnopqrstuvwxyz` |
 
 ---
 
-## Optional Variables (with Defaults)
+## Biến tùy chọn (có giá trị mặc định)
 
-| Variable | Description | Default |
+| Biến | Mô tả | Giá trị mặc định |
 |----------|-------------|---------|
-| `JWT_EXPIRATION` | Access token TTL (ms) | `86400000` (24h) |
-| `FRONTEND_URL` | Frontend base URL for email links | `http://localhost:3000` |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
-| `ATTENDANCE_MAX_ABSENT_RATIO` | Max absent ratio (0.0–1.0) | `0.2` |
-| `SERVER_PORT` | HTTP port (set via `server.port`) | `8080` |
+| `JWT_EXPIRATION` | Thời gian hết hạn access token (ms) | `86400000` (24 giờ) |
+| `FRONTEND_URL` | URL frontend dùng cho link trong email | `http://localhost:3000` |
+| `CORS_ALLOWED_ORIGINS` | Danh sách origin được phép, phân cách bằng dấu phẩy | `http://localhost:3000` |
+| `ATTENDANCE_MAX_ABSENT_RATIO` | Tỷ lệ vắng tối đa (0.0–1.0) | `0.2` (tức 20%) |
+| `SERVER_PORT` | Cổng HTTP (cấu hình qua `server.port`) | `8080` |
 
 ---
 
-## Obtaining Credentials
+## Cách lấy thông tin xác thực
 
 ### 1. MySQL Database
 
-**Local Development:**
+**Môi trường dev:**
 ```bash
-# Using Docker
+# Dùng Docker
 docker run -d \
   --name learninghub-mysql \
   -e MYSQL_ROOT_PASSWORD=your_password \
@@ -69,18 +69,18 @@ docker run -d \
   -p 3306:3306 \
   mysql:8.0
 ```
-Then set:
+Sau đó cấu hình:
 ```
 DB_URL=jdbc:mysql://localhost:3306/learninghub?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
 DB_USERNAME=root
 DB_PASSWORD=your_password
 ```
 
-**Production:** Use managed DB (AWS RDS, Azure Database, GCP Cloud SQL) — update `DB_URL` with the provided endpoint.
+**Production:** Nên dùng managed DB (AWS RDS, Azure Database, GCP Cloud SQL) — cập nhật `DB_URL` theo endpoint được cấp.
 
 ### 2. JWT Secret
 
-Generate a secure key:
+Sinh khóa bảo mật:
 ```bash
 # Linux/macOS/Git Bash
 openssl rand -base64 32
@@ -88,27 +88,27 @@ openssl rand -base64 32
 # PowerShell
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
 ```
-Must be **≥ 32 characters** (256 bits) for HS256.
+Khóa phải **≥ 32 ký tự** (256 bits) cho thuật toán HS256.
 
 ### 3. Brevo SMTP (Email)
 
-1. Create account at [brevo.com](https://brevo.com)
-2. Go to **SMTP & API** → **SMTP** → **SMTP Settings**
-3. Copy:
-   - `MAIL_USERNAME` = SMTP login (e.g., `user@domain.com`)
-   - `MAIL_PASSWORD` = SMTP key (e.g., `xkeysib-xxxxxxxxxxxxx`)
+1. Tạo tài khoản tại [brevo.com](https://brevo.com)
+2. Vào **SMTP & API** → **SMTP** → **SMTP Settings**
+3. Sao chép:
+   - `MAIL_USERNAME` = SMTP login (VD: `user@domain.com`)
+   - `MAIL_PASSWORD` = SMTP key (VD: `xkeysib-xxxxxxxxxxxxx`)
 
-The host (`smtp-relay.brevo.com`) and port (`587`) are pre-configured in `application.yml`.
+Host (`smtp-relay.brevo.com`) và port (`587`) đã được cấu hình sẵn trong `application.yml`.
 
-### 4. Cloudinary (Video Upload)
+### 4. Cloudinary (Upload video)
 
-1. Sign up at [cloudinary.com](https://cloudinary.com)
-2. Dashboard → **Account Details** → copy:
+1. Đăng ký tại [cloudinary.com](https://cloudinary.com)
+2. Vào Dashboard → **Account Details** → sao chép:
    - `CLOUDINARY_CLOUD_NAME`
    - `CLOUDINARY_API_KEY`
    - `CLOUDINARY_API_SECRET`
 
-Video upload limit is configured in `application.yml`:
+Giới hạn upload video được cấu hình trong `application.yml`:
 ```yaml
 app:
   upload:
@@ -122,51 +122,51 @@ spring:
 
 ---
 
-## Variable Reference by Module
+## Tra cứu biến theo module
 
-| Module | Variables Used |
+| Module | Biến sử dụng |
 |--------|----------------|
-| **Auth** (JWT, Forgot Password) | `JWT_SECRET`, `JWT_EXPIRATION`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `FRONTEND_URL` |
+| **Auth** (JWT, Quên mật khẩu) | `JWT_SECRET`, `JWT_EXPIRATION`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `FRONTEND_URL` |
 | **Database / Flyway** | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` |
 | **Email (Brevo)** | `MAIL_USERNAME`, `MAIL_PASSWORD` |
-| **Video Upload** | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` |
+| **Upload Video** | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` |
 | **CORS / WebSocket** | `CORS_ALLOWED_ORIGINS`, `FRONTEND_URL` |
-| **Attendance** | `ATTENDANCE_MAX_ABSENT_RATIO` |
+| **Điểm danh** | `ATTENDANCE_MAX_ABSENT_RATIO` |
 
 ---
 
-## Validation Checklist
+## Checklist kiểm tra
 
-Before starting the application, verify:
+Trước khi khởi động ứng dụng, xác nhận:
 
-- [ ] `.env` file exists in project root
-- [ ] All **required** variables are set (no placeholder values)
-- [ ] `JWT_SECRET` is ≥ 32 chars
-- [ ] MySQL is running and accessible at `DB_URL`
-- [ ] Brevo SMTP credentials work (test with `telnet smtp-relay.brevo.com 587`)
-- [ ] Cloudinary credentials are valid (test via dashboard)
-- [ ] `FRONTEND_URL` matches your frontend deployment
+- [ ] File `.env` đã tồn tại ở thư mục gốc
+- [ ] Tất cả biến **bắt buộc** đã được đặt (không còn giá trị mẫu)
+- [ ] `JWT_SECRET` dài ≥ 32 ký tự
+- [ ] MySQL đang chạy và truy cập được tại `DB_URL`
+- [ ] Thông tin Brevo SMTP hoạt động (test bằng `telnet smtp-relay.brevo.com 587`)
+- [ ] Thông tin Cloudinary hợp lệ (test qua dashboard)
+- [ ] `FRONTEND_URL` khớp với deployment frontend của bạn
 
 ---
 
-## Troubleshooting
+## Xử lý lỗi thường gặp
 
-| Error | Cause | Fix |
+| Lỗi | Nguyên nhân | Cách xử lý |
 |-------|-------|-----|
-| `Communications link failure` | MySQL not reachable | Check `DB_URL`, firewall, MySQL running |
-| `Bad credentials` (DB) | Wrong user/pass | Verify `DB_USERNAME`, `DB_PASSWORD` |
-| `JWT signature does not match` | Secret mismatch | Ensure same `JWT_SECRET` across restarts |
-| `403 Forbidden` on email send | Invalid Brevo creds | Re-check `MAIL_USERNAME`/`MAIL_PASSWORD` |
-| `Upload failed` (video) | Cloudinary auth error | Verify all 3 Cloudinary vars |
-| `CORS error` in browser | Origin not allowed | Add frontend URL to `CORS_ALLOWED_ORIGINS` |
+| `Communications link failure` | Không kết nối được MySQL | Kiểm tra `DB_URL`, firewall, MySQL có chạy không |
+| `Bad credentials` (DB) | Sai user/pass | Kiểm tra `DB_USERNAME`, `DB_PASSWORD` |
+| `JWT signature does not match` | Khóa bí mật không khớp | Đảm bảo `JWT_SECRET` giống nhau qua các lần khởi động |
+| `403 Forbidden` khi gửi email | Sai thông tin Brevo | Kiểm tra lại `MAIL_USERNAME`/`MAIL_PASSWORD` |
+| `Upload failed` (video) | Lỗi xác thực Cloudinary | Kiểm tra đủ 3 biến Cloudinary |
+| `CORS error` trên browser | Origin chưa được phép | Thêm URL frontend vào `CORS_ALLOWED_ORIGINS` |
 
 ---
 
-## Security Best Practices
+## Thực hành bảo mật tốt
 
-1. **Never commit `.env`** — it's in `.gitignore`
-2. **Use different values per environment** (dev/staging/prod)
-3. **Rotate secrets periodically** (JWT secret, DB password, API keys)
-4. **Use secret managers in production** (AWS Secrets Manager, Azure Key Vault, HashiCorp Vault)
-5. **Restrict CORS origins** to only known frontends
-6. **Use strong DB passwords** and dedicated DB users (not `root` in prod)
+1. **Không commit `.env`** — file này đã có trong `.gitignore`
+2. **Dùng giá trị khác nhau cho mỗi môi trường** (dev/staging/prod)
+3. **Xoay vòng secret định kỳ** (JWT secret, mật khẩu DB, API keys)
+4. **Dùng secret manager ở production** (AWS Secrets Manager, Azure Key Vault, HashiCorp Vault)
+5. **Giới hạn CORS origins** — chỉ cho phép frontend đã biết
+6. **Dùng mật khẩu DB mạnh** và tài khoản DB riêng (không dùng `root` ở production)
