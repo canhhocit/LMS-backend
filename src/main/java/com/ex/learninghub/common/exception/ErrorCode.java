@@ -56,6 +56,8 @@ public enum ErrorCode {
     CLAZZ_FULL(4031, "Class has reached maximum student capacity", HttpStatus.BAD_REQUEST),
     INVALID_RESET_TOKEN(4032, "Invalid or expired password reset token", HttpStatus.BAD_REQUEST),
 
+    SCHEDULE_NOT_FOUND(4001, "Schedule not found", HttpStatus.NOT_FOUND),
+    SCHEDULE_CONFLICT(4002, "Schedule conflicts with existing entry", HttpStatus.BAD_REQUEST),
     EXCEL_PARSE_ERROR(7001, "Failed to parse Excel file. Please check the file format", HttpStatus.BAD_REQUEST);
 
     private final int code;
