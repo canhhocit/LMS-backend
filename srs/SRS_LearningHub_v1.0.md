@@ -4,6 +4,10 @@
 
 ─────────────────────────────────────
 
+> ⚠️ DEPRECATED: Tài liệu mô tả hướng "Online Learning / mentor-learner", HIỆN KHÔNG áp dụng. Hệ thống theo mô hình ĐH truyền thống (Clazz-based). Xem srs/SRS_LearningHub_v3.0.md.
+
+─────────────────────────────────────
+
 **LearningHub**
 
 Hệ thống Học trực tuyến (Online Learning Platform)

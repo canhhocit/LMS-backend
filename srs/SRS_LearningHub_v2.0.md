@@ -1,7 +1,11 @@
-# SRS_LearningHub_v2.0 – Clean Architecture
+# TÀI LIỆU ĐẶC TẢ YÊU CẦU PHẦN MỀM
 
-## 1. Giới thiệu
-- **Tên dự án:** LearningHub
+*Software Requirements Specification (SRS)*
+
+─────────────────────────────────────
+
+> ⚠️ DEPRECATED: Tài liệu mô tả hướng "Online Learning / mentor-learner", HIỆN KHÔNG áp dụng. Hệ thống theo mô hình ĐH truyền thống (Clazz-based). Xem srs/SRS_LearningHub_v3.0.md.
+
 - **Phiên bản:** 2.0 (2026‑08‑21)
 - **Mục tiêu:** Đưa hệ thống lên kiến trúc **Clean Architecture** để tách rời domain, use‑case và framework, tăng khả năng bảo trì, mở rộng và chuẩn bị cho việc chuyển sang micro‑service trong các giai đoạn sau.
 
