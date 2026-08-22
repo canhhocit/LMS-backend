@@ -13,6 +13,8 @@ import com.ex.learninghub.modules.assessment.entity.Submission;
 import com.ex.learninghub.modules.assessment.repository.AssignmentRepository;
 import com.ex.learninghub.modules.assessment.repository.SubmissionRepository;
 import com.ex.learninghub.modules.assessment.service.AssessmentService;
+import com.ex.learninghub.common.enums.NotificationType;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.user.entity.User;
@@ -32,6 +34,7 @@ public class AssessmentServiceImpl implements AssessmentService {
     private final AssignmentRepository assignmentRepository;
     private final SubmissionRepository submissionRepository;
     private final ClazzRepository clazzRepository;
+    private final NotificationService notificationService;
 
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
         if (clazz.getLecturer() == null ||
@@ -53,7 +56,15 @@ public class AssessmentServiceImpl implements AssessmentService {
                 .dueDate(request.getDueDate())
                 .maxScore(request.getMaxScore())
                 .build();
-        return AssignmentResponse.from(assignmentRepository.save(assignment));
+        var saved = assignmentRepository.save(assignment);
+
+        // Notify all enrolled students about the new assignment (WebSocket + DB)
+        notificationService.notifyClazz(classId, NotificationType.NEW_ASSIGNMENT,
+                "New assignment: " + request.getTitle(),
+                "An assignment has been posted. Due: " + request.getDueDate(),
+                saved.getId());
+
+        return AssignmentResponse.from(saved);
     }
 
     @Override
@@ -66,7 +77,9 @@ public class AssessmentServiceImpl implements AssessmentService {
         assignment.setDescription(request.getDescription());
         assignment.setDueDate(request.getDueDate());
         assignment.setMaxScore(request.getMaxScore());
-        return AssignmentResponse.from(assignmentRepository.save(assignment));
+        var saved = assignmentRepository.save(assignment);
+
+        return AssignmentResponse.from(saved);
     }
 
     @Override

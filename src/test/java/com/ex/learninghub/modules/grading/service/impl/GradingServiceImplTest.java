@@ -46,6 +46,9 @@ class GradingServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private com.ex.learninghub.modules.notification.service.NotificationService notificationService;
+
     @InjectMocks
     private GradingServiceImpl gradingService;
 

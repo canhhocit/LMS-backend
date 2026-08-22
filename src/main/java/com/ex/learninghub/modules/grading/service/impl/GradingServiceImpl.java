@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 public class GradingServiceImpl implements GradingService {
 
     private final GradeRepository gradeRepository;
+    private final com.ex.learninghub.modules.notification.service.NotificationService notificationService;
     private final AttendanceRepository attendanceRepository;
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
@@ -88,7 +89,16 @@ public class GradingServiceImpl implements GradingService {
             grade.setTotalScore(null);
         }
 
-        return GradeResponse.from(gradeRepository.save(grade));
+        Grade savedGrade = gradeRepository.save(grade);
+
+        // Notify the student about their new grade (WebSocket + DB)
+        notificationService.notifyUser(request.getStudentId(),
+                com.ex.learninghub.common.enums.NotificationType.NEW_GRADE,
+                "New grade posted",
+                "Your grade for " + clazz.getClassName() + " has been updated",
+                savedGrade.getId());
+
+        return GradeResponse.from(savedGrade);
     }
 
     @Override

@@ -38,6 +38,7 @@ public class ContentServiceImpl implements ContentService {
     private final ChapterRepository chapterRepository;
     private final LessonRepository lessonRepository;
     private final AnnouncementRepository announcementRepository;
+    private final com.ex.learninghub.modules.notification.service.NotificationService notificationService;
     private final EnrollmentRepository enrollmentRepository;
 
     @Override
@@ -186,7 +187,9 @@ public class ContentServiceImpl implements ContentService {
                 .title(request.getTitle())
                 .content(request.getContent())
                 .build();
-        return AnnouncementResponse.from(announcementRepository.save(announcement));
+        var savedAnnouncement = announcementRepository.save(announcement);
+
+        return AnnouncementResponse.from(savedAnnouncement);
     }
 
     @Override
@@ -197,7 +200,16 @@ public class ContentServiceImpl implements ContentService {
         verifyLecturerOwnsClazz(announcement.getClazz(), userPrincipal);
         announcement.setTitle(request.getTitle());
         announcement.setContent(request.getContent());
-        return AnnouncementResponse.from(announcementRepository.save(announcement));
+        var savedAnnouncement = announcementRepository.save(announcement);
+
+        // Notify all enrolled students about the updated announcement (WebSocket + DB)
+        notificationService.notifyClazz(announcement.getClazz().getId(),
+                com.ex.learninghub.common.enums.NotificationType.NEW_ANNOUNCEMENT,
+                "Updated announcement: " + request.getTitle(),
+                request.getContent(),
+                savedAnnouncement.getId());
+
+        return AnnouncementResponse.from(savedAnnouncement);
     }
 
     @Override
