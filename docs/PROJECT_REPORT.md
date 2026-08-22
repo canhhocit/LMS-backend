@@ -10,7 +10,7 @@
 
 LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyến, hiện thực đầy đủ bộ tính năng qua 7 giai đoạn phát triển. Hệ thống cung cấp xác thực, quản lý khóa học, thông báo realtime, theo dõi tiến độ, bài kiểm tra, chấm điểm, phân tích quản trị, diễn đàn và phát video — tất cả đều có phân quyền theo vai trò (STUDENT, LECTURER, ADMIN).
 
-**Tech Stack:** Java 21, Spring Boot 3.3, Spring Security + JWT, Spring Data JPA (Hibernate), Flyway migrations, MySQL 8, WebSocket (STOMP), Cloudinary (video), Brevo (email), Apache POI (Excel), OpenPDF (PDF), Maven.
+**Tech Stack:** Java 17, Spring Boot 3.3, Spring Security + JWT, Spring Data JPA (Hibernate), Flyway migrations, MySQL 8, WebSocket (STOMP), Cloudinary (video), Brevo (email), Apache POI (Excel), OpenPDF (PDF), Maven.
 
 **Trạng thái build:** ✅ `mvn clean verify` — **BUILD SUCCESS**, 11/11 tests pass.
 
@@ -68,9 +68,9 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 
 ### Phase A — Quên mật khẩu / Đặt lại mật khẩu (Brevo SMTP)
 - **Migration:** `V10__add_password_reset_tokens.sql`
-- **Entity:** `PasswordResetToken` (TTL 15 phút, dùng một lần)
+- **Entity:** `PasswordResetToken` (TTL 30 phút, dùng một lần)
 - **Endpoint:** `POST /auth/forgot-password`, `POST /auth/reset-password`
-- **Bảo mật:** Token hash khi lưu, giới hạn theo email
+- **Bảo mật:** Token lưu trực tiếp (UUID), giới hạn theo email
 - **Test:** `AuthServiceImplTest` — 2 tests
 
 ### Phase B — Theo dõi tiến độ bài học
@@ -84,7 +84,7 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 ### Phase C — Thông báo realtime (WebSocket)
 - **Migration:** `V14__add_notifications.sql`
 - **Entity:** `Notification` (USER/CLAZZ/ALL, READ/UNREAD)
-- **WS Config:** `WebSocketConfig` — JWT trên CONNECT → `UserPrincipal` trong session
+- **WS Config:** `WebSocketConfig` — JWT trên CONNECT → `UserPrincipal` trong session; handshake HTTP được phép qua `permitAll("/ws/**")` ở SecurityConfig
 - **Endpoint:** `GET /me/notifications`, `PATCH /me/notifications/{id}/read`
 - **Hook:** Tạo bài tập, chấm điểm, tạo thông báo lớp
 - **Topic:** `/topic/user.{id}`, `/topic/clazz.{id}`
@@ -107,7 +107,7 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 - **Endpoint:** `POST /lessons/{id}/upload-video` → cập nhật `Lesson.videoUrl`
 - **Bảo mật:** Giảng viên của lớp hoặc admin
 
-### Phase G — Tài liệu (Phase hiện tại)
+### Phase G — Tài liệu
 - **Files:** `.env.example`, `docs/ENV_GUIDE.md`, `docs/PROJECT_REPORT.md`
 
 ---
@@ -197,7 +197,7 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 ### WebSocket (STOMP)
 | Frame | Destination | Mô tả |
 |-------|-------------|-------------|
-| CONNECT | `/ws` | JWT trong header `Authorization` |
+| CONNECT | `/ws` | JWT trong header `Authorization`; handshake HTTP đã được `permitAll` |
 | SUBSCRIBE | `/topic/user.{userId}` | Thông báo cá nhân |
 | SUBSCRIBE | `/topic/clazz.{clazzId}` | Thông báo theo lớp |
 | SEND | `/app/chat` | (Tương lai) Tin nhắn chat |
@@ -206,20 +206,22 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 
 ## 5. Sơ đồ cơ sở dữ liệu (Flyway Migrations)
 
-| Version | File | Bảng được tạo |
+15 file migration đang có trong `src/main/resources/db/migration/`:
+
+| Version | File | Mô tả |
 |---------|------|----------------|
-| V1 | `V1__init_schema.sql` | users, roles, courses, chapters, lessons, clazzes, enrollments |
-| V2 | `V2__add_assessment_quiz.sql` | assessments, questions, quiz_attempts |
-| V3 | `V3__add_grading.sql` | grades |
-| V4 | `V4__add_attendance.sql` | attendance_sessions, attendance_records |
-| V5 | `V5__add_content.sql` | announcements |
-| V6 | `V6__add_refresh_tokens.sql` | refresh_tokens |
-| V7 | `V7__drop_chat_messages.sql` | (dọn dẹp) |
-| V8 | `V8__fix_quiz_schema.sql` | sửa schema quiz |
-| V9 | `V9__add_max_students.sql` | thêm max_students cho clazz |
+| V1 | `V1__init_db.sql` | Schema khởi tạo (users, roles, courses, clazzes…) |
+| V2 | `V2__add_administrative_classes.sql` | Thêm administrative classes |
+| V3 | `V3__add_srs_tables.sql` | Thêm các bảng SRS (assessments, quizzes, grades, attendance…) |
+| V4 | `V4__add_enrollment_online_learning.sql` | Thêm enrollment và online learning |
+| V5 | `V5__add_chapters_lessons.sql` | Thêm chapters/lessons |
+| V6 | `V6__cleanup_online_learning_schema.sql` | Dọn dẹp schema online learning |
+| V7 | `V7__drop_chat_messages.sql` | Bỏ bảng chat_messages |
+| V8 | `V8__add_user_status.sql` | Thêm cột status cho users |
+| V9 | `V9__add_max_students_to_clazz.sql` | Thêm max_students cho clazz |
 | **V10** | `V10__add_password_reset_tokens.sql` | **password_reset_tokens** |
 | **V11** | `V11__fix_chapter_lesson_schema.sql` | sửa FK chapter/lesson |
-| **V12** | `V12__add_refresh_tokens.sql` | refresh_tokens (cuối cùng) |
+| **V12** | `V12__add_refresh_tokens.sql` | refresh_tokens |
 | **V13** | `V13__add_lesson_progress.sql` | **lesson_progress** |
 | **V14** | `V14__add_notifications.sql` | **notifications** |
 | **V15** | `V15__add_forum.sql` | **forum_posts, forum_comments** |
@@ -258,7 +260,9 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 | **Xác thực** | JWT (HS256), 24h expiry, refresh token rotation | ✅ |
 | **Phân quyền** | `@PreAuthorize` + kiểm tra ownership trong service | ✅ |
 | **Lưu trữ mật khẩu** | BCrypt (strength 10) | ✅ |
-| **Bảo mật token** | Token reset được hash (SHA-256), TTL 15 phút, dùng một lần | ✅ |
+| **Bảo mật token reset** | Token UUID TTL 30 phút, dùng một lần | ✅ |
+| **Bảo mật refresh token** | Hash SHA-256 trước khi lưu DB; client chỉ nhận raw | ✅ |
+| **WebSocket** | `/ws/**` được `permitAll` cho handshake; JWT xác thực ở `ChannelInterceptor` CONNECT | ✅ |
 | **CORS** | Cấu hình qua biến `CORS_ALLOWED_ORIGINS` | ✅ |
 | **Upload file** | Kiểm tra MIME + dung lượng (200MB, chỉ video) | ✅ |
 | **SQL Injection** | JPA/Hibernate parameter binding | ✅ |
@@ -267,7 +271,7 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 **Hạn chế đã biết:**
 - Chưa rate limit endpoint xác thực (cân nhắc `Bucket4j`)
 - Chưa audit logging cho tác vụ nhạy cảm
-- Refresh token đang lưu plaintext (cân nhắc hash)
+- Password reset token hiện lưu UUID thuần (cân nhắc hash tương tự refresh token)
 
 ---
 
@@ -338,7 +342,9 @@ volumes: {mysql-data:}
 ## 10. Lịch sử commit (Conventional Commits)
 
 ```
-feat: env guide + project report           ← Phase G (commit hiện tại)
+fix(security): allow WebSocket handshake via /ws/** permitAll
+fix(auth): hash refresh token with SHA-256 before DB storage
+feat: env guide + project report           ← Phase G
 feat: video upload cloudinary              ← Phase F
 feat: class forum                          ← Phase E
 feat: admin dashboard export               ← Phase D
@@ -358,8 +364,7 @@ chore: schema fix chapter lesson           ← Sửa migration
 | Rủi ro | Ảnh hưởng | Các giảm thiểu |
 |------|--------|------------|
 | **Chưa rate limit** | Brute-force endpoint auth | Thêm Bucket4j filter |
-| **Refresh token plaintext** | Token bị đánh cắp → chiếm session | Hash trước khi lưu |
-| **Một JWT secret duy nhất** | Không thể xoay khóa | Triển khai JWKS / key rotation |
+| **Single JWT secret** | Không thể xoay khóa | Triển khai JWKS / key rotation |
 | **Không version API trong URL** | Khó quản lý breaking change | Đã có prefix `/api/v1` — tốt |
 | **Độ phủ test ~60%** | Rủi ro regression | Bổ sung integration test |
 | **Chưa có observability** | Khó debug ở production | Thêm Actuator + Micrometer |
@@ -386,8 +391,8 @@ chore: schema fix chapter lesson           ← Sửa migration
 Backend LearningHub **đã feature-complete cho MVP** với:
 - ✅ Đã hiện thực và kiểm thử cả 7 phases
 - ✅ Kiến trúc sạch, modular, dễ bảo trì
-- ✅ Thiết kế ưu tiên bảo mật (JWT, RBAC, env secrets)
-- ✅ Khả năng realtime (WebSocket)
+- ✅ Thiết kế ưu tiên bảo mật (JWT, RBAC, env secrets, hash refresh token)
+- ✅ Khả năng realtime (WebSocket với JWT trên CONNECT)
 - ✅ Phân tích quản trị + export (Excel/PDF)
 - ✅ Xử lý media (Cloudinary video)
 - ✅ Tài liệu đầy đủ (báo cáo này + ENV_GUIDE)
@@ -396,4 +401,4 @@ Backend LearningHub **đã feature-complete cho MVP** với:
 
 ---
 
-*Báo cáo được tạo như một phần của deliverables Phase G.*
+*Báo cáo được tạo như một phần của deliverables Phase G, cập nhật theo fix_instruction.md.*
