@@ -19,7 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByStudentCode(String studentCode);
     boolean existsByLecturerCode(String lecturerCode);
     boolean existsByRole(Role role);
+    long countByRole(Role role);
     List<User> findByAdminClassId(Long adminClassId);
+
 
     @Query("SELECT u FROM User u WHERE u.role = :role AND " +
            "(:keyword IS NULL OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
