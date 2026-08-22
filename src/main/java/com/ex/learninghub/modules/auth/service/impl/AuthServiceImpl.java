@@ -27,7 +27,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,6 +50,20 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
+    /**
+     * Hash a raw refresh token using SHA-256 and return hex-encoded string.
+     * The raw value is given to the client; only the hash is stored in the DB.
+     */
+    private String hashToken(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        }
+    }
+
     @Override
     public AuthResponse login(LoginRequest request) {
         // Handle login with email, student code or lecturer code
@@ -61,11 +79,11 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(user.getEmail());
 
-        // Generate refresh token (7 days)
-        String refreshToken = UUID.randomUUID().toString();
+        // Generate refresh token (7 days) — store hash, return raw to client
+        String rawRefreshToken = UUID.randomUUID().toString();
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)
-                .token(refreshToken)
+                .token(hashToken(rawRefreshToken))
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
 
@@ -77,7 +95,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .isFirstLogin(user.getIsFirstLogin() != null && user.getIsFirstLogin())
-                .refreshToken(refreshToken)
+                .refreshToken(rawRefreshToken)
                 .build();
     }
 
@@ -151,7 +169,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse refresh(String refreshToken) {
-        RefreshToken stored = refreshTokenRepository.findByToken(refreshToken)
+        // Hash the incoming raw token before lookup
+        String hashed = hashToken(refreshToken);
+        RefreshToken stored = refreshTokenRepository.findByToken(hashed)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
 
         if (stored.getRevoked() || stored.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -164,10 +184,10 @@ public class AuthServiceImpl implements AuthService {
         stored.setRevoked(true);
         refreshTokenRepository.save(stored);
 
-        String newRefreshToken = UUID.randomUUID().toString();
+        String newRawRefreshToken = UUID.randomUUID().toString();
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)
-                .token(newRefreshToken)
+                .token(hashToken(newRawRefreshToken))
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
 
@@ -181,7 +201,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .isFirstLogin(user.getIsFirstLogin() != null && user.getIsFirstLogin())
-                .refreshToken(newRefreshToken)
+                .refreshToken(newRawRefreshToken)
                 .build();
     }
 }
