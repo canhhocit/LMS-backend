@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Entity representing a class (Clazz) where learners enroll.
+ * Entity representing a class (Clazz) where students enroll.
  */
 @Entity
 @Table(name = "classes")

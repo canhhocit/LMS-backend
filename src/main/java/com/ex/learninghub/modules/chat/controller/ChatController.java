@@ -27,7 +27,7 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('LEARNER', 'MENTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER', 'ADMIN')")
     public Page<MessageDTO> getConversation(
             @RequestParam Long withUserId,
             @AuthenticationPrincipal UserPrincipal principal,
@@ -36,7 +36,7 @@ public class ChatController {
     }
 
     @GetMapping("/course")
-    @PreAuthorize("hasAnyRole('LEARNER', 'MENTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER', 'ADMIN')")
     public List<MessageDTO> getMessagesByCourse(
             @RequestParam Long withUserId,
             @RequestParam Long courseId,
@@ -45,7 +45,7 @@ public class ChatController {
     }
 
     @PatchMapping("/{id}/read")
-    @PreAuthorize("hasAnyRole('LEARNER', 'MENTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER', 'ADMIN')")
     public void markAsRead(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -53,7 +53,7 @@ public class ChatController {
     }
 
     @GetMapping("/unread-count")
-    @PreAuthorize("hasAnyRole('LEARNER', 'MENTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER', 'ADMIN')")
     public long getUnreadCount(@AuthenticationPrincipal UserPrincipal principal) {
         return chatService.getUnreadCount(principal.getUser().getId());
     }

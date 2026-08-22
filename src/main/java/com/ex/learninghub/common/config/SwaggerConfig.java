@@ -17,7 +17,7 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("LearningHub LMS API")
                         .version("1.0.0")
-                        .description("API Documentation for LearningHub Mentor & Learner platform"))
+                        .description("API Documentation for LearningHub University LMS platform"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
