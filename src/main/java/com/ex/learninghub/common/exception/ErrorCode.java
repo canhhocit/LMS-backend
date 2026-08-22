@@ -45,6 +45,7 @@ public enum ErrorCode {
     QUIZ_TIME_EXCEEDED(3014, "Quiz submission time limit exceeded", HttpStatus.BAD_REQUEST),
     LESSON_NOT_IN_ENROLLMENT(3016, "Lesson does not belong to the clazz of this enrollment", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_FOUND(3017, "Notification not found", HttpStatus.NOT_FOUND),
+    FORUM_POST_NOT_FOUND(3018, "Forum post not found", HttpStatus.NOT_FOUND),
     INVALID_REFRESH_TOKEN(4033, "Invalid or expired refresh token", HttpStatus.UNAUTHORIZED),
     
     ATTENDANCE_NOT_QUALIFIED(4030, "Student does not meet attendance requirement", HttpStatus.BAD_REQUEST),
