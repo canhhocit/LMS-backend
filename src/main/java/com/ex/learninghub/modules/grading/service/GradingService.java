@@ -22,4 +22,6 @@ public interface GradingService {
     List<AttendanceResponse> getAttendanceByDate(Long classId, LocalDate date, UserPrincipal userPrincipal);
 
     List<AttendanceResponse> getMyAttendance(Long classId, UserPrincipal userPrincipal);
+
+    List<com.ex.learninghub.modules.grading.dto.response.TranscriptResponse> getMyTranscript(UserPrincipal userPrincipal);
 }

@@ -6,6 +6,7 @@ import com.ex.learninghub.modules.grading.dto.request.AttendanceRequest;
 import com.ex.learninghub.modules.grading.dto.request.GradeRequest;
 import com.ex.learninghub.modules.grading.dto.response.AttendanceResponse;
 import com.ex.learninghub.modules.grading.dto.response.GradeResponse;
+import com.ex.learninghub.modules.grading.dto.response.TranscriptResponse;
 import com.ex.learninghub.modules.grading.service.GradingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -70,5 +71,11 @@ public class GradingController {
     public ApiResponse<List<AttendanceResponse>> getMyAttendance(@PathVariable Long classId,
                                                                    @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(gradingService.getMyAttendance(classId, userPrincipal));
+    }
+
+    @GetMapping("/me/transcript")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<List<TranscriptResponse>> getMyTranscript(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(gradingService.getMyTranscript(userPrincipal));
     }
 }

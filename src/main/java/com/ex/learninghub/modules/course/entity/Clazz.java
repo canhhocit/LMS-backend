@@ -40,4 +40,7 @@ public class Clazz extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lecturer_id", foreignKey = @ForeignKey(name = "FK_CLASS_LECTURER"))
     private User lecturer;
+
+    @Column(name = "max_students")
+    private Integer maxStudents;
 }

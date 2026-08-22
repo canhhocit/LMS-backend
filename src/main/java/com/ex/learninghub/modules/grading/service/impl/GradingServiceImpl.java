@@ -10,6 +10,7 @@ import com.ex.learninghub.modules.grading.dto.request.AttendanceRequest;
 import com.ex.learninghub.modules.grading.dto.request.GradeRequest;
 import com.ex.learninghub.modules.grading.dto.response.AttendanceResponse;
 import com.ex.learninghub.modules.grading.dto.response.GradeResponse;
+import com.ex.learninghub.modules.grading.dto.response.TranscriptResponse;
 import com.ex.learninghub.modules.grading.entity.Attendance;
 import com.ex.learninghub.modules.grading.entity.Grade;
 import com.ex.learninghub.modules.grading.repository.AttendanceRepository;
@@ -17,7 +18,9 @@ import com.ex.learninghub.modules.grading.repository.GradeRepository;
 import com.ex.learninghub.modules.grading.service.GradingService;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
+import com.ex.learninghub.common.enums.AttendanceStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,9 @@ public class GradingServiceImpl implements GradingService {
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
 
+    @Value("${app.attendance.max-absent-ratio:0.2}")
+    private double maxAbsentRatio;
+
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
         if (userPrincipal.getUser().getRole() == com.ex.learninghub.common.enums.Role.ADMIN) {
             return;
@@ -55,6 +61,16 @@ public class GradingServiceImpl implements GradingService {
         verifyLecturerOwnsClazz(clazz, userPrincipal);
         User student = userRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // Check attendance constraint
+        long totalAttendance = attendanceRepository.countByClazzIdAndStudentId(classId, request.getStudentId());
+        if (totalAttendance > 0) {
+            long absentCount = attendanceRepository.countByClazzIdAndStudentIdAndStatus(classId, request.getStudentId(), AttendanceStatus.ABSENT);
+            double absentRatio = (double) absentCount / totalAttendance;
+            if (absentRatio > maxAbsentRatio) {
+                throw new AppException(ErrorCode.ATTENDANCE_NOT_QUALIFIED);
+            }
+        }
 
         Grade grade = gradeRepository.findByClazzIdAndStudentId(classId, request.getStudentId())
                 .orElse(Grade.builder().clazz(clazz).student(student).build());
@@ -129,5 +145,53 @@ public class GradingServiceImpl implements GradingService {
         return attendanceRepository.findByClazzIdAndStudentId(classId, userPrincipal.getUser().getId()).stream()
                 .map(AttendanceResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TranscriptResponse> getMyTranscript(UserPrincipal userPrincipal) {
+        Long studentId = userPrincipal.getUser().getId();
+        List<Grade> grades = gradeRepository.findByStudentId(studentId);
+
+        // Group by course and calculate GPA per course
+        java.util.Map<Long, List<Grade>> gradesByCourse = new java.util.LinkedHashMap<>();
+        for (Grade g : grades) {
+            Long courseId = g.getClazz().getCourse().getId();
+            gradesByCourse.computeIfAbsent(courseId, k -> new ArrayList<>()).add(g);
+        }
+
+        double totalWeightedScore = 0;
+        int totalCredits = 0;
+        List<TranscriptResponse> result = new ArrayList<>();
+
+        for (var entry : gradesByCourse.entrySet()) {
+            List<Grade> courseGrades = entry.getValue();
+            Grade lastGrade = courseGrades.get(courseGrades.size() - 1);
+            var course = lastGrade.getClazz().getCourse();
+            int credit = course.getCredit() != null ? course.getCredit() : 0;
+            BigDecimal totalScore = lastGrade.getTotalScore();
+
+            double gpa = 0.0;
+            if (totalScore != null && credit > 0) {
+                gpa = totalScore.doubleValue();
+                totalWeightedScore += gpa * credit;
+                totalCredits += credit;
+            }
+
+            result.add(TranscriptResponse.builder()
+                    .courseCode(course.getCode())
+                    .courseTitle(course.getTitle())
+                    .credit(credit)
+                    .totalScore(totalScore)
+                    .gpa(gpa)
+                    .build());
+        }
+
+        // Set overall GPA on each entry
+        double overallGpa = totalCredits > 0 ? totalWeightedScore / totalCredits : 0.0;
+        for (TranscriptResponse t : result) {
+            t.setGpa(Math.round(overallGpa * 100.0) / 100.0);
+        }
+
+        return result;
     }
 }

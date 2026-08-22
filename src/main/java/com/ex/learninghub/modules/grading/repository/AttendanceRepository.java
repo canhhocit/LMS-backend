@@ -12,4 +12,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Optional<Attendance> findByClazzIdAndStudentIdAndAttendanceDate(Long clazzId, Long studentId, LocalDate attendanceDate);
     List<Attendance> findByClazzIdAndAttendanceDate(Long clazzId, LocalDate attendanceDate);
     List<Attendance> findByClazzIdAndStudentId(Long clazzId, Long studentId);
+
+    long countByClazzIdAndStudentId(Long clazzId, Long studentId);
+
+    long countByClazzIdAndStudentIdAndStatus(Long clazzId, Long studentId, com.ex.learninghub.common.enums.AttendanceStatus status);
 }

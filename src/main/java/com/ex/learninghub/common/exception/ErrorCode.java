@@ -54,7 +54,9 @@ public enum ErrorCode {
     CANNOT_REVIEW_NOT_COMPLETED(5003, "You must complete the course before reviewing", HttpStatus.BAD_REQUEST),
     INVALID_RATING(5004, "Rating must be between 1 and 5", HttpStatus.BAD_REQUEST),
     QUIZ_NOT_FOUND(3010, "Quiz not found", HttpStatus.NOT_FOUND),
-    QUESTION_NOT_FOUND(3011, "Question not found", HttpStatus.NOT_FOUND);
+    QUESTION_NOT_FOUND(3011, "Question not found", HttpStatus.NOT_FOUND),
+    ATTENDANCE_NOT_QUALIFIED(4030, "Student does not meet attendance requirement", HttpStatus.BAD_REQUEST),
+    CLAZZ_FULL(4031, "Class has reached maximum student capacity", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;
