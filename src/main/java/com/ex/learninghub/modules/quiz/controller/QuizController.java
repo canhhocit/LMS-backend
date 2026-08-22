@@ -11,13 +11,14 @@ import com.ex.learninghub.modules.quiz.service.QuizService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.ex.learninghub.common.security.UserPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/quizzes")
+@RequestMapping("/quizzes")
 @RequiredArgsConstructor
 public class QuizController {
 
@@ -95,8 +96,7 @@ public class QuizController {
     public ApiResponse<QuizAttemptResponse> submitAttempt(
             @PathVariable Long quizId,
             @Valid @RequestBody QuizAttemptRequest request,
-            Authentication authentication) {
-        Long studentId = Long.parseLong(authentication.getName());
-        return ApiResponse.success(quizService.submitAttempt(quizId, studentId, request));
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.submitAttempt(quizId, userPrincipal.getUser().getId(), request));
     }
 }

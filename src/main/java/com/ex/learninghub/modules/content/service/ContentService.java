@@ -8,6 +8,9 @@ import com.ex.learninghub.modules.content.dto.response.AnnouncementResponse;
 import com.ex.learninghub.modules.content.dto.response.ChapterResponse;
 import com.ex.learninghub.modules.content.dto.response.LessonResponse;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 public interface ContentService {
@@ -21,6 +24,8 @@ public interface ContentService {
 
     List<ChapterResponse> getChaptersByClass(Long classId);
 
+    Page<ChapterResponse> getChaptersByClass(Long classId, Pageable pageable);
+
     // Lesson
     LessonResponse createLesson(Long chapterId, LessonRequest request, UserPrincipal userPrincipal);
 
@@ -30,6 +35,8 @@ public interface ContentService {
 
     List<LessonResponse> getLessonsByChapter(Long chapterId);
 
+    Page<LessonResponse> getLessonsByChapter(Long chapterId, Pageable pageable);
+
     // Announcement
     AnnouncementResponse createAnnouncement(Long classId, AnnouncementRequest request, UserPrincipal userPrincipal);
 
@@ -38,4 +45,9 @@ public interface ContentService {
     void deleteAnnouncement(Long announcementId, UserPrincipal userPrincipal);
 
     List<AnnouncementResponse> getAnnouncementsByClass(Long classId);
+
+    // Access control helpers
+    void verifyAccessToClass(Long classId, UserPrincipal userPrincipal);
+
+    void verifyAccessToChapter(Long chapterId, UserPrincipal userPrincipal);
 }

@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,6 +63,11 @@ public class CourseServiceImpl implements CourseService {
         return courseRepository.findAll().stream()
                 .map(CourseResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<CourseResponse> getAllCourses(Pageable pageable) {
+        return courseRepository.findAll(pageable).map(CourseResponse::from);
     }
 
     @Override

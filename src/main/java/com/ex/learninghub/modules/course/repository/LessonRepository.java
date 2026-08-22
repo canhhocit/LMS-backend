@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -31,4 +34,6 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     void deleteByChapterId(Long chapterId);
 
     long countByChapterId(Long chapterId);
+
+    Page<Lesson> findByChapterId(Long chapterId, Pageable pageable);
 }

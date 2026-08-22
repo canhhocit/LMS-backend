@@ -38,6 +38,9 @@ public class GradingServiceImpl implements GradingService {
     private final UserRepository userRepository;
 
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
+        if (userPrincipal.getUser().getRole() == com.ex.learninghub.common.enums.Role.ADMIN) {
+            return;
+        }
         if (clazz.getLecturer() == null ||
                 !clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
@@ -74,6 +77,9 @@ public class GradingServiceImpl implements GradingService {
 
     @Override
     public List<GradeResponse> getGradesByClass(Long classId, UserPrincipal userPrincipal) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
         return gradeRepository.findByClazzId(classId).stream()
                 .map(GradeResponse::from)
                 .collect(Collectors.toList());
@@ -110,6 +116,9 @@ public class GradingServiceImpl implements GradingService {
 
     @Override
     public List<AttendanceResponse> getAttendanceByDate(Long classId, LocalDate date, UserPrincipal userPrincipal) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
         return attendanceRepository.findByClazzIdAndAttendanceDate(classId, date).stream()
                 .map(AttendanceResponse::from)
                 .collect(Collectors.toList());

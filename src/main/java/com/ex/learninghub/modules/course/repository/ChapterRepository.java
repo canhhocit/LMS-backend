@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -21,4 +24,6 @@ public interface ChapterRepository extends JpaRepository<Chapter, Long> {
     List<Chapter> findByClazzIdWithLessons(@Param("clazzId") Long clazzId);
 
     void deleteByClazzId(Long clazzId);
+
+    Page<Chapter> findByClazzId(Long clazzId, Pageable pageable);
 }

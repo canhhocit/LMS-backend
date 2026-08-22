@@ -1,6 +1,7 @@
 package com.ex.learninghub.modules.user.entity;
 
 import com.ex.learninghub.common.enums.Role;
+import com.ex.learninghub.common.enums.UserStatus;
 import com.ex.learninghub.common.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -61,4 +62,9 @@ public class User extends BaseEntity {
     @Column(name = "is_first_login", columnDefinition = "boolean default true")
     @Builder.Default
     private Boolean isFirstLogin = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
 }

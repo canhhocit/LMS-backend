@@ -12,15 +12,20 @@ import com.ex.learninghub.modules.content.dto.response.LessonResponse;
 import com.ex.learninghub.modules.content.entity.Announcement;
 import com.ex.learninghub.modules.content.repository.AnnouncementRepository;
 import com.ex.learninghub.modules.content.service.ContentService;
+import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.modules.course.entity.Chapter;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.entity.Lesson;
 import com.ex.learninghub.modules.course.repository.ChapterRepository;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.repository.LessonRepository;
+import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +38,27 @@ public class ContentServiceImpl implements ContentService {
     private final ChapterRepository chapterRepository;
     private final LessonRepository lessonRepository;
     private final AnnouncementRepository announcementRepository;
+    private final EnrollmentRepository enrollmentRepository;
+
+    @Override
+    public void verifyAccessToClass(Long classId, UserPrincipal userPrincipal) {
+        if (userPrincipal.getUser().getRole() == Role.ADMIN) return;
+        if (userPrincipal.getUser().getRole() == Role.LECTURER) {
+            Clazz clazz = clazzRepository.findById(classId)
+                    .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+            if (clazz.getLecturer() != null && clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) return;
+        }
+        if (!enrollmentRepository.existsByStudentIdAndClazzId(userPrincipal.getUser().getId(), classId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    @Override
+    public void verifyAccessToChapter(Long chapterId, UserPrincipal userPrincipal) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        verifyAccessToClass(chapter.getClazzId(), userPrincipal);
+    }
 
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
         if (clazz.getLecturer() == null ||
@@ -87,6 +113,11 @@ public class ContentServiceImpl implements ContentService {
     }
 
     @Override
+    public Page<ChapterResponse> getChaptersByClass(Long classId, Pageable pageable) {
+        return chapterRepository.findByClazzId(classId, pageable).map(ChapterResponse::from);
+    }
+
+    @Override
     @Transactional
     public LessonResponse createLesson(Long chapterId, LessonRequest request, UserPrincipal userPrincipal) {
         Chapter chapter = chapterRepository.findById(chapterId)
@@ -137,6 +168,11 @@ public class ContentServiceImpl implements ContentService {
         return lessonRepository.findByChapterIdOrderBySortOrderAsc(chapterId).stream()
                 .map(LessonResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<LessonResponse> getLessonsByChapter(Long chapterId, Pageable pageable) {
+        return lessonRepository.findByChapterId(chapterId, pageable).map(LessonResponse::from);
     }
 
     @Override

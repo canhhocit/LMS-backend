@@ -313,4 +313,13 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         userRepository.delete(user);
     }
+
+    @Override
+    @Transactional
+    public void updateUserStatus(Long id, String status) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setStatus(com.ex.learninghub.common.enums.UserStatus.valueOf(status.toUpperCase()));
+        userRepository.save(user);
+    }
 }

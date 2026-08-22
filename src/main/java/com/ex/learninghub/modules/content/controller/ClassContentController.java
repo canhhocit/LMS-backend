@@ -51,7 +51,9 @@ public class ClassContentController {
 
     @GetMapping("/classes/{classId}/chapters")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<List<ChapterResponse>> getChaptersByClass(@PathVariable Long classId) {
+    public ApiResponse<List<ChapterResponse>> getChaptersByClass(@PathVariable Long classId,
+                                                                  @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        contentService.verifyAccessToClass(classId, userPrincipal);
         return ApiResponse.success(contentService.getChaptersByClass(classId));
     }
 
@@ -83,7 +85,9 @@ public class ClassContentController {
 
     @GetMapping("/chapters/{chapterId}/lessons")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<List<LessonResponse>> getLessonsByChapter(@PathVariable Long chapterId) {
+    public ApiResponse<List<LessonResponse>> getLessonsByChapter(@PathVariable Long chapterId,
+                                                                  @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        contentService.verifyAccessToChapter(chapterId, userPrincipal);
         return ApiResponse.success(contentService.getLessonsByChapter(chapterId));
     }
 
@@ -115,7 +119,9 @@ public class ClassContentController {
 
     @GetMapping("/classes/{classId}/announcements")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<List<AnnouncementResponse>> getAnnouncementsByClass(@PathVariable Long classId) {
+    public ApiResponse<List<AnnouncementResponse>> getAnnouncementsByClass(@PathVariable Long classId,
+                                                                            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        contentService.verifyAccessToClass(classId, userPrincipal);
         return ApiResponse.success(contentService.getAnnouncementsByClass(classId));
     }
 }
