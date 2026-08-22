@@ -52,7 +52,9 @@ public enum ErrorCode {
     MENTOR_REQUEST_ALREADY_EXISTS(4003, "You already have a mentor request", HttpStatus.BAD_REQUEST),
     MENTOR_REQUEST_ALREADY_PROCESSED(4004, "Mentor request already processed", HttpStatus.BAD_REQUEST),
     CANNOT_REVIEW_NOT_COMPLETED(5003, "You must complete the course before reviewing", HttpStatus.BAD_REQUEST),
-    INVALID_RATING(5004, "Rating must be between 1 and 5", HttpStatus.BAD_REQUEST);
+    INVALID_RATING(5004, "Rating must be between 1 and 5", HttpStatus.BAD_REQUEST),
+    QUIZ_NOT_FOUND(3010, "Quiz not found", HttpStatus.NOT_FOUND),
+    QUESTION_NOT_FOUND(3011, "Question not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;

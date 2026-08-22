@@ -1,23 +1,29 @@
 package com.ex.learninghub.modules.quiz.service.impl;
 
-import com.ex.learninghub.common.exception.BusinessException;
+import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.modules.assessment.entity.Question;
 import com.ex.learninghub.modules.assessment.entity.Quiz;
+import com.ex.learninghub.modules.assessment.entity.QuizAttempt;
 import com.ex.learninghub.modules.assessment.repository.QuestionRepository;
+import com.ex.learninghub.modules.assessment.repository.QuizAttemptRepository;
+import com.ex.learninghub.modules.assessment.repository.QuizRepository;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
-import com.ex.learninghub.modules.quiz.dto.QuizAttemptRequest;
-import com.ex.learninghub.modules.quiz.dto.QuizAttemptResponse;
-import com.ex.learninghub.modules.quiz.repository.QuizRepository;
+import com.ex.learninghub.modules.quiz.dto.request.QuestionRequest;
+import com.ex.learninghub.modules.quiz.dto.request.QuizAttemptRequest;
+import com.ex.learninghub.modules.quiz.dto.request.QuizRequest;
+import com.ex.learninghub.modules.quiz.dto.response.QuestionResponse;
+import com.ex.learninghub.modules.quiz.dto.response.QuizAttemptResponse;
+import com.ex.learninghub.modules.quiz.dto.response.QuizResponse;
 import com.ex.learninghub.modules.quiz.service.QuizService;
-import com.ex.learninghub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,98 +35,123 @@ public class QuizServiceImpl implements QuizService {
     private final QuizRepository quizRepository;
     private final QuestionRepository questionRepository;
     private final ClazzRepository clazzRepository;
-    private final UserRepository userRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+
+    // ==================== Quiz CRUD ====================
 
     @Override
     @Transactional
-    public Quiz createQuiz(Long classId, Quiz quiz) {
+    public QuizResponse createQuiz(Long classId, QuizRequest request) {
         Clazz clazz = clazzRepository.findById(classId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CLAZZ_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+
+        Quiz quiz = new Quiz();
         quiz.setClazz(clazz);
-        return quizRepository.save(quiz);
+        quiz.setTitle(request.getTitle());
+        quiz.setDurationMinutes(request.getDurationMinutes());
+        quiz.setTotalScore(request.getTotalScore());
+
+        Quiz saved = quizRepository.save(quiz);
+        return QuizResponse.from(saved);
     }
 
     @Override
-    public Quiz getQuizById(Long quizId) {
-        return quizRepository.findById(quizId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.COURSE_NOT_FOUND));
+    public QuizResponse getQuizById(Long quizId) {
+        Quiz quiz = findQuizOrThrow(quizId);
+        return QuizResponse.from(quiz);
     }
 
     @Override
-    public List<Quiz> getQuizzesByClassId(Long classId) {
-        return quizRepository.findByClazzId(classId);
+    public List<QuizResponse> getQuizzesByClassId(Long classId) {
+        return quizRepository.findByClazzId(classId).stream()
+                .map(QuizResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public Quiz updateQuiz(Long quizId, Quiz quiz) {
-        Quiz existing = getQuizById(quizId);
-        existing.setTitle(quiz.getTitle());
-        existing.setDurationMinutes(quiz.getDurationMinutes());
-        existing.setTotalScore(quiz.getTotalScore());
-        return quizRepository.save(existing);
+    public QuizResponse updateQuiz(Long quizId, QuizRequest request) {
+        Quiz existing = findQuizOrThrow(quizId);
+        existing.setTitle(request.getTitle());
+        existing.setDurationMinutes(request.getDurationMinutes());
+        existing.setTotalScore(request.getTotalScore());
+
+        Quiz saved = quizRepository.save(existing);
+        return QuizResponse.from(saved);
     }
 
     @Override
     @Transactional
     public void deleteQuiz(Long quizId) {
-        Quiz quiz = getQuizById(quizId);
+        Quiz quiz = findQuizOrThrow(quizId);
         quizRepository.delete(quiz);
     }
 
+    // ==================== Question CRUD ====================
+
     @Override
     @Transactional
-    public Question createQuestion(Long quizId, Question question) {
-        Quiz quiz = getQuizById(quizId);
+    public QuestionResponse createQuestion(Long quizId, QuestionRequest request) {
+        Quiz quiz = findQuizOrThrow(quizId);
+
+        Question question = new Question();
         question.setQuiz(quiz);
-        return questionRepository.save(question);
+        question.setQuestionText(request.getQuestionText());
+        question.setOptionA(request.getOptionA());
+        question.setOptionB(request.getOptionB());
+        question.setOptionC(request.getOptionC());
+        question.setOptionD(request.getOptionD());
+        question.setCorrectAnswer(request.getCorrectAnswer());
+
+        Question saved = questionRepository.save(question);
+        return QuestionResponse.from(saved);
     }
 
     @Override
-    public Question getQuestionById(Long questionId) {
-        return questionRepository.findById(questionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.COURSE_NOT_FOUND));
-    }
-
-    @Override
-    public List<Question> getQuestionsByQuizId(Long quizId) {
-        return questionRepository.findByQuizId(quizId);
+    public List<QuestionResponse> getQuestionsByQuizId(Long quizId) {
+        // Verify quiz exists
+        findQuizOrThrow(quizId);
+        return questionRepository.findByQuizId(quizId).stream()
+                .map(QuestionResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public Question updateQuestion(Long questionId, Question question) {
-        Question existing = getQuestionById(questionId);
-        existing.setQuestionText(question.getQuestionText());
-        existing.setOptionA(question.getOptionA());
-        existing.setOptionB(question.getOptionB());
-        existing.setOptionC(question.getOptionC());
-        existing.setOptionD(question.getOptionD());
-        existing.setCorrectAnswer(question.getCorrectAnswer());
-        return questionRepository.save(existing);
+    public QuestionResponse updateQuestion(Long questionId, QuestionRequest request) {
+        Question existing = findQuestionOrThrow(questionId);
+        existing.setQuestionText(request.getQuestionText());
+        existing.setOptionA(request.getOptionA());
+        existing.setOptionB(request.getOptionB());
+        existing.setOptionC(request.getOptionC());
+        existing.setOptionD(request.getOptionD());
+        existing.setCorrectAnswer(request.getCorrectAnswer());
+
+        Question saved = questionRepository.save(existing);
+        return QuestionResponse.from(saved);
     }
 
     @Override
     @Transactional
     public void deleteQuestion(Long questionId) {
-        Question question = getQuestionById(questionId);
+        Question question = findQuestionOrThrow(questionId);
         questionRepository.delete(question);
     }
 
+    // ==================== Quiz Attempt ====================
+
     @Override
     @Transactional
-    public QuizAttemptResponse submitAttempt(Long quizId, QuizAttemptRequest request) {
-        Quiz quiz = getQuizById(quizId);
+    public QuizAttemptResponse submitAttempt(Long quizId, Long studentId, QuizAttemptRequest request) {
+        Quiz quiz = findQuizOrThrow(quizId);
         List<Question> questions = questionRepository.findByQuizId(quizId);
 
-        // Map questions by ID for easy lookup
         Map<Long, Question> questionMap = questions.stream()
                 .collect(Collectors.toMap(Question::getId, q -> q));
 
         int correctAnswers = 0;
         int totalQuestions = questions.size();
 
-        // Calculate score
         if (request.getAnswers() != null) {
             for (QuizAttemptRequest.Answer answer : request.getAnswers()) {
                 Question question = questionMap.get(answer.getQuestionId());
@@ -138,12 +169,28 @@ public class QuizServiceImpl implements QuizService {
                     .divide(BigDecimal.valueOf(totalQuestions), 2, RoundingMode.HALF_UP);
         }
 
-        return QuizAttemptResponse.builder()
-                .quizId(quizId)
-                .totalQuestions(totalQuestions)
-                .correctAnswers(correctAnswers)
-                .score(score)
-                .totalScore(quiz.getTotalScore())
-                .build();
+        // Save the attempt
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setQuiz(quiz);
+        com.ex.learninghub.modules.user.entity.User student = new com.ex.learninghub.modules.user.entity.User();
+        student.setId(studentId);
+        attempt.setStudent(student);
+        attempt.setScore(score);
+        attempt.setSubmittedAt(LocalDateTime.now());
+        quizAttemptRepository.save(attempt);
+
+        return QuizAttemptResponse.from(attempt, totalQuestions, correctAnswers, quiz.getTotalScore());
+    }
+
+    // ==================== Private helpers ====================
+
+    private Quiz findQuizOrThrow(Long quizId) {
+        return quizRepository.findById(quizId)
+                .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
+    }
+
+    private Question findQuestionOrThrow(Long questionId) {
+        return questionRepository.findById(questionId)
+                .orElseThrow(() -> new AppException(ErrorCode.QUESTION_NOT_FOUND));
     }
 }

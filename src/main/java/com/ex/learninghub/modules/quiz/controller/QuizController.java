@@ -1,83 +1,102 @@
 package com.ex.learninghub.modules.quiz.controller;
 
-import com.ex.learninghub.modules.assessment.entity.Question;
-import com.ex.learninghub.modules.assessment.entity.Quiz;
-import com.ex.learninghub.modules.quiz.dto.QuizAttemptRequest;
-import com.ex.learninghub.modules.quiz.dto.QuizAttemptResponse;
+import com.ex.learninghub.common.response.ApiResponse;
+import com.ex.learninghub.modules.quiz.dto.request.QuestionRequest;
+import com.ex.learninghub.modules.quiz.dto.request.QuizAttemptRequest;
+import com.ex.learninghub.modules.quiz.dto.request.QuizRequest;
+import com.ex.learninghub.modules.quiz.dto.response.QuestionResponse;
+import com.ex.learninghub.modules.quiz.dto.response.QuizAttemptResponse;
+import com.ex.learninghub.modules.quiz.dto.response.QuizResponse;
 import com.ex.learninghub.modules.quiz.service.QuizService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/quizzes")
+@RequestMapping("/api/quizzes")
 @RequiredArgsConstructor
 public class QuizController {
 
     private final QuizService quizService;
 
-    // Quiz CRUD - Lecturer only
+    // ==================== Quiz CRUD ====================
+
     @PostMapping("/class/{classId}")
     @PreAuthorize("hasRole('LECTURER')")
-    public ResponseEntity<Quiz> createQuiz(@PathVariable Long classId, @RequestBody Quiz quiz) {
-        return ResponseEntity.ok(quizService.createQuiz(classId, quiz));
+    public ApiResponse<QuizResponse> createQuiz(
+            @PathVariable Long classId,
+            @Valid @RequestBody QuizRequest request) {
+        return ApiResponse.success(quizService.createQuiz(classId, request));
     }
 
     @GetMapping("/{quizId}")
-    public ResponseEntity<Quiz> getQuiz(@PathVariable Long quizId) {
-        return ResponseEntity.ok(quizService.getQuizById(quizId));
+    public ApiResponse<QuizResponse> getQuiz(@PathVariable Long quizId) {
+        return ApiResponse.success(quizService.getQuizById(quizId));
     }
 
     @GetMapping("/class/{classId}")
-    public ResponseEntity<List<Quiz>> getQuizzesByClass(@PathVariable Long classId) {
-        return ResponseEntity.ok(quizService.getQuizzesByClassId(classId));
+    public ApiResponse<List<QuizResponse>> getQuizzesByClass(@PathVariable Long classId) {
+        return ApiResponse.success(quizService.getQuizzesByClassId(classId));
     }
 
     @PutMapping("/{quizId}")
     @PreAuthorize("hasRole('LECTURER')")
-    public ResponseEntity<Quiz> updateQuiz(@PathVariable Long quizId, @RequestBody Quiz quiz) {
-        return ResponseEntity.ok(quizService.updateQuiz(quizId, quiz));
+    public ApiResponse<QuizResponse> updateQuiz(
+            @PathVariable Long quizId,
+            @Valid @RequestBody QuizRequest request) {
+        return ApiResponse.success(quizService.updateQuiz(quizId, request));
     }
 
     @DeleteMapping("/{quizId}")
     @PreAuthorize("hasRole('LECTURER')")
-    public ResponseEntity<Void> deleteQuiz(@PathVariable Long quizId) {
+    public ApiResponse<Void> deleteQuiz(@PathVariable Long quizId) {
         quizService.deleteQuiz(quizId);
-        return ResponseEntity.noContent().build();
+        return ApiResponse.success(null);
     }
 
-    // Question CRUD - Lecturer only
+    // ==================== Question CRUD ====================
+
     @PostMapping("/{quizId}/questions")
     @PreAuthorize("hasRole('LECTURER')")
-    public ResponseEntity<Question> createQuestion(@PathVariable Long quizId, @RequestBody Question question) {
-        return ResponseEntity.ok(quizService.createQuestion(quizId, question));
+    public ApiResponse<QuestionResponse> createQuestion(
+            @PathVariable Long quizId,
+            @Valid @RequestBody QuestionRequest request) {
+        return ApiResponse.success(quizService.createQuestion(quizId, request));
     }
 
     @GetMapping("/{quizId}/questions")
-    public ResponseEntity<List<Question>> getQuestionsByQuiz(@PathVariable Long quizId) {
-        return ResponseEntity.ok(quizService.getQuestionsByQuizId(quizId));
+    public ApiResponse<List<QuestionResponse>> getQuestionsByQuiz(@PathVariable Long quizId) {
+        return ApiResponse.success(quizService.getQuestionsByQuizId(quizId));
     }
 
     @PutMapping("/questions/{questionId}")
     @PreAuthorize("hasRole('LECTURER')")
-    public ResponseEntity<Question> updateQuestion(@PathVariable Long questionId, @RequestBody Question question) {
-        return ResponseEntity.ok(quizService.updateQuestion(questionId, question));
+    public ApiResponse<QuestionResponse> updateQuestion(
+            @PathVariable Long questionId,
+            @Valid @RequestBody QuestionRequest request) {
+        return ApiResponse.success(quizService.updateQuestion(questionId, request));
     }
 
     @DeleteMapping("/questions/{questionId}")
     @PreAuthorize("hasRole('LECTURER')")
-    public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
+    public ApiResponse<Void> deleteQuestion(@PathVariable Long questionId) {
         quizService.deleteQuestion(questionId);
-        return ResponseEntity.noContent().build();
+        return ApiResponse.success(null);
     }
 
-    // Quiz Attempt - Student only
+    // ==================== Quiz Attempt ====================
+
     @PostMapping("/{quizId}/attempts")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<QuizAttemptResponse> submitAttempt(@PathVariable Long quizId, @RequestBody QuizAttemptRequest request) {
-        return ResponseEntity.ok(quizService.submitAttempt(quizId, request));
+    public ApiResponse<QuizAttemptResponse> submitAttempt(
+            @PathVariable Long quizId,
+            @Valid @RequestBody QuizAttemptRequest request,
+            Authentication authentication) {
+        Long studentId = Long.parseLong(authentication.getName());
+        return ApiResponse.success(quizService.submitAttempt(quizId, studentId, request));
     }
 }

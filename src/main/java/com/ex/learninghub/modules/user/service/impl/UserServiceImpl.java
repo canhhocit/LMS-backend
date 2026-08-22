@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +38,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
+    @Value("${app.default-password:Password@123}")
+    private String defaultPassword;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -58,7 +62,7 @@ public class UserServiceImpl implements UserService {
                 .dateOfBirth(request.getDateOfBirth())
                 .faculty(request.getFaculty())
                 .major(request.getMajor())
-                .password(passwordEncoder.encode("Password@123"))
+                .password(passwordEncoder.encode(defaultPassword))
                 .isFirstLogin(true)
                 .build();
 
@@ -283,7 +287,7 @@ public class UserServiceImpl implements UserService {
     public void resetPassword(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        user.setPassword(passwordEncoder.encode("Password@123"));
+        user.setPassword(passwordEncoder.encode(defaultPassword));
         user.setIsFirstLogin(true);
         userRepository.save(user);
     }

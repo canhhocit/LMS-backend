@@ -55,16 +55,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiResponse);
     }
 
-    /** NullPointerException on userPrincipal = unauthenticated request slipped through → 401 */
-    @ExceptionHandler(value = NullPointerException.class)
-    ResponseEntity<ApiResponse<Object>> handlingNullPointerException(NullPointerException ex) {
-        log.warn("NullPointerException — possibly unauthenticated request: {}", ex.getMessage());
-        ApiResponse<Object> apiResponse = ApiResponse.builder()
-                .code(ErrorCode.UNAUTHORIZED.getCode())
-                .message(ErrorCode.UNAUTHORIZED.getMessage())
-                .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
-    }
+
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse<Object>> handlingValidationException(MethodArgumentNotValidException ex) {
