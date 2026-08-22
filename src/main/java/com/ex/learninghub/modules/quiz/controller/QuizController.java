@@ -27,11 +27,12 @@ public class QuizController {
     // ==================== Quiz CRUD ====================
 
     @PostMapping("/class/{classId}")
-    @PreAuthorize("hasRole('LECTURER')")
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
     public ApiResponse<QuizResponse> createQuiz(
             @PathVariable Long classId,
-            @Valid @RequestBody QuizRequest request) {
-        return ApiResponse.success(quizService.createQuiz(classId, request));
+            @Valid @RequestBody QuizRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.createQuiz(classId, request, userPrincipal));
     }
 
     @GetMapping("/{quizId}")
@@ -45,28 +46,32 @@ public class QuizController {
     }
 
     @PutMapping("/{quizId}")
-    @PreAuthorize("hasRole('LECTURER')")
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
     public ApiResponse<QuizResponse> updateQuiz(
             @PathVariable Long quizId,
-            @Valid @RequestBody QuizRequest request) {
-        return ApiResponse.success(quizService.updateQuiz(quizId, request));
+            @Valid @RequestBody QuizRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.updateQuiz(quizId, request, userPrincipal));
     }
 
     @DeleteMapping("/{quizId}")
-    @PreAuthorize("hasRole('LECTURER')")
-    public ApiResponse<Void> deleteQuiz(@PathVariable Long quizId) {
-        quizService.deleteQuiz(quizId);
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
+    public ApiResponse<Void> deleteQuiz(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        quizService.deleteQuiz(quizId, userPrincipal);
         return ApiResponse.success(null);
     }
 
     // ==================== Question CRUD ====================
 
     @PostMapping("/{quizId}/questions")
-    @PreAuthorize("hasRole('LECTURER')")
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
     public ApiResponse<QuestionResponse> createQuestion(
             @PathVariable Long quizId,
-            @Valid @RequestBody QuestionRequest request) {
-        return ApiResponse.success(quizService.createQuestion(quizId, request));
+            @Valid @RequestBody QuestionRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.createQuestion(quizId, request, userPrincipal));
     }
 
     @GetMapping("/{quizId}/questions")
@@ -75,21 +80,32 @@ public class QuizController {
     }
 
     @PutMapping("/questions/{questionId}")
-    @PreAuthorize("hasRole('LECTURER')")
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
     public ApiResponse<QuestionResponse> updateQuestion(
             @PathVariable Long questionId,
-            @Valid @RequestBody QuestionRequest request) {
-        return ApiResponse.success(quizService.updateQuestion(questionId, request));
+            @Valid @RequestBody QuestionRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.updateQuestion(questionId, request, userPrincipal));
     }
 
     @DeleteMapping("/questions/{questionId}")
-    @PreAuthorize("hasRole('LECTURER')")
-    public ApiResponse<Void> deleteQuestion(@PathVariable Long questionId) {
-        quizService.deleteQuestion(questionId);
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
+    public ApiResponse<Void> deleteQuestion(
+            @PathVariable Long questionId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        quizService.deleteQuestion(questionId, userPrincipal);
         return ApiResponse.success(null);
     }
 
     // ==================== Quiz Attempt ====================
+
+    @PostMapping("/{quizId}/start")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<java.time.LocalDateTime> startQuiz(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.startQuiz(quizId, userPrincipal));
+    }
 
     @PostMapping("/{quizId}/attempts")
     @PreAuthorize("hasRole('STUDENT')")

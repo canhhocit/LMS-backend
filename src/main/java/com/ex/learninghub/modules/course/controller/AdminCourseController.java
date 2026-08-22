@@ -6,6 +6,9 @@ import com.ex.learninghub.modules.course.dto.response.CourseResponse;
 import com.ex.learninghub.modules.course.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +42,12 @@ public class AdminCourseController {
     @GetMapping
     public ApiResponse<List<CourseResponse>> getAllCourses() {
         return ApiResponse.success(courseService.getAllCourses());
+    }
+
+    @GetMapping("/paged")
+    public ApiResponse<Page<CourseResponse>> getAllCoursesPaged(
+            @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+        return ApiResponse.success(courseService.getAllCourses(pageable));
     }
 
     @GetMapping("/{id}")

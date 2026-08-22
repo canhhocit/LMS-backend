@@ -23,4 +23,7 @@ public class AuthResponse {
     private String fullName;
     private Role role;
     private boolean isFirstLogin;
+
+    @Builder.Default
+    private String refreshToken = null;
 }

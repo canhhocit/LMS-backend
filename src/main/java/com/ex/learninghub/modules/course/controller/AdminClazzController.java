@@ -9,6 +9,9 @@ import com.ex.learninghub.modules.enrollment.service.ClazzEnrollmentService;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +46,12 @@ public class AdminClazzController {
     @GetMapping
     public ApiResponse<List<ClazzResponse>> getAllClazzes() {
         return ApiResponse.success(clazzService.getAllClazzes());
+    }
+
+    @GetMapping("/paged")
+    public ApiResponse<Page<ClazzResponse>> getAllClazzesPaged(
+            @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+        return ApiResponse.success(clazzService.getAllClazzes(pageable));
     }
 
     @GetMapping("/{id}")

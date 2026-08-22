@@ -4,7 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -14,6 +18,51 @@ import com.ex.learninghub.common.response.ApiResponse;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    /** Malformed JSON request body → 400 */
+    @ExceptionHandler(value = HttpMessageNotReadableException.class)
+    ResponseEntity<ApiResponse<Object>> handlingHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        ApiResponse<Object> apiResponse = ApiResponse.builder()
+                .code(HttpStatus.BAD_REQUEST.value())
+                .message("Malformed JSON request")
+                .build();
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
+
+    /** Duplicate or FK-violating data → 400 (do not leak SQL details) */
+    @ExceptionHandler(value = DataIntegrityViolationException.class)
+    ResponseEntity<ApiResponse<Object>> handlingDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        ApiResponse<Object> apiResponse = ApiResponse.builder()
+                .code(HttpStatus.BAD_REQUEST.value())
+                .message("Duplicate or invalid data")
+                .build();
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
+
+    /** Wrong path-variable / request-param type (e.g. /users/abc) → 400 */
+    @ExceptionHandler(value = MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ApiResponse<Object>> handlingTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ApiResponse<Object> apiResponse = ApiResponse.builder()
+                .code(HttpStatus.BAD_REQUEST.value())
+                .message("Invalid parameter type: " + ex.getName())
+                .build();
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
+
+    /** Bean validation on @RequestParam / @PathVariable → 400 */
+    @ExceptionHandler(value = ConstraintViolationException.class)
+    ResponseEntity<ApiResponse<Object>> handlingConstraintViolation(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations().stream()
+                .findFirst()
+                .map(v -> v.getMessage())
+                .orElse("Invalid request parameter");
+        ApiResponse<Object> apiResponse = ApiResponse.builder()
+                .code(HttpStatus.BAD_REQUEST.value())
+                .message(message)
+                .build();
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
 
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse<Object>> handlingRuntimeException(Exception ex) {

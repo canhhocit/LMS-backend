@@ -23,7 +23,7 @@ import java.util.List;
 @RequestMapping("/admin/administrative-classes")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-public class AdminClassController {
+public class AdministrativeClassController {
 
     private final AdminClassService adminClassService;
 

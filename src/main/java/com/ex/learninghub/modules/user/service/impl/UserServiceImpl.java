@@ -216,7 +216,7 @@ public class UserServiceImpl implements UserService {
                         .role(role)
                         .studentCode(role == Role.STUDENT ? code : null)
                         .lecturerCode(role == Role.LECTURER ? code : null)
-                        .password(passwordEncoder.encode("Password@123"))
+                        .password(passwordEncoder.encode(defaultPassword))
                         .isFirstLogin(true)
                         .build();
 

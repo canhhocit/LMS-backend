@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -93,11 +94,14 @@ public class AssessmentServiceImpl implements AssessmentService {
         if (submissionRepository.findByAssignmentIdAndStudentId(assignmentId, student.getId()).isPresent()) {
             throw new AppException(ErrorCode.SUBMISSION_EXISTS);
         }
+        LocalDateTime now = LocalDateTime.now();
+        boolean late = assignment.getDueDate() != null && now.isAfter(assignment.getDueDate());
         Submission submission = Submission.builder()
                 .assignment(assignment)
                 .student(student)
                 .fileUrl(request.getFileUrl())
-                .submittedAt(LocalDateTime.now())
+                .submittedAt(now)
+                .isLate(late)
                 .build();
         return SubmissionResponse.from(submissionRepository.save(submission));
     }
@@ -108,6 +112,13 @@ public class AssessmentServiceImpl implements AssessmentService {
         Submission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         verifyLecturerOwnsClazz(submission.getAssignment().getClazz(), userPrincipal);
+
+        BigDecimal maxScore = submission.getAssignment().getMaxScore();
+        if (maxScore != null && request.getScore() != null
+                && request.getScore().compareTo(maxScore) > 0) {
+            throw new AppException(ErrorCode.SCORE_EXCEEDS_MAX);
+        }
+
         submission.setScore(request.getScore());
         submission.setFeedback(request.getFeedback());
         return SubmissionResponse.from(submissionRepository.save(submission));

@@ -6,8 +6,12 @@ import com.ex.learninghub.modules.course.dto.response.ClazzResponse;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.enrollment.dto.request.EnrollStudentsRequest;
+import com.ex.learninghub.modules.course.entity.Lesson;
+import com.ex.learninghub.modules.course.repository.LessonRepository;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
+import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
+import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
 import com.ex.learninghub.modules.enrollment.service.ClazzEnrollmentService;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
 import com.ex.learninghub.modules.user.entity.User;
@@ -26,6 +30,8 @@ public class ClazzEnrollmentServiceImpl implements ClazzEnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
+    private final LessonProgressRepository lessonProgressRepository;
+    private final LessonRepository lessonRepository;
 
     @Override
     @Transactional
@@ -43,6 +49,7 @@ public class ClazzEnrollmentServiceImpl implements ClazzEnrollmentService {
         }
 
         if (request.getStudentIds() != null) {
+            List<Lesson> clazzLessons = lessonRepository.findByClazzId(clazzId);
             for (Long studentId : request.getStudentIds()) {
                 if (!enrollmentRepository.existsByStudentIdAndClazzId(studentId, clazzId)) {
                     User student = userRepository.findById(studentId)
@@ -51,7 +58,19 @@ public class ClazzEnrollmentServiceImpl implements ClazzEnrollmentService {
                             .student(student)
                             .clazz(clazz)
                             .build();
-                    enrollmentRepository.save(enrollment);
+                    Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+
+                    // Auto-create progress records for every lesson of the clazz
+                    if (!clazzLessons.isEmpty()) {
+                        List<LessonProgress> progressRecords = clazzLessons.stream()
+                                .map(lesson -> LessonProgress.builder()
+                                        .enrollment(savedEnrollment)
+                                        .lesson(lesson)
+                                        .isCompleted(false)
+                                        .build())
+                                .toList();
+                        lessonProgressRepository.saveAll(progressRecords);
+                    }
                 }
             }
         }

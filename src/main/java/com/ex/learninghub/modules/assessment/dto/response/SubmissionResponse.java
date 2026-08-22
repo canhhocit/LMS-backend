@@ -17,6 +17,7 @@ public class SubmissionResponse {
     private String studentName;
     private String fileUrl;
     private LocalDateTime submittedAt;
+    private Boolean isLate;
     private BigDecimal score;
     private String feedback;
 
@@ -28,6 +29,7 @@ public class SubmissionResponse {
                 .studentName(submission.getStudent() != null ? submission.getStudent().getFullName() : null)
                 .fileUrl(submission.getFileUrl())
                 .submittedAt(submission.getSubmittedAt())
+                .isLate(submission.getIsLate())
                 .score(submission.getScore())
                 .feedback(submission.getFeedback())
                 .build();

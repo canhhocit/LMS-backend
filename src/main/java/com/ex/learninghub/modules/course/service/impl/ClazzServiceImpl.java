@@ -49,6 +49,7 @@ public class ClazzServiceImpl implements ClazzService {
                 .academicYear(request.getAcademicYear())
                 .course(course)
                 .lecturer(lecturer)
+                .maxStudents(request.getMaxStudents())
                 .build();
         return ClazzResponse.from(clazzRepository.save(clazz));
     }
@@ -71,6 +72,7 @@ public class ClazzServiceImpl implements ClazzService {
         clazz.setAcademicYear(request.getAcademicYear());
         clazz.setCourse(course);
         clazz.setLecturer(lecturer);
+        clazz.setMaxStudents(request.getMaxStudents());
         return ClazzResponse.from(clazzRepository.save(clazz));
     }
 

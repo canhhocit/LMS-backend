@@ -1,7 +1,9 @@
 package com.ex.learninghub.modules.quiz.service.impl;
 
+import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
+import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.assessment.entity.Question;
 import com.ex.learninghub.modules.assessment.entity.Quiz;
 import com.ex.learninghub.modules.assessment.entity.QuizAttempt;
@@ -10,6 +12,7 @@ import com.ex.learninghub.modules.assessment.repository.QuizAttemptRepository;
 import com.ex.learninghub.modules.assessment.repository.QuizRepository;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
+import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.quiz.dto.request.QuestionRequest;
 import com.ex.learninghub.modules.quiz.dto.request.QuizAttemptRequest;
 import com.ex.learninghub.modules.quiz.dto.request.QuizRequest;
@@ -26,6 +29,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,14 +40,16 @@ public class QuizServiceImpl implements QuizService {
     private final QuestionRepository questionRepository;
     private final ClazzRepository clazzRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     // ==================== Quiz CRUD ====================
 
     @Override
     @Transactional
-    public QuizResponse createQuiz(Long classId, QuizRequest request) {
+    public QuizResponse createQuiz(Long classId, QuizRequest request, UserPrincipal userPrincipal) {
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
 
         Quiz quiz = new Quiz();
         quiz.setClazz(clazz);
@@ -70,8 +76,9 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public QuizResponse updateQuiz(Long quizId, QuizRequest request) {
+    public QuizResponse updateQuiz(Long quizId, QuizRequest request, UserPrincipal userPrincipal) {
         Quiz existing = findQuizOrThrow(quizId);
+        verifyLecturerOwnsClazz(existing.getClazz(), userPrincipal);
         existing.setTitle(request.getTitle());
         existing.setDurationMinutes(request.getDurationMinutes());
         existing.setTotalScore(request.getTotalScore());
@@ -82,8 +89,9 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public void deleteQuiz(Long quizId) {
+    public void deleteQuiz(Long quizId, UserPrincipal userPrincipal) {
         Quiz quiz = findQuizOrThrow(quizId);
+        verifyLecturerOwnsClazz(quiz.getClazz(), userPrincipal);
         quizRepository.delete(quiz);
     }
 
@@ -91,8 +99,9 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public QuestionResponse createQuestion(Long quizId, QuestionRequest request) {
+    public QuestionResponse createQuestion(Long quizId, QuestionRequest request, UserPrincipal userPrincipal) {
         Quiz quiz = findQuizOrThrow(quizId);
+        verifyLecturerOwnsClazz(quiz.getClazz(), userPrincipal);
 
         Question question = new Question();
         question.setQuiz(quiz);
@@ -118,8 +127,9 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public QuestionResponse updateQuestion(Long questionId, QuestionRequest request) {
+    public QuestionResponse updateQuestion(Long questionId, QuestionRequest request, UserPrincipal userPrincipal) {
         Question existing = findQuestionOrThrow(questionId);
+        verifyLecturerOwnsClazz(existing.getQuiz().getClazz(), userPrincipal);
         existing.setQuestionText(request.getQuestionText());
         existing.setOptionA(request.getOptionA());
         existing.setOptionB(request.getOptionB());
@@ -133,8 +143,9 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public void deleteQuestion(Long questionId) {
+    public void deleteQuestion(Long questionId, UserPrincipal userPrincipal) {
         Question question = findQuestionOrThrow(questionId);
+        verifyLecturerOwnsClazz(question.getQuiz().getClazz(), userPrincipal);
         questionRepository.delete(question);
     }
 
@@ -142,8 +153,56 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
+    public LocalDateTime startQuiz(Long quizId, UserPrincipal userPrincipal) {
+        Quiz quiz = findQuizOrThrow(quizId);
+        Long studentId = userPrincipal.getUser().getId();
+
+        // Verify student is enrolled
+        if (!enrollmentRepository.existsByStudentIdAndClazzId(studentId, quiz.getClazz().getId())) {
+            throw new AppException(ErrorCode.USER_NOT_ENROLLED);
+        }
+
+        // Prevent duplicate starts — reuse existing start time if any
+        Optional<QuizAttempt> existing = quizAttemptRepository.findByQuizIdAndStudentId(quizId, studentId);
+        if (existing.isPresent()) {
+            return existing.get().getStartedAt();
+        }
+
+        QuizAttempt attempt = QuizAttempt.builder()
+                .quiz(quiz)
+                .student(userPrincipal.getUser())
+                .startedAt(LocalDateTime.now())
+                .build();
+        quizAttemptRepository.save(attempt);
+        return attempt.getStartedAt();
+    }
+
+    @Override
+    @Transactional
     public QuizAttemptResponse submitAttempt(Long quizId, Long studentId, QuizAttemptRequest request) {
         Quiz quiz = findQuizOrThrow(quizId);
+
+        // Verify student is enrolled in the clazz containing this quiz
+        if (!enrollmentRepository.existsByStudentIdAndClazzId(studentId, quiz.getClazz().getId())) {
+            throw new AppException(ErrorCode.USER_NOT_ENROLLED);
+        }
+
+        // Prevent duplicate attempts
+        if (quizAttemptRepository.existsByQuizIdAndStudentId(quizId, studentId)) {
+            throw new AppException(ErrorCode.QUIZ_ALREADY_ATTEMPTED);
+        }
+
+        // Enforce duration limit: must have started via /start and not exceed durationMinutes
+        QuizAttempt pendingAttempt = quizAttemptRepository.findByQuizIdAndStudentId(quizId, studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
+        LocalDateTime now = LocalDateTime.now();
+        if (quiz.getDurationMinutes() != null && pendingAttempt.getStartedAt() != null) {
+            LocalDateTime deadline = pendingAttempt.getStartedAt().plusMinutes(quiz.getDurationMinutes());
+            if (now.isAfter(deadline)) {
+                throw new AppException(ErrorCode.QUIZ_TIME_EXCEEDED);
+            }
+        }
+
         List<Question> questions = questionRepository.findByQuizId(quizId);
 
         Map<Long, Question> questionMap = questions.stream()
@@ -192,5 +251,14 @@ public class QuizServiceImpl implements QuizService {
     private Question findQuestionOrThrow(Long questionId) {
         return questionRepository.findById(questionId)
                 .orElseThrow(() -> new AppException(ErrorCode.QUESTION_NOT_FOUND));
+    }
+
+    private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
+        if (userPrincipal.getUser().getRole() == Role.ADMIN) {
+            return; // Admin can access all classes
+        }
+        if (!clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
     }
 }

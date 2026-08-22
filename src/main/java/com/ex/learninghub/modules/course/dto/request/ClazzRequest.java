@@ -2,6 +2,7 @@ package com.ex.learninghub.modules.course.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,4 +29,7 @@ public class ClazzRequest {
     private Long courseId;
 
     private Long lecturerId;
+
+    @Positive(message = "Max students must be greater than 0")
+    private Integer maxStudents;
 }

@@ -43,6 +43,10 @@ public class Submission extends BaseEntity {
     @Column(precision = 5, scale = 2)
     private BigDecimal score;
 
+    @Column(name = "is_late", columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean isLate = false;
+
     @Column(columnDefinition = "TEXT")
     private String feedback;
 }
