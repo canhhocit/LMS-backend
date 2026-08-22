@@ -135,6 +135,13 @@
 			<version>1.3.43</version>
 		</dependency>
 
+		<!-- Cloudinary video storage -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http44</artifactId>
+			<version>1.39.0</version>
+		</dependency>
+
 		<!-- Devtools -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -46,6 +46,10 @@ public enum ErrorCode {
     LESSON_NOT_IN_ENROLLMENT(3016, "Lesson does not belong to the clazz of this enrollment", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_FOUND(3017, "Notification not found", HttpStatus.NOT_FOUND),
     FORUM_POST_NOT_FOUND(3018, "Forum post not found", HttpStatus.NOT_FOUND),
+    VIDEO_FILE_EMPTY(3019, "Video file is empty", HttpStatus.BAD_REQUEST),
+    VIDEO_TOO_LARGE(3020, "Video file exceeds maximum allowed size", HttpStatus.PAYLOAD_TOO_LARGE),
+    VIDEO_INVALID_FORMAT(3021, "Unsupported video format", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+    VIDEO_UPLOAD_FAILED(3022, "Failed to upload video to storage", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_REFRESH_TOKEN(4033, "Invalid or expired refresh token", HttpStatus.UNAUTHORIZED),
     
     ATTENDANCE_NOT_QUALIFIED(4030, "Student does not meet attendance requirement", HttpStatus.BAD_REQUEST),

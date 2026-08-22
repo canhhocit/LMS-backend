@@ -124,4 +124,18 @@ public class ClassContentController {
         contentService.verifyAccessToClass(classId, userPrincipal);
         return ApiResponse.success(contentService.getAnnouncementsByClass(classId));
     }
+
+    // ─── Video upload (Cloudinary) ───────────────────────────────────────────────
+
+    private final com.ex.learninghub.modules.content.service.VideoUploadService videoUploadService;
+
+    @PostMapping("/lessons/{id}/upload-video")
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
+    public ApiResponse<String> uploadVideo(@PathVariable Long id,
+                                           @org.springframework.web.bind.annotation.RequestParam("file")
+                                           org.springframework.web.multipart.MultipartFile file,
+                                           @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        String url = videoUploadService.uploadLessonVideo(id, file, userPrincipal);
+        return ApiResponse.success(url);
+    }
 }
