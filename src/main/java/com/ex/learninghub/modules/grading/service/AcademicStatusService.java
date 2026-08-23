@@ -10,6 +10,12 @@ public interface AcademicStatusService {
     AcademicStatusResponse getMyAcademicStatus(UserPrincipal principal);
 
     /**
+     * Phiên bản nội bộ: lấy tình trạng học vụ của một sinh viên bất kỳ (dùng cho service khác,
+     * ví dụ RegistrationService áp trần tín chỉ theo probation).
+     */
+    AcademicStatusResponse getMyAcademicStatusRaw(Long studentId);
+
+    /**
      * Quét tất cả sinh viên có GPA dưới ngưỡng và phát cảnh báo qua Notification.
      * Gọi bởi cron / admin thủ công.
      */

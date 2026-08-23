@@ -36,4 +36,9 @@ public class Enrollment extends BaseEntity {
     @Column(name = "status", length = 20)
     @Builder.Default
     private String status = "ACTIVE";
+
+    /** Đăng ký học lại môn đã trượt (cùng course, khác clazz ở kỳ sau) */
+    @Column(name = "is_retake", nullable = false)
+    @Builder.Default
+    private Boolean isRetake = false;
 }

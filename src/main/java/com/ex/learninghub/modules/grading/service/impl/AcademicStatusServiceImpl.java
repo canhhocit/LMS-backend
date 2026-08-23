@@ -47,6 +47,12 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public AcademicStatusResponse getMyAcademicStatusRaw(Long studentId) {
+        return computeForStudent(studentId);
+    }
+
+    @Override
     @Transactional
     public int scanAndWarnAcademicProbation() {
         List<User> students = userRepository.findByRole(Role.STUDENT);
@@ -86,20 +92,23 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
             totalCredits += credits;
             BigDecimal score = g.getTotalScore();
 
-            if (score != null && score.compareTo(passScore) >= 0) {
-                passedCourses++;
-                passedCredits += credits;
-                // GPA theo thang 4
+            if (score != null) {
+                // Quy đổi mọi môn có điểm sang hệ 4 (môn trượt = 0.0)
                 BigDecimal gpa4 = scoreToGpa4(score);
                 weightedSum += gpa4.doubleValue() * credits;
                 weightedCount += credits;
-            } else if (score != null) {
-                failed.add(AcademicStatusResponse.FailedCourse.builder()
-                        .courseCode(c != null ? c.getCode() : null)
-                        .courseTitle(c != null ? c.getTitle() : null)
-                        .credit(credits)
-                        .totalScore(score)
-                        .build());
+
+                if (score.compareTo(passScore) >= 0) {
+                    passedCourses++;
+                    passedCredits += credits;
+                } else {
+                    failed.add(AcademicStatusResponse.FailedCourse.builder()
+                            .courseCode(c != null ? c.getCode() : null)
+                            .courseTitle(c != null ? c.getTitle() : null)
+                            .credit(credits)
+                            .totalScore(score)
+                            .build());
+                }
             }
         }
 

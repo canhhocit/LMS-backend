@@ -208,7 +208,6 @@ class RegistrationServiceImplTest {
         when(periodRepository.findByIsActiveTrue()).thenReturn(Optional.of(openPeriod));
         when(enrollmentRepository.findByStudentIdAndClazzId(1L, 20L)).thenReturn(Optional.of(existing));
         when(lessonProgressRepository.findByEnrollmentId(700L)).thenReturn(new ArrayList<>());
-        when(enrollmentRepository.findByStudentId(1L)).thenReturn(List.of(existing));
 
         registrationService.unregister(20L, new UserPrincipal(student));
 

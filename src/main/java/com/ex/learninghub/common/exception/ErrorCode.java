@@ -58,6 +58,7 @@ public enum ErrorCode {
 
     SCHEDULE_NOT_FOUND(4001, "Schedule not found", HttpStatus.NOT_FOUND),
     SCHEDULE_CONFLICT(4002, "Schedule conflicts with existing entry", HttpStatus.BAD_REQUEST),
+    ROOM_CONFLICT(4006, "Room is already booked for another class at this time slot", HttpStatus.BAD_REQUEST),
     REGISTRATION_CLOSED(4003, "Registration period is not open", HttpStatus.BAD_REQUEST),
     CREDIT_LIMIT_EXCEEDED(4004, "Total credits exceed registration limit", HttpStatus.BAD_REQUEST),
     PREREQUISITE_NOT_MET(4005, "Prerequisite course has not been completed", HttpStatus.BAD_REQUEST),

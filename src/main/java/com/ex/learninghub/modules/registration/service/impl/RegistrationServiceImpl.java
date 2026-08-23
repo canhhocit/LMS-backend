@@ -38,6 +38,11 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final LessonProgressRepository lessonProgressRepository;
     private final CoursePrerequisiteRepository prerequisiteRepository;
     private final com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
+    private final com.ex.learninghub.modules.grading.service.AcademicStatusService academicStatusService;
+
+    /** Trần tín chỉ áp dụng cho sinh viên bị probation (warningLevel >= 2). */
+    @org.springframework.beans.factory.annotation.Value("${app.registration.max-credits-probation:14}")
+    private int probationMaxCredits;
 
     // =================== PERIOD CRUD ===================
 
@@ -128,8 +133,9 @@ public class RegistrationServiceImpl implements RegistrationService {
         int addingCredits = clazz.getCourse() != null && clazz.getCourse().getCredit() != null
                 ? clazz.getCourse().getCredit() : 0;
         if (period.getMaxCredits() != null) {
+            int effectiveMax = resolveEffectiveMaxCredits(student.getId(), period.getMaxCredits());
             int currentCredits = computeCurrentCredits(student.getId(), clazzId);
-            if (currentCredits + addingCredits > period.getMaxCredits()) {
+            if (currentCredits + addingCredits > effectiveMax) {
                 throw new AppException(ErrorCode.CREDIT_LIMIT_EXCEEDED);
             }
         }
@@ -167,20 +173,6 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         Enrollment e = enrollmentRepository.findByStudentIdAndClazzId(student.getId(), clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
-
-        // Tín chỉ hoàn lại
-        int droppingCredits = e.getClazz() != null
-                && e.getClazz().getCourse() != null
-                && e.getClazz().getCourse().getCredit() != null
-                ? e.getClazz().getCourse().getCredit() : 0;
-        if (period.getMaxCredits() != null) {
-            int currentCredits = computeCurrentCredits(student.getId(), clazzId);
-            // currentCredits tính cả clazzId hiện tại; sau khi xóa mới áp dụng giới hạn
-            int afterDrop = currentCredits - droppingCredits;
-            if (afterDrop > period.getMaxCredits()) {
-                throw new AppException(ErrorCode.CREDIT_LIMIT_EXCEEDED);
-            }
-        }
 
         // Xóa progress trước
         lessonProgressRepository.findByEnrollmentId(e.getId())
@@ -222,6 +214,22 @@ public class RegistrationServiceImpl implements RegistrationService {
                 periodRepository.save(p);
             }
         });
+    }
+
+    /**
+     * Sinh viên bị cảnh báo học vụ nặng (warningLevel >= 2 = probation) sẽ bị áp dụng
+     * trần tín chỉ riêng thấp hơn. Trả về giá trị nhỏ hơn giữa trần mặc định và trần probation.
+     */
+    private int resolveEffectiveMaxCredits(Long studentId, int defaultMax) {
+        try {
+            var status = academicStatusService.getMyAcademicStatusRaw(studentId);
+            if (status != null && status.getWarningLevel() != null && status.getWarningLevel() >= 2) {
+                return Math.min(defaultMax, probationMaxCredits);
+            }
+        } catch (Exception ignored) {
+            // Nếu tính status lỗi (sinh viên chưa có điểm) thì dùng trần mặc định.
+        }
+        return defaultMax;
     }
 
     private int computeCurrentCredits(Long studentId, Long excludeClazzId) {

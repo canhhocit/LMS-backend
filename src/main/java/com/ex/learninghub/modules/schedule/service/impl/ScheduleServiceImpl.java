@@ -47,6 +47,10 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new AppException(ErrorCode.SCHEDULE_CONFLICT);
         }
 
+        // Room conflict check (room is shared across all clazzes)
+        ensureRoomAvailable(request.getRoom(), request.getDayOfWeek(),
+                request.getStartPeriod(), request.getEndPeriod(), null);
+
         ClassSchedule schedule = ClassSchedule.builder()
                 .clazzId(clazzId)
                 .dayOfWeek(request.getDayOfWeek())
@@ -72,6 +76,20 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new AppException(ErrorCode.SCHEDULE_CONFLICT);
         }
 
+        // Conflict check within the same clazz (exclude current schedule being updated)
+        boolean clazzConflict = scheduleRepository.findByClazzId(schedule.getClazzId()).stream()
+                .filter(s -> !s.getId().equals(scheduleId))
+                .anyMatch(s -> s.getDayOfWeek().equals(request.getDayOfWeek())
+                        && periodsOverlap(s.getStartPeriod(), s.getEndPeriod(),
+                                request.getStartPeriod(), request.getEndPeriod()));
+        if (clazzConflict) {
+            throw new AppException(ErrorCode.SCHEDULE_CONFLICT);
+        }
+
+        // Room conflict check (exclude current schedule being updated)
+        ensureRoomAvailable(request.getRoom(), request.getDayOfWeek(),
+                request.getStartPeriod(), request.getEndPeriod(), scheduleId);
+
         schedule.setDayOfWeek(request.getDayOfWeek());
         schedule.setStartPeriod(request.getStartPeriod());
         schedule.setEndPeriod(request.getEndPeriod());
@@ -79,6 +97,20 @@ public class ScheduleServiceImpl implements ScheduleService {
         scheduleRepository.save(schedule);
 
         return ScheduleResponse.from(schedule);
+    }
+
+    /**
+     * Kiểm tra phòng học còn trống không cho (room, day, [startPeriod, endPeriod]).
+     * excludeScheduleId: ID của schedule đang update (để không tự so với chính nó), null khi create.
+     */
+    private void ensureRoomAvailable(String room, Integer dayOfWeek, int startPeriod, int endPeriod, Long excludeScheduleId) {
+        if (room == null || room.isBlank()) return;
+        boolean roomConflict = scheduleRepository.findByRoomAndDayOfWeek(room, dayOfWeek).stream()
+                .filter(s -> excludeScheduleId == null || !s.getId().equals(excludeScheduleId))
+                .anyMatch(s -> periodsOverlap(s.getStartPeriod(), s.getEndPeriod(), startPeriod, endPeriod));
+        if (roomConflict) {
+            throw new AppException(ErrorCode.ROOM_CONFLICT);
+        }
     }
 
     @Override

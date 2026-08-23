@@ -175,10 +175,15 @@ public class GradingServiceImpl implements GradingService {
 
         for (var entry : gradesByCourse.entrySet()) {
             List<Grade> courseGrades = entry.getValue();
-            Grade lastGrade = courseGrades.get(courseGrades.size() - 1);
-            var course = lastGrade.getClazz().getCourse();
+            // Chính sách học lại (retake): lấy điểm cao nhất trong các lần học.
+            // Trước đây lấy courseGrades.get(size-1) = bản ghi cuối; đổi sang max.
+            Grade bestGrade = courseGrades.stream()
+                    .filter(g -> g.getTotalScore() != null)
+                    .max(java.util.Comparator.comparing(Grade::getTotalScore))
+                    .orElse(courseGrades.get(courseGrades.size() - 1));
+            var course = bestGrade.getClazz().getCourse();
             int credit = course.getCredit() != null ? course.getCredit() : 0;
-            BigDecimal totalScore = lastGrade.getTotalScore();
+            BigDecimal totalScore = bestGrade.getTotalScore();
 
             double gpa = 0.0;
             if (totalScore != null && credit > 0) {

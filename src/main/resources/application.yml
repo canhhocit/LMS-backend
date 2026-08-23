@@ -51,6 +51,10 @@ app:
         pass-score: 5.0
         warning-gpa: 2.0
         probation-gpa: 1.5
+    registration:
+        # Trần tín chỉ áp dụng cho sinh viên đang bị cảnh báo học vụ (warningLevel >= 2).
+        # Trần mặc định của RegistrationPeriod vẫn được ưu tiên nếu nhỏ hơn giá trị này.
+        max-credits-probation: ${REG_MAX_CREDITS_PROBATION:14}
     curriculum:
         pass-score: 5.0
 

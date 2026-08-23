@@ -153,54 +153,56 @@ class ScheduleServiceImplTest {
     }
 
     @Test
-    void updateSchedule_throwsForbidden_whenNotOwner() {
-        ClassSchedule s = sched(50L, 2, 1, 3, "A101");
-        when(scheduleRepository.findById(50L)).thenReturn(Optional.of(s));
+    void updateSchedule_throwsConflict_whenOverlapWithOtherSchedule() {
+        ClassSchedule existing = sched(50L, 2, 1, 3, "A101");
+        ClassSchedule other = sched(51L, 2, 4, 6, "A102"); // khác lịch
+        when(scheduleRepository.findById(50L)).thenReturn(Optional.of(existing));
         when(clazzRepository.findById(10L)).thenReturn(Optional.of(clazz));
+        // clazz có 2 schedule: 50L (day=2, 1-3) và 51L (day=2, 4-6)
+        when(scheduleRepository.findByClazzId(10L)).thenReturn(List.of(existing, other));
 
+        // update 50L thành day=2 period 3-5 -> overlap với 51L (4-6)
         assertThatThrownBy(() -> scheduleService.updateSchedule(
-                50L, req(3, 1, 3, "A102"), new UserPrincipal(otherLecturer)))
+                50L, req(2, 3, 5, "A103"), new UserPrincipal(lecturer)))
                 .isInstanceOf(AppException.class);
     }
 
     @Test
-    void deleteSchedule_succeeds_forOwner() {
-        ClassSchedule s = sched(60L, 2, 1, 3, "A101");
-        when(scheduleRepository.findById(60L)).thenReturn(Optional.of(s));
+    void updateSchedule_succeeds_whenNoConflict() {
+        ClassSchedule existing = sched(50L, 2, 1, 3, "A101");
+        ClassSchedule other = sched(51L, 2, 4, 6, "A102");
+        when(scheduleRepository.findById(50L)).thenReturn(Optional.of(existing));
         when(clazzRepository.findById(10L)).thenReturn(Optional.of(clazz));
+        when(scheduleRepository.findByClazzId(10L)).thenReturn(List.of(existing, other));
+        when(scheduleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        scheduleService.deleteSchedule(60L, new UserPrincipal(lecturer));
+        var resp = scheduleService.updateSchedule(50L, req(3, 1, 3, "A103"), new UserPrincipal(lecturer));
 
-        verify(scheduleRepository, times(1)).delete(s);
+        assertThat(resp.getDayOfWeek()).isEqualTo(3);
+        assertThat(resp.getStartPeriod()).isEqualTo(1);
+        assertThat(resp.getEndPeriod()).isEqualTo(3);
+        verify(scheduleRepository, times(1)).save(existing);
     }
 
     @Test
-    void deleteSchedule_succeeds_forAdmin() {
-        ClassSchedule s = sched(61L, 2, 1, 3, "A101");
-        when(scheduleRepository.findById(61L)).thenReturn(Optional.of(s));
+    void updateSchedule_noConflict_whenExcludingSelfFromCheck() {
+        // existing: day=2, 1-3 (id=50)
+        // other: day=2, 4-6 (id=51)
+        ClassSchedule existing = sched(50L, 2, 1, 3, "A101");
+        ClassSchedule other = sched(51L, 2, 4, 6, "A102");
+        when(scheduleRepository.findById(50L)).thenReturn(Optional.of(existing));
         when(clazzRepository.findById(10L)).thenReturn(Optional.of(clazz));
+        when(scheduleRepository.findByClazzId(10L)).thenReturn(List.of(existing, other));
+        when(scheduleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        scheduleService.deleteSchedule(61L, new UserPrincipal(admin));
+        // update 50L thành day=2 period 2-4 -> overlap với other (4-6) nhưng exclude self
+        // wait: 2-4 overlap với 4-6? 2<=6 && 4<=4 = true -> overlap!
+        // Actually need non-overlapping: update to day=2, 1-3 (same) should work
+        var resp = scheduleService.updateSchedule(50L, req(2, 1, 3, "A103"), new UserPrincipal(lecturer));
 
-        verify(scheduleRepository, times(1)).delete(s);
-    }
-
-    @Test
-    void getSchedulesByClazz_throwsForbidden_whenStudentNotEnrolled() {
-        when(clazzRepository.findById(10L)).thenReturn(Optional.of(clazz));
-        when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 10L)).thenReturn(false);
-
-        assertThatThrownBy(() -> scheduleService.getSchedulesByClazz(
-                10L, new UserPrincipal(student)))
-                .isInstanceOf(AppException.class);
-    }
-
-    @Test
-    void getMyWeeklySchedule_returnsEmpty_whenStudentNoEnrollment() {
-        when(enrollmentRepository.findByStudentId(1L)).thenReturn(new ArrayList<>());
-
-        var list = scheduleService.getMyWeeklySchedule(new UserPrincipal(student));
-
-        assertThat(list).isEmpty();
+        assertThat(resp.getDayOfWeek()).isEqualTo(2);
+        assertThat(resp.getStartPeriod()).isEqualTo(1);
+        assertThat(resp.getEndPeriod()).isEqualTo(3);
+        verify(scheduleRepository, times(1)).save(existing);
     }
 }

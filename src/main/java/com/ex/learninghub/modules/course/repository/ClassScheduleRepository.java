@@ -14,4 +14,6 @@ public interface ClassScheduleRepository extends JpaRepository<ClassSchedule, Lo
     List<ClassSchedule> findByDayOfWeek(Integer dayOfWeek);
 
     List<ClassSchedule> findByRoom(String room);
+
+    List<ClassSchedule> findByRoomAndDayOfWeek(String room, Integer dayOfWeek);
 }
