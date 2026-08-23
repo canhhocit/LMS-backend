@@ -51,6 +51,11 @@ class RegistrationServiceImplTest {
     @Mock
     private LessonProgressRepository lessonProgressRepository;
 
+    @Mock
+    private com.ex.learninghub.modules.curriculum.repository.CoursePrerequisiteRepository prerequisiteRepository;
+    @Mock
+    private com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
+
     @InjectMocks
     private RegistrationServiceImpl registrationService;
 
@@ -143,6 +148,7 @@ class RegistrationServiceImplTest {
         when(clazzRepository.findById(20L)).thenReturn(Optional.of(newClazz));
         when(scheduleRepository.findByClazzId(20L)).thenReturn(List.of(sched(20L, 2, 1, 3)));
         when(enrollmentRepository.findByStudentId(1L)).thenReturn(new ArrayList<>());
+        when(prerequisiteRepository.findByCourseId(11L)).thenReturn(List.of());
         when(enrollmentRepository.save(any())).thenAnswer(inv -> {
             Enrollment e = inv.getArgument(0);
             e.setId(500L);

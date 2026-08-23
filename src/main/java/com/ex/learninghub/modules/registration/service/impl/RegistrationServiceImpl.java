@@ -7,6 +7,8 @@ import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.entity.ClassSchedule;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.repository.ClassScheduleRepository;
+import com.ex.learninghub.modules.curriculum.repository.CoursePrerequisiteRepository;
+import com.ex.learninghub.modules.curriculum.entity.CoursePrerequisite;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
@@ -34,6 +36,8 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final ClassScheduleRepository scheduleRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final CoursePrerequisiteRepository prerequisiteRepository;
+    private final com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
 
     // =================== PERIOD CRUD ===================
 
@@ -132,6 +136,19 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         // Kiểm tra trùng lịch với các lớp đã đăng ký trong cùng kỳ
         checkScheduleConflict(student.getId(), clazzId);
+
+        // Kiểm tra môn tiên quyết
+        if (clazz.getCourse() != null) {
+            List<CoursePrerequisite> prereqs = prerequisiteRepository.findByCourseId(clazz.getCourse().getId());
+            if (!prereqs.isEmpty()) {
+                List<Long> passed = gradeRepository.findPassedCourseIds(
+                        student.getId(), new java.math.BigDecimal("5.0"));
+                boolean ok = prereqs.stream().allMatch(p -> passed.contains(p.getPrerequisiteCourseId()));
+                if (!ok) {
+                    throw new AppException(ErrorCode.PREREQUISITE_NOT_MET);
+                }
+            }
+        }
 
         Enrollment e = Enrollment.builder()
                 .student(student)

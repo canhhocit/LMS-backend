@@ -47,6 +47,12 @@ app:
         allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
     upload:
         max-video-size: 200MB
+    academic:
+        pass-score: 5.0
+        warning-gpa: 2.0
+        probation-gpa: 1.5
+    curriculum:
+        pass-score: 5.0
 
 cloudinary:
     cloud-name: ${CLOUDINARY_CLOUD_NAME}
