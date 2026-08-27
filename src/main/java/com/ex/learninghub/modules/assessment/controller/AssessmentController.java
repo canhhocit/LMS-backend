@@ -8,6 +8,8 @@ import com.ex.learninghub.modules.assessment.dto.request.SubmissionRequest;
 import com.ex.learninghub.modules.assessment.dto.response.AssignmentResponse;
 import com.ex.learninghub.modules.assessment.dto.response.SubmissionResponse;
 import com.ex.learninghub.modules.assessment.service.AssessmentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Bài tập & Nộp bài", description = "Các API quản lý bài tập (Assignment) và bài nộp (Submission) của sinh viên")
 public class AssessmentController {
 
     private final AssessmentService assessmentService;
@@ -26,31 +29,51 @@ public class AssessmentController {
 
     @PostMapping("/classes/{classId}/assignments")
     @PreAuthorize("hasRole('LECTURER')")
-    public ApiResponse<AssignmentResponse> createAssignment(@PathVariable Long classId,
-                                                              @Valid @RequestBody AssignmentRequest request,
-                                                              @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @Operation(
+            summary = "Tạo bài tập mới",
+            description = "Giảng viên tạo một bài tập mới cho lớp học phần của mình."
+    )
+    public ApiResponse<AssignmentResponse> createAssignment(
+            @PathVariable Long classId,
+            @Valid @RequestBody AssignmentRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(assessmentService.createAssignment(classId, request, userPrincipal));
     }
 
     @PutMapping("/assignments/{id}")
     @PreAuthorize("hasRole('LECTURER')")
-    public ApiResponse<AssignmentResponse> updateAssignment(@PathVariable Long id,
-                                                             @Valid @RequestBody AssignmentRequest request,
-                                                             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @Operation(
+            summary = "Cập nhật bài tập",
+            description = "Giảng viên cập nhật nội dung, hạn nộp hoặc thông tin khác của một bài tập."
+    )
+    public ApiResponse<AssignmentResponse> updateAssignment(
+            @PathVariable Long id,
+            @Valid @RequestBody AssignmentRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(assessmentService.updateAssignment(id, request, userPrincipal));
     }
 
     @DeleteMapping("/assignments/{id}")
     @PreAuthorize("hasRole('LECTURER')")
-    public ApiResponse<Void> deleteAssignment(@PathVariable Long id,
-                                               @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @Operation(
+            summary = "Xóa bài tập",
+            description = "Giảng viên xóa một bài tập. Lưu ý: các bài nộp liên quan cũng sẽ bị xóa theo."
+    )
+    public ApiResponse<Void> deleteAssignment(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         assessmentService.deleteAssignment(id, userPrincipal);
         return ApiResponse.success(null);
     }
 
     @GetMapping("/classes/{classId}/assignments")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<List<AssignmentResponse>> getAssignmentsByClass(@PathVariable Long classId) {
+    @Operation(
+            summary = "Lấy danh sách bài tập của lớp học phần",
+            description = "Trả về danh sách tất cả bài tập thuộc về một lớp học phần."
+    )
+    public ApiResponse<List<AssignmentResponse>> getAssignmentsByClass(
+            @PathVariable Long classId) {
         return ApiResponse.success(assessmentService.getAssignmentsByClass(classId));
     }
 
@@ -58,29 +81,48 @@ public class AssessmentController {
 
     @PostMapping("/assignments/{id}/submit")
     @PreAuthorize("hasRole('STUDENT')")
-    public ApiResponse<SubmissionResponse> submitAssignment(@PathVariable Long id,
-                                                              @Valid @RequestBody SubmissionRequest request,
-                                                              @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @Operation(
+            summary = "Sinh viên nộp bài tập",
+            description = "Sinh viên nộp bài làm cho một bài tập. Nộp lại sẽ cập nhật bài nộp gần nhất (tùy chính sách)."
+    )
+    public ApiResponse<SubmissionResponse> submitAssignment(
+            @PathVariable Long id,
+            @Valid @RequestBody SubmissionRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(assessmentService.submitAssignment(id, request, userPrincipal));
     }
 
     @PutMapping("/submissions/{id}/grade")
     @PreAuthorize("hasRole('LECTURER')")
-    public ApiResponse<SubmissionResponse> gradeSubmission(@PathVariable Long id,
-                                                            @Valid @RequestBody GradeSubmissionRequest request,
-                                                            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @Operation(
+            summary = "Chấm điểm bài nộp",
+            description = "Giảng viên chấm điểm và nhận xét cho một bài nộp của sinh viên."
+    )
+    public ApiResponse<SubmissionResponse> gradeSubmission(
+            @PathVariable Long id,
+            @Valid @RequestBody GradeSubmissionRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(assessmentService.gradeSubmission(id, request, userPrincipal));
     }
 
     @GetMapping("/assignments/{id}/submissions")
     @PreAuthorize("hasRole('LECTURER')")
-    public ApiResponse<List<SubmissionResponse>> getSubmissionsByAssignment(@PathVariable Long id,
-                                                                              @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @Operation(
+            summary = "Lấy danh sách bài nộp theo bài tập",
+            description = "Giảng viên xem tất cả bài nộp của sinh viên cho một bài tập cụ thể."
+    )
+    public ApiResponse<List<SubmissionResponse>> getSubmissionsByAssignment(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(assessmentService.getSubmissionsByAssignment(id, userPrincipal));
     }
 
     @GetMapping("/me/submissions")
     @PreAuthorize("hasRole('STUDENT')")
+    @Operation(
+            summary = "Lấy danh sách bài nộp của tôi",
+            description = "Sinh viên xem lại tất cả bài nộp của mình (kèm điểm và nhận xét nếu có)."
+    )
     public ApiResponse<List<SubmissionResponse>> getMySubmissions(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(assessmentService.getMySubmissions(userPrincipal));
     }

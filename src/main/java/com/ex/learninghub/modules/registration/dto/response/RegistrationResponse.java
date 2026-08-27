@@ -5,7 +5,6 @@ import com.ex.learninghub.modules.course.entity.Course;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter

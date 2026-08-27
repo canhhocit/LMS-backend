@@ -36,7 +36,7 @@ public class Submission extends BaseEntity {
     @Column(name = "file_url", length = 500)
     private String fileUrl;
 
-    @Column(name = "submitted_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "submitted_at")
     @Builder.Default
     private LocalDateTime submittedAt = LocalDateTime.now();
 

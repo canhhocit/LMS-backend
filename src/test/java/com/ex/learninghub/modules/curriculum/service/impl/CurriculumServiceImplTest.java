@@ -6,7 +6,6 @@ import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.course.entity.Course;
 import com.ex.learninghub.modules.course.repository.CourseRepository;
 import com.ex.learninghub.modules.curriculum.dto.request.CurriculumCourseRequest;
-import com.ex.learninghub.modules.curriculum.dto.request.CurriculumRequest;
 import com.ex.learninghub.modules.curriculum.dto.request.PrerequisiteRequest;
 import com.ex.learninghub.modules.curriculum.entity.CoursePrerequisite;
 import com.ex.learninghub.modules.curriculum.entity.Curriculum;
@@ -15,7 +14,6 @@ import com.ex.learninghub.modules.curriculum.repository.CoursePrerequisiteReposi
 import com.ex.learninghub.modules.curriculum.repository.CurriculumCourseRepository;
 import com.ex.learninghub.modules.curriculum.repository.CurriculumRepository;
 import com.ex.learninghub.modules.grading.repository.GradeRepository;
-import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

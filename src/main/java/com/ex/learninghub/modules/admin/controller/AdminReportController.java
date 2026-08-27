@@ -10,6 +10,8 @@ import com.ex.learninghub.modules.grading.entity.Grade;
 import com.ex.learninghub.modules.grading.repository.GradeRepository;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +28,7 @@ import java.util.Map;
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Quản trị - Báo cáo & Thống kê", description = "Các API phục vụ báo cáo, thống kê và xuất dữ liệu (Excel/PDF) cho Admin")
 public class AdminReportController {
 
     private final AdminService adminService;
@@ -36,17 +39,31 @@ public class AdminReportController {
     private final TranscriptPdfExporter transcriptPdfExporter;
 
     @GetMapping("/reports/enrollments-by-month")
+    @Operation(
+            summary = "Thống kê lượt đăng ký theo tháng",
+            description = "Trả về dữ liệu số lượt đăng ký lớp học phần theo từng tháng, phục vụ biểu đồ báo cáo của Admin."
+    )
     public ApiResponse<Map<String, Object>> getEnrollmentsByMonth() {
         return ApiResponse.success(adminService.getEnrollmentsByMonth());
     }
 
     @GetMapping("/reports/average-score-by-clazz")
+    @Operation(
+            summary = "Thống kê điểm trung bình theo lớp học phần",
+            description = "Trả về điểm trung bình tổng kết của từng lớp học phần, phục vụ báo cáo chất lượng đào tạo."
+    )
     public ApiResponse<Map<String, Double>> getAverageScoreByClazz() {
         return ApiResponse.success(adminService.getAverageScoreByClazz());
     }
 
     @GetMapping("/reports/clazz/{clazzId}/export")
-    public void exportClazzGrades(@PathVariable Long clazzId, HttpServletResponse response) throws IOException {
+    @Operation(
+            summary = "Xuất bảng điểm lớp học phần ra Excel",
+            description = "Xuất danh sách điểm (giữa kỳ, cuối kỳ, tổng kết) của tất cả sinh viên trong một lớp học phần ra file Excel (.xlsx)."
+    )
+    public void exportClazzGrades(
+            @PathVariable Long clazzId,
+            HttpServletResponse response) throws IOException {
         Clazz clazz = clazzRepository.findById(clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
@@ -67,7 +84,13 @@ public class AdminReportController {
     }
 
     @GetMapping("/reports/transcript/{studentId}/export")
-    public void exportTranscript(@PathVariable Long studentId, HttpServletResponse response) throws IOException {
+    @Operation(
+            summary = "Xuất bảng điểm (transcript) của sinh viên ra PDF",
+            description = "Xuất bảng điểm toàn khóa của một sinh viên ra file PDF, bao gồm GPA và danh sách điểm các môn đã học."
+    )
+    public void exportTranscript(
+            @PathVariable Long studentId,
+            HttpServletResponse response) throws IOException {
         com.ex.learninghub.modules.user.entity.User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 

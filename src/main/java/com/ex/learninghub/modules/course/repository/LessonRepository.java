@@ -20,9 +20,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     @Query("SELECT l FROM Lesson l WHERE l.chapterId = :chapterId ORDER BY l.sortOrder")
     List<Lesson> findLessonsByChapterIdOrdered(@Param("chapterId") Long chapterId);
 
-    @Query("SELECT l FROM Lesson l WHERE l.chapterId IN " +
-           "(SELECT c.id FROM Chapter c WHERE c.clazzId = :clazzId) " +
-           "ORDER BY c.sortOrder, l.sortOrder")
+    @Query("SELECT l FROM Lesson l JOIN Chapter c ON c.id = l.chapterId " +
+           "WHERE c.clazzId = :clazzId ORDER BY c.sortOrder, l.sortOrder")
     List<Lesson> findByClazzId(@Param("clazzId") Long clazzId);
 
     @Query("SELECT l FROM Lesson l WHERE l.chapterId IN " +

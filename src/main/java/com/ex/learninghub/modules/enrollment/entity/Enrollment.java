@@ -29,7 +29,7 @@ public class Enrollment extends BaseEntity {
     @JoinColumn(name = "class_id", nullable = false)
     private Clazz clazz;
 
-    @Column(name = "enrolled_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "enrolled_at")
     @Builder.Default
     private LocalDateTime enrolledAt = LocalDateTime.now();
 
