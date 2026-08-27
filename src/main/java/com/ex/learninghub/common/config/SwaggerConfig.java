@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,5 +36,95 @@ public class SwaggerConfig {
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")));
+    }
+
+    @Bean
+    public GroupedOpenApi allApis() {
+        return GroupedOpenApi.builder()
+                .group("All APIs")
+                .pathsToMatch("/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi authServiceApi() {
+        return groupByModule("Auth Service", "com.ex.learninghub.modules.auth");
+    }
+
+    @Bean
+    public GroupedOpenApi userServiceApi() {
+        return groupByModule("User Service", "com.ex.learninghub.modules.user");
+    }
+
+    @Bean
+    public GroupedOpenApi courseServiceApi() {
+        return groupByModule("Course Service", "com.ex.learninghub.modules.course");
+    }
+
+    @Bean
+    public GroupedOpenApi contentServiceApi() {
+        return groupByModule("Content Service", "com.ex.learninghub.modules.content");
+    }
+
+    @Bean
+    public GroupedOpenApi assessmentServiceApi() {
+        return groupByModule("Assessment Service", "com.ex.learninghub.modules.assessment");
+    }
+
+    @Bean
+    public GroupedOpenApi quizServiceApi() {
+        return groupByModule("Quiz Service", "com.ex.learninghub.modules.quiz");
+    }
+
+    @Bean
+    public GroupedOpenApi gradingServiceApi() {
+        return groupByModule("Grading Service", "com.ex.learninghub.modules.grading");
+    }
+
+    @Bean
+    public GroupedOpenApi scheduleServiceApi() {
+        return groupByModule("Schedule Service", "com.ex.learninghub.modules.schedule");
+    }
+
+    @Bean
+    public GroupedOpenApi registrationServiceApi() {
+        return groupByModule("Registration Service", "com.ex.learninghub.modules.registration");
+    }
+
+    @Bean
+    public GroupedOpenApi curriculumServiceApi() {
+        return groupByModule("Curriculum Service", "com.ex.learninghub.modules.curriculum");
+    }
+
+    @Bean
+    public GroupedOpenApi departmentServiceApi() {
+        return groupByModule("Department Service", "com.ex.learninghub.modules.department");
+    }
+
+    @Bean
+    public GroupedOpenApi tuitionServiceApi() {
+        return groupByModule("Tuition Service", "com.ex.learninghub.modules.tuition");
+    }
+
+    @Bean
+    public GroupedOpenApi notificationServiceApi() {
+        return groupByModule("Notification Service", "com.ex.learninghub.modules.notification");
+    }
+
+    @Bean
+    public GroupedOpenApi forumServiceApi() {
+        return groupByModule("Forum Service", "com.ex.learninghub.modules.forum");
+    }
+
+    @Bean
+    public GroupedOpenApi adminServiceApi() {
+        return groupByModule("Admin Service", "com.ex.learninghub.modules.admin");
+    }
+
+    private GroupedOpenApi groupByModule(String groupName, String packageName) {
+        return GroupedOpenApi.builder()
+                .group(groupName)
+                .packagesToScan(packageName)
+                .build();
     }
 }
