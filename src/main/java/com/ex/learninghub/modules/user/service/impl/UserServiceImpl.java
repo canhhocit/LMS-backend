@@ -90,14 +90,20 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<UserResponse> getStudents(String keyword, Pageable pageable) {
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        return userRepository.findByRoleAndKeyword(Role.STUDENT, kw, pageable)
+        Page<User> users = kw == null
+            ? userRepository.findByRole(Role.STUDENT, pageable)
+            : userRepository.findByRoleAndKeyword(Role.STUDENT, kw, pageable);
+        return users
                 .map(UserResponse::from);
     }
 
     @Override
     public Page<UserResponse> getLecturers(String keyword, Pageable pageable) {
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        return userRepository.findByRoleAndKeyword(Role.LECTURER, kw, pageable)
+        Page<User> users = kw == null
+            ? userRepository.findByRole(Role.LECTURER, pageable)
+            : userRepository.findByRoleAndKeyword(Role.LECTURER, kw, pageable);
+        return users
                 .map(UserResponse::from);
     }
 
@@ -122,7 +128,9 @@ public class UserServiceImpl implements UserService {
         // Template: STT | Lớp | MSV | Họ đệm | Tên | Ngày sinh
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
         Pageable allPages = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("fullName"));
-        List<User> users = userRepository.findByRoleAndKeyword(role, kw, allPages).getContent();
+        List<User> users = (kw == null
+            ? userRepository.findByRole(role, allPages)
+            : userRepository.findByRoleAndKeyword(role, kw, allPages)).getContent();
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 

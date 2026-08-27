@@ -32,5 +32,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                     @Param("keyword") String keyword,
                                     Pageable pageable);
 
+    Page<User> findByRole(Role role, Pageable pageable);
+
     List<User> findByRole(Role role);
 }
