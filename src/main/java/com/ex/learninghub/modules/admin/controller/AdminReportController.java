@@ -10,16 +10,31 @@ import com.ex.learninghub.modules.grading.entity.Grade;
 import com.ex.learninghub.modules.grading.repository.GradeRepository;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +69,88 @@ public class AdminReportController {
     )
     public ApiResponse<Map<String, Double>> getAverageScoreByClazz() {
         return ApiResponse.success(adminService.getAverageScoreByClazz());
+    }
+
+    @GetMapping("/reports/enrollments-by-month/export")
+    @Operation(
+            summary = "Xuất thống kê đăng ký theo tháng ra Excel",
+            description = "Tải xuống file Excel chứa số lượng đăng ký theo từng tháng phục vụ báo cáo admin."
+    )
+    public void exportEnrollmentsByMonth(HttpServletResponse response) throws IOException {
+        Map<String, Object> result = adminService.getEnrollmentsByMonth();
+        @SuppressWarnings("unchecked")
+        Map<String, Long> series = (Map<String, Long>) result.getOrDefault("series", Map.of());
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("EnrollmentsByMonth");
+            Row header = sheet.createRow(0);
+            header.createCell(0).setCellValue("Month");
+            header.createCell(1).setCellValue("Enrollments");
+
+            int rowIndex = 1;
+            for (Map.Entry<String, Long> entry : series.entrySet()) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(entry.getKey());
+                row.createCell(1).setCellValue(entry.getValue());
+            }
+
+            for (int i = 0; i < 2; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=enrollments-by-month.xlsx");
+            workbook.write(response.getOutputStream());
+        }
+    }
+
+    @GetMapping("/reports/average-score-by-clazz/export")
+    @Operation(
+            summary = "Xuất điểm trung bình theo lớp ra PDF",
+            description = "Tải xuống file PDF tổng hợp điểm trung bình của từng lớp học phần."
+    )
+    public void exportAverageScoreByClazz(HttpServletResponse response) throws DocumentException, IOException {
+        Map<String, Double> scores = adminService.getAverageScoreByClazz();
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=average-score-by-class.pdf");
+
+        Document document = new Document(PageSize.A4);
+        try {
+            PdfWriter.getInstance(document, response.getOutputStream());
+            document.open();
+
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
+            Font cellFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+
+            Paragraph title = new Paragraph("Average Score by Class", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            document.add(title);
+
+            PdfPTable table = new PdfPTable(2);
+            table.setWidthPercentage(100);
+            table.setWidths(new float[]{3.5f, 1.5f});
+
+            String[] headers = {"Class", "Average Score"};
+            for (String header : headers) {
+                PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
+                cell.setBackgroundColor(new Color(230, 230, 230));
+                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                table.addCell(cell);
+            }
+
+            for (Map.Entry<String, Double> entry : scores.entrySet()) {
+                table.addCell(new Phrase(entry.getKey(), cellFont));
+                PdfPCell scoreCell = new PdfPCell(new Phrase(String.format("%.2f", entry.getValue()), cellFont));
+                scoreCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                table.addCell(scoreCell);
+            }
+
+            document.add(table);
+        } finally {
+            document.close();
+        }
     }
 
     @GetMapping("/reports/clazz/{clazzId}/export")
