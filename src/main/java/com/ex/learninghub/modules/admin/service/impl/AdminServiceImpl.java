@@ -64,6 +64,7 @@ public class AdminServiceImpl implements AdminService {
         DateTimeFormatter monthKey = DateTimeFormatter.ofPattern("yyyy-MM");
         Map<String, Long> byMonth = new TreeMap<>();
         for (Enrollment e : enrollmentRepository.findAll()) {
+            if (e.getEnrolledAt() == null) continue;
             String key = e.getEnrolledAt().format(monthKey);
             byMonth.merge(key, 1L, Long::sum);
         }

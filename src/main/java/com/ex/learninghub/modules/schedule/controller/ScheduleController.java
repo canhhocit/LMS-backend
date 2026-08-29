@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping
 @RequiredArgsConstructor
 @Tag(name = "Lịch học", description = "Các API quản lý và xem lịch học (thời khóa biểu) của lớp học phần và cá nhân")
 public class ScheduleController {

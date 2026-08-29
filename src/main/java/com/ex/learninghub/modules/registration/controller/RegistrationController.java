@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping
 @RequiredArgsConstructor
 @Tag(name = "Đăng ký học phần", description = "Các API quản lý đợt đăng ký và sinh viên đăng ký/hủy lớp học phần")
 public class RegistrationController {

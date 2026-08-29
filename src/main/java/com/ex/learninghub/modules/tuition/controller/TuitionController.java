@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping
 @RequiredArgsConstructor
 @Tag(name = "Học phí", description = "Các API xem hóa đơn học phí của sinh viên và quản lý mức học phí (Admin)")
 public class TuitionController {

@@ -14,7 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping
 @RequiredArgsConstructor
 @Tag(name = "Tình trạng học tập", description = "Các API xem tình trạng học tập của sinh viên và cảnh báo học vụ")
 public class AcademicStatusController {
