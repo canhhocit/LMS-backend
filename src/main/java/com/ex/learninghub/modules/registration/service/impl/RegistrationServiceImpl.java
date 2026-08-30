@@ -5,11 +5,14 @@ import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.entity.ClassSchedule;
+import com.ex.learninghub.modules.course.entity.Lesson;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.repository.ClassScheduleRepository;
+import com.ex.learninghub.modules.course.repository.LessonRepository;
 import com.ex.learninghub.modules.curriculum.repository.CoursePrerequisiteRepository;
 import com.ex.learninghub.modules.curriculum.entity.CoursePrerequisite;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
+import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
 import com.ex.learninghub.modules.registration.dto.request.RegistrationPeriodRequest;
@@ -36,6 +39,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final ClassScheduleRepository scheduleRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final LessonRepository lessonRepository;
     private final CoursePrerequisiteRepository prerequisiteRepository;
     private final com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
     private final com.ex.learninghub.modules.grading.service.AcademicStatusService academicStatusService;
@@ -162,7 +166,21 @@ public class RegistrationServiceImpl implements RegistrationService {
                 .enrolledAt(LocalDateTime.now())
                 .status("ACTIVE")
                 .build();
-        return RegistrationResponse.from(enrollmentRepository.save(e));
+        Enrollment savedEnrollment = enrollmentRepository.save(e);
+
+        List<Lesson> clazzLessons = lessonRepository.findByClazzId(clazzId);
+        if (!clazzLessons.isEmpty()) {
+            List<LessonProgress> progressRecords = clazzLessons.stream()
+                    .map(lesson -> LessonProgress.builder()
+                            .enrollment(savedEnrollment)
+                            .lesson(lesson)
+                            .isCompleted(false)
+                            .build())
+                    .toList();
+            lessonProgressRepository.saveAll(progressRecords);
+        }
+
+        return RegistrationResponse.from(savedEnrollment);
     }
 
     @Override

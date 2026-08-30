@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
         log.error("Exception caught by handler: ", ex);
         ApiResponse<Object> apiResponse = ApiResponse.builder()
                 .code(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode())
-                .message(ex.getMessage() != null ? ex.getMessage() : ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
+                .message(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
                 .build();
         return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode()).body(apiResponse);
     }

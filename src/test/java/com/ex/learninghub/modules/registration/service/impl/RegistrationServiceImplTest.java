@@ -6,6 +6,7 @@ import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.entity.ClassSchedule;
 import com.ex.learninghub.modules.course.entity.Course;
+import com.ex.learninghub.modules.course.entity.Lesson;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.repository.ClassScheduleRepository;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
@@ -50,6 +51,9 @@ class RegistrationServiceImplTest {
 
     @Mock
     private LessonProgressRepository lessonProgressRepository;
+
+    @Mock
+    private com.ex.learninghub.modules.course.repository.LessonRepository lessonRepository;
 
     @Mock
     private com.ex.learninghub.modules.curriculum.repository.CoursePrerequisiteRepository prerequisiteRepository;
@@ -148,6 +152,7 @@ class RegistrationServiceImplTest {
         when(clazzRepository.findById(20L)).thenReturn(Optional.of(newClazz));
         when(scheduleRepository.findByClazzId(20L)).thenReturn(List.of(sched(20L, 2, 1, 3)));
         when(enrollmentRepository.findByStudentId(1L)).thenReturn(new ArrayList<>());
+        when(lessonRepository.findByClazzId(20L)).thenReturn(List.of());
         when(prerequisiteRepository.findByCourseId(11L)).thenReturn(List.of());
         when(enrollmentRepository.save(any())).thenAnswer(inv -> {
             Enrollment e = inv.getArgument(0);
@@ -160,6 +165,30 @@ class RegistrationServiceImplTest {
         assertThat(response.getClazzId()).isEqualTo(20L);
         assertThat(response.getCredits()).isEqualTo(3);
         verify(enrollmentRepository, times(1)).save(any());
+    }
+
+    @Test
+    void register_createsLessonProgressRecords_forEachLessonInClazz() {
+        when(periodRepository.findByIsActiveTrue()).thenReturn(Optional.of(openPeriod));
+        when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 20L)).thenReturn(false);
+        when(clazzRepository.findById(20L)).thenReturn(Optional.of(newClazz));
+        when(scheduleRepository.findByClazzId(20L)).thenReturn(List.of());
+        when(enrollmentRepository.findByStudentId(1L)).thenReturn(new ArrayList<>());
+        when(lessonRepository.findByClazzId(20L)).thenReturn(List.of(
+                Lesson.builder().chapterId(1L).title("Lesson 1").sortOrder(1).build(),
+                Lesson.builder().chapterId(1L).title("Lesson 2").sortOrder(2).build()
+        ));
+        when(prerequisiteRepository.findByCourseId(11L)).thenReturn(List.of());
+        when(enrollmentRepository.save(any())).thenAnswer(inv -> {
+            Enrollment e = inv.getArgument(0);
+            e.setId(500L);
+            return e;
+        });
+        when(lessonProgressRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        registrationService.register(20L, new UserPrincipal(student));
+
+        verify(lessonProgressRepository, times(1)).saveAll(any());
     }
 
     @Test
