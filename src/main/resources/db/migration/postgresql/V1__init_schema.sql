@@ -194,7 +194,7 @@ CREATE TABLE lesson_progress (
     is_completed BOOLEAN NOT NULL DEFAULT FALSE, completed_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_enrollment_lesson UNIQUE (enrollment_id, lesson_id)
+    CONSTRAINT uk_lesson_progress_enrollment_lesson UNIQUE (enrollment_id, lesson_id)
 );
 
 CREATE TABLE notifications (

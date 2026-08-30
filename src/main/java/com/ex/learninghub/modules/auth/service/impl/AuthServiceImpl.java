@@ -87,6 +87,10 @@ public class AuthServiceImpl implements AuthService {
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
 
+        java.util.Set<String> permissions = user.getAdminPermissions() == null ? java.util.Set.of() : user.getAdminPermissions().stream()
+                .map(p -> p.getCode().name())
+                .collect(java.util.stream.Collectors.toSet());
+
         return AuthResponse.builder()
                 .token(jwt)
                 .type("Bearer")
@@ -95,6 +99,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .isFirstLogin(user.getIsFirstLogin() != null && user.getIsFirstLogin())
+                .permissions(permissions)
                 .refreshToken(rawRefreshToken)
                 .build();
     }
@@ -193,6 +198,10 @@ public class AuthServiceImpl implements AuthService {
 
         String jwt = tokenProvider.generateToken(user.getEmail());
 
+        java.util.Set<String> permissions = user.getAdminPermissions() == null ? java.util.Set.of() : user.getAdminPermissions().stream()
+                .map(p -> p.getCode().name())
+                .collect(java.util.stream.Collectors.toSet());
+
         return AuthResponse.builder()
                 .token(jwt)
                 .type("Bearer")
@@ -201,6 +210,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .isFirstLogin(user.getIsFirstLogin() != null && user.getIsFirstLogin())
+                .permissions(permissions)
                 .refreshToken(newRawRefreshToken)
                 .build();
     }

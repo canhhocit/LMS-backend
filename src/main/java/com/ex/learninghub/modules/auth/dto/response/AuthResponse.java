@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
 @Setter
 @Builder
@@ -23,7 +25,9 @@ public class AuthResponse {
     private String fullName;
     private Role role;
     private boolean isFirstLogin;
+    private Set<String> permissions;
 
     @Builder.Default
     private String refreshToken = null;
 }
+

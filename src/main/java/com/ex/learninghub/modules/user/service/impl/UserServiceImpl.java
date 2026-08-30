@@ -344,4 +344,12 @@ public class UserServiceImpl implements UserService {
         user.setStatus(com.ex.learninghub.common.enums.UserStatus.valueOf(status.toUpperCase()));
         userRepository.save(user);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserResponse> getAdmins() {
+        return userRepository.findByRole(Role.ADMIN).stream()
+                .map(UserResponse::from)
+                .collect(java.util.stream.Collectors.toList());
+    }
 }

@@ -21,8 +21,8 @@ spring:
     servlet:
         multipart:
             enabled: true
-            max-file-size: 400MB
-            max-request-size: 400MB
+            max-file-size: 200MB
+            max-request-size: 200MB
     mail:
         host: smtp-relay.brevo.com
         port: 587
@@ -46,7 +46,7 @@ app:
     cors:
         allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
     upload:
-        max-video-size: 200MB
+        max-video-size: 500MB
     academic:
         pass-score: 5.0
         warning-gpa: 2.0

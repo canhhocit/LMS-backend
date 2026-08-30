@@ -76,6 +76,13 @@ public class AdminUserController {
         return ApiResponse.success(userService.getLecturers(keyword, pageable));
     }
 
+    @GetMapping("/admins")
+    @Operation(summary = "Danh sách admin", description = "Trả về danh sách tất cả các tài khoản quản trị viên.")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'SYSTEM_CONFIG')")
+    public ApiResponse<List<UserResponse>> getAdmins() {
+        return ApiResponse.success(userService.getAdmins());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Lấy chi tiết người dùng", description = "Trả về thông tin chi tiết của một người dùng theo ID.")
     public ApiResponse<UserResponse> getUserById(@PathVariable Long id) {

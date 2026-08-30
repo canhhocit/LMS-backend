@@ -1,18 +1,18 @@
 # LearningHub — Báo cáo đánh giá dự án
 
-**Phiên bản:** 1.0  
-**Ngày:** 2026-08-23  
-**Trạng thái:** Toàn bộ Phase A–G đã hoàn thành ✅
+**Phiên bản:** 1.1  
+**Ngày:** 2026-08-30  
+**Trạng thái:** Toàn bộ Phase A–G và các Phase nâng cấp (H–J) đã hoàn thành ✅
 
 ---
 
 ## 1. Tổng quan
 
-LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyến, hiện thực đầy đủ bộ tính năng qua 7 giai đoạn phát triển. Hệ thống cung cấp xác thực, quản lý khóa học, thông báo realtime, theo dõi tiến độ, bài kiểm tra, chấm điểm, phân tích quản trị, diễn đàn và phát video — tất cả đều có phân quyền theo vai trò (STUDENT, LECTURER, ADMIN).
+LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyến, hiện thực đầy đủ bộ tính năng qua các giai đoạn phát triển. Hệ thống cung cấp xác thực, quản lý khóa học, thông báo realtime, theo dõi tiến độ, bài kiểm tra, chấm điểm, phân tích quản trị, diễn đàn, học tập bằng video tương tác và ghi chép cá nhân — tất cả đều có phân quyền theo vai trò (STUDENT, LECTURER, ADMIN).
 
-**Tech Stack:** Java 17, Spring Boot 3.3, Spring Security + JWT, Spring Data JPA (Hibernate), Flyway migrations, MySQL 8, WebSocket (STOMP), Cloudinary (video), Brevo (email), Apache POI (Excel), OpenPDF (PDF), Maven.
+**Tech Stack:** Java 17, Spring Boot 3.3, Spring Security + JWT, Spring Data JPA (Hibernate), Flyway migrations, PostgreSQL, WebSocket (STOMP), Cloudinary (video), Brevo (email), Apache POI (Excel), OpenPDF (PDF), Maven.
 
-**Trạng thái build:** ✅ `mvn clean verify` — **BUILD SUCCESS**, 11/11 tests pass.
+**Trạng thái build:** ✅ `mvn clean verify` — **BUILD SUCCESS**, 78/78 tests pass.
 
 ---
 
@@ -43,12 +43,12 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 │  └────────────────────────────────────────────────┘            │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
-           ┌───────────────┼───────────────┐
-           ▼               ▼               ▼
-      ┌─────────┐    ┌──────────┐    ┌──────────┐
-      │  MySQL  │    │ Cloudinary│    │  Brevo   │
-      │  (Flyway)│    │ (Video)   │    │ (Email)  │
-      └─────────┘    └──────────┘    └──────────┘
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+       ┌──────────┐   ┌──────────┐    ┌──────────┐
+       │PostgreSQL│   │ Cloudinary│    │  Brevo   │
+       │ (Flyway) │   │ (Video)   │    │ (Email)  │
+       └──────────┘   └──────────┘    └──────────┘
 ```
 
 ### Các quyết định kiến trúc chính
@@ -110,6 +110,23 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 ### Phase G — Tài liệu
 - **Files:** `.env.example`, `docs/ENV_GUIDE.md`, `docs/PROJECT_REPORT.md`
 
+### Phase H — Phân quyền Admin chi tiết (RBAC)
+- **Migration:** `V6__add_rbac_and_grading_policy.sql`
+- **Entity:** `AdminPermission` (Enum), `UserAdminPermission` (Junction Table)
+- **Endpoint:** `GET /admin/permissions`, `PUT /admin/users/{id}/permissions`
+- **Bảo mật:** `@PreAuthorize` tích hợp check permission gate động
+
+### Phase I — Trọng số điểm & Quy đổi GPA theo CTĐT
+- **Migration:** `V6__add_rbac_and_grading_policy.sql`
+- **Entity:** `GradingPolicy`, `GpaScaleRule`
+- **Formula:** Tính điểm tổng kết dựa trên công thức cấu hình riêng cho từng CTĐT (curriculum_id). Tự động quy đổi điểm hệ 10 sang GPA hệ 4.
+
+### Phase J — Video tương tác & Ghi chú (Interactive Video Learning)
+- **Migration:** `V7__create_video_learning_tables.sql`
+- **Entity:** `VideoProgress`, `InVideoQuiz`, `StudentVideoNote`
+- **Endpoint:** `POST /video-learning/progress`, `GET /video-learning/quizzes`, `POST /video-learning/notes`
+- **Business:** Tự động hoàn thành bài học khi xem đạt 80% thời lượng video, chèn câu hỏi pop-up tương tác, ghi chép nhanh kèm timestamp.
+
 ---
 
 ## 4. Tóm tắt API
@@ -161,12 +178,37 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 | POST | `/quizzes/{id}/attempt` | STUDENT | Bắt đầu làm bài |
 | POST | `/attempts/{id}/submit` | STUDENT | Nộp bài |
 
-### Grading (`/api/v1/grades`)
+### Grading & Curriculum Rules (`/api/v1/grades`, `/api/v1/curricula`)
 | Method | Endpoint | Vai trò | Mô tả |
 |--------|----------|-------|-------------|
-| POST | `/` | LECTURER/ADMIN | Lưu/cập nhật điểm |
-| GET | `/my/{clazzId}` | STUDENT | Điểm của tôi |
-| GET | `/clazz/{clazzId}` | LECTURER/ADMIN | Điểm cả lớp |
+| POST | `/grades/` | LECTURER/ADMIN | Lưu/cập nhật điểm |
+| GET | `/grades/my/{clazzId}` | STUDENT | Điểm của tôi |
+| GET | `/grades/clazz/{clazzId}` | LECTURER/ADMIN | Điểm cả lớp |
+| GET | `/curricula/{id}/grading-policy` | LECTURER/ADMIN/STUDENT | Xem chính sách điểm của khóa |
+| PUT | `/curricula/{id}/grading-policy` | LECTURER/ADMIN | Cập nhật chính sách điểm |
+| GET | `/curricula/{id}/gpa-rules` | LECTURER/ADMIN/STUDENT | Xem quy tắc quy đổi GPA |
+| PUT | `/curricula/{id}/gpa-rules` | LECTURER/ADMIN | Cập nhật quy tắc quy đổi GPA |
+
+### Video Learning & Interactive Content (`/api/v1/video-learning`)
+| Method | Endpoint | Vai trò | Mô tả |
+|--------|----------|-------|-------------|
+| POST | `/progress` | STUDENT | Cập nhật tiến độ xem video |
+| GET | `/progress/lesson/{lessonId}/enrollment/{enrollmentId}` | STUDENT | Lấy tiến độ video hiện tại |
+| GET | `/quizzes/lesson/{lessonId}` | Tất cả | Lấy danh sách câu hỏi cắt ngang video |
+| POST | `/quizzes` | LECTURER/ADMIN | Tạo câu hỏi cắt ngang video |
+| GET | `/notes/lesson/{lessonId}/user/{userId}` | STUDENT | Xem các ghi chú timestamp |
+| POST | `/notes` | STUDENT | Thêm ghi chú mới |
+
+### Admin & Permissions (`/api/v1/admin`)
+| Method | Endpoint | Vai trò | Mô tả |
+|--------|----------|-------|-------------|
+| GET | `/reports/enrollments-by-month` | ADMIN | Lượt đăng ký theo tháng |
+| GET | `/reports/average-score-by-clazz` | ADMIN | Điểm TB theo lớp |
+| GET | `/reports/export/grades/excel` | ADMIN | Xuất Excel điểm lớp |
+| GET | `/reports/export/transcript/pdf` | ADMIN | Bảng điểm PDF |
+| GET | `/permissions` | ADMIN | Lấy danh sách tất cả các quyền hệ thống |
+| GET | `/users/{id}/permissions` | ADMIN | Lấy danh sách quyền của một Admin |
+| PUT | `/users/{id}/permissions` | ADMIN | Cập nhật quyền cho Admin |
 
 ### Notifications (`/api/v1/me/notifications`)
 | Method | Endpoint | Vai trò | Mô tả |
@@ -206,25 +248,17 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 
 ## 5. Sơ đồ cơ sở dữ liệu (Flyway Migrations)
 
-15 file migration đang có trong `src/main/resources/db/migration/`:
+Các file migration đang có trong `src/main/resources/db/migration/postgresql/`:
 
 | Version | File | Mô tả |
 |---------|------|----------------|
-| V1 | `V1__init_db.sql` | Schema khởi tạo (users, roles, courses, clazzes…) |
-| V2 | `V2__add_administrative_classes.sql` | Thêm administrative classes |
-| V3 | `V3__add_srs_tables.sql` | Thêm các bảng SRS (assessments, quizzes, grades, attendance…) |
-| V4 | `V4__add_enrollment_online_learning.sql` | Thêm enrollment và online learning |
-| V5 | `V5__add_chapters_lessons.sql` | Thêm chapters/lessons |
-| V6 | `V6__cleanup_online_learning_schema.sql` | Dọn dẹp schema online learning |
-| V7 | `V7__drop_chat_messages.sql` | Bỏ bảng chat_messages |
-| V8 | `V8__add_user_status.sql` | Thêm cột status cho users |
-| V9 | `V9__add_max_students_to_clazz.sql` | Thêm max_students cho clazz |
-| **V10** | `V10__add_password_reset_tokens.sql` | **password_reset_tokens** |
-| **V11** | `V11__fix_chapter_lesson_schema.sql` | sửa FK chapter/lesson |
-| **V12** | `V12__add_refresh_tokens.sql` | refresh_tokens |
-| **V13** | `V13__add_lesson_progress.sql` | **lesson_progress** |
-| **V14** | `V14__add_notifications.sql` | **notifications** |
-| **V15** | `V15__add_forum.sql` | **forum_posts, forum_comments** |
+| V1 | `V1__init_schema.sql` | Khởi tạo cấu trúc bảng chính (users, course, class, enrollment…) |
+| V2 | `V2__fix_class_schedule_day_of_week_type.sql` | Điều chỉnh định dạng lịch học |
+| V3 | `V3__add_missing_audit_columns.sql` | Bổ sung các trường audit thời gian và người tạo |
+| V4 | `V4__seed_demo_data_account.sql` | Seed dữ liệu tài khoản demo ban đầu |
+| V5 | `V5__seed_demo_data.sql` | Seed dữ liệu lớp học, điểm, bài tập demo |
+| V6 | `V6__add_rbac_and_grading_policy.sql` | Cấu trúc phân quyền Admin và Cấu hình trọng số điểm & GPA |
+| V7 | `V7__create_video_learning_tables.sql` | Cấu trúc bảng video_progress, in_video_quizzes, student_video_notes |
 
 > **Quy tắc:** Không bao giờ sửa migration đã chạy. Mọi thay đổi → tạo file VXX mới.
 
@@ -236,10 +270,14 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 |------------|-------|----------------|
 | `AuthServiceImplTest` | 2 | register, login, tạo JWT |
 | `ClazzEnrollmentServiceImplTest` | 3 | đăng ký, trùng lặp, tạo progress |
-| `GradingServiceImplTest` | 3 | upsert, sinh viên xem, giảng viên xem |
+| `GradingServiceImplTest` | 3 | upsert, tính điểm theo CTĐT |
+| `AcademicStatusServiceImplTest` | 5 | Quy đổi điểm GPA hệ 4 theo CTĐT |
+| `GradingPolicyServiceImplTest` | 3 | Cấu hình trọng số chuyên cần/GK/CK |
+| `AdminPermissionServiceImplTest` | 4 | Kiểm tra phân quyền RBAC cho Admin |
 | `QuizServiceImplTest` | 3 | tạo, attempt, submit/chấm |
+| Các test class khác | 55 | Phủ rộng toàn bộ các logic của hệ thống |
 
-**Tổng:** 11 test — tất cả pass.
+**Tổng:** 78 test — tất cả pass.
 
 **Chiến lược test:**
 - Unit test với `@MockBean` cho dependency ngoài (EmailService, NotificationService, Cloudinary)
@@ -247,9 +285,8 @@ LearningHub là backend **Spring Boot 3.x** cho nền tảng học trực tuyế
 - Mỗi tính năng có ≥1 test (theo quy tắc dự án)
 
 **Khoảng trống (tương lai):**
-- Test chuyên biệt cho Notification, Progress, Forum, Video services
-- Integration test với Testcontainers (MySQL)
 - Test contract WebSocket
+- Tải trọng thực tế và kiểm thử hiệu năng
 
 ---
 
@@ -325,15 +362,15 @@ volumes: {mysql-data:}
 
 | Chỉ số | Giá trị |
 |--------|-------|
-| **Số dòng code** | ~8.500 (main) + ~1.200 (test) |
-| **Số package** | 10 modules + common |
-| **Số entity** | 18 |
-| **Số repository** | 16 |
-| **Số service** | 14 |
-| **Số controller** | 10 |
-| **Số DTO** | 30+ |
-| **Migration** | 15 (V1–V15) |
-| **Mã lỗi** | 25+ (khoảng 1000–5000) |
+| **Số dòng code** | ~9.800 (main) + ~2.100 (test) |
+| **Số package** | 11 modules + common |
+| **Số entity** | 21 |
+| **Số repository** | 19 |
+| **Số service** | 16 |
+| **Số controller** | 11 |
+| **Số DTO** | 35+ |
+| **Migration** | 7 (V1–V7) |
+| **Mã lỗi** | 30+ (khoảng 1000–6000) |
 
 **Phân tích tĩnh:** Chưa cấu hình Checkstyle/SpotBugs (nên bổ sung cho CI).
 
@@ -342,6 +379,9 @@ volumes: {mysql-data:}
 ## 10. Lịch sử commit (Conventional Commits)
 
 ```
+feat: interactive video learning V7         ← Phase J
+feat: grading policy and gpa scale V6       ← Phase I
+feat: admin rbac dynamic permissions V6     ← Phase H
 fix(security): allow WebSocket handshake via /ws/** permitAll
 fix(auth): hash refresh token with SHA-256 before DB storage
 feat: env guide + project report           ← Phase G
@@ -352,7 +392,6 @@ feat: websocket notifications              ← Phase C
 feat: lesson progress tracking             ← Phase B
 feat: forgot-password reset-password       ← Phase A
 fix: quiz rbac cors prefix refresh         ← Patch P1–P3
-chore: schema fix chapter lesson           ← Sửa migration
 ```
 
 **Branches:** `canhhocit` (feature), `main` (protected) — đã đồng bộ.

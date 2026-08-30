@@ -33,4 +33,5 @@ public interface UserService {
     UserResponse updateUser(Long id, UserCreateRequest request);
     void deleteUser(Long id);
     void updateUserStatus(Long id, String status);
+    List<UserResponse> getAdmins();
 }
