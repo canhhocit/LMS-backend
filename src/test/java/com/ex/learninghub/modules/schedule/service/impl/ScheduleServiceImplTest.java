@@ -53,7 +53,7 @@ class ScheduleServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        lecturer = User.builder().email("gv@test").role(Role.LECTURER).build();
+        lecturer = User.builder().email("gv@test").fullName("Giảng viên A").role(Role.LECTURER).build();
         lecturer.setId(100L);
         otherLecturer = User.builder().email("gv2@test").role(Role.LECTURER).build();
         otherLecturer.setId(101L);
@@ -90,6 +90,19 @@ class ScheduleServiceImplTest {
                 .build();
         s.setId(id);
         return s;
+    }
+
+    @Test
+    void getSchedulesByClazz_includesRealClassAndLecturerInfo() {
+        ClassSchedule schedule = sched(77L, 2, 1, 3, "A101");
+        when(clazzRepository.findById(10L)).thenReturn(Optional.of(clazz));
+        when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 10L)).thenReturn(true);
+        when(scheduleRepository.findByClazzId(10L)).thenReturn(List.of(schedule));
+
+        var response = scheduleService.getSchedulesByClazz(10L, new UserPrincipal(student)).get(0);
+
+        assertThat(response.getClassName()).isEqualTo("INT1001");
+        assertThat(response.getLecturerName()).isEqualTo("Giảng viên A");
     }
 
     @Test

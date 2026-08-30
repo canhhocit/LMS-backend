@@ -13,8 +13,10 @@ public class ScheduleResponse {
     private Long id;
     private Long clazzId;
     private String clazzCode;
+    private String className;
     private String courseCode;
     private String courseTitle;
+    private String lecturerName;
     private Integer dayOfWeek;
     private Integer startPeriod;
     private Integer endPeriod;
@@ -25,10 +27,13 @@ public class ScheduleResponse {
                 .id(s.getId())
                 .clazzId(s.getClazzId())
                 .clazzCode(s.getClazz() != null ? s.getClazz().getClassCode() : null)
+                .className(s.getClazz() != null ? s.getClazz().getClassName() : null)
                 .courseCode(s.getClazz() != null && s.getClazz().getCourse() != null
                         ? s.getClazz().getCourse().getCode() : null)
                 .courseTitle(s.getClazz() != null && s.getClazz().getCourse() != null
                         ? s.getClazz().getCourse().getTitle() : null)
+                .lecturerName(s.getClazz() != null && s.getClazz().getLecturer() != null
+                        ? s.getClazz().getLecturer().getFullName() : null)
                 .dayOfWeek(s.getDayOfWeek())
                 .startPeriod(s.getStartPeriod())
                 .endPeriod(s.getEndPeriod())

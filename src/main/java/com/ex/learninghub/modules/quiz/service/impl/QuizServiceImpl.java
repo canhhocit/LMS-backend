@@ -162,10 +162,13 @@ public class QuizServiceImpl implements QuizService {
             throw new AppException(ErrorCode.USER_NOT_ENROLLED);
         }
 
-        // Prevent duplicate starts — reuse existing start time if any
         Optional<QuizAttempt> existing = quizAttemptRepository.findByQuizIdAndStudentId(quizId, studentId);
         if (existing.isPresent()) {
-            return existing.get().getStartedAt();
+            QuizAttempt attempt = existing.get();
+            if (attempt.getSubmittedAt() != null) {
+                throw new AppException(ErrorCode.QUIZ_ALREADY_ATTEMPTED);
+            }
+            return attempt.getStartedAt();
         }
 
         QuizAttempt attempt = QuizAttempt.builder()
@@ -187,17 +190,17 @@ public class QuizServiceImpl implements QuizService {
             throw new AppException(ErrorCode.USER_NOT_ENROLLED);
         }
 
-        // Prevent duplicate attempts
-        if (quizAttemptRepository.existsByQuizIdAndStudentId(quizId, studentId)) {
+        QuizAttempt attempt = quizAttemptRepository.findByQuizIdAndStudentId(quizId, studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
+
+        if (attempt.getSubmittedAt() != null) {
             throw new AppException(ErrorCode.QUIZ_ALREADY_ATTEMPTED);
         }
 
         // Enforce duration limit: must have started via /start and not exceed durationMinutes
-        QuizAttempt pendingAttempt = quizAttemptRepository.findByQuizIdAndStudentId(quizId, studentId)
-                .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
         LocalDateTime now = LocalDateTime.now();
-        if (quiz.getDurationMinutes() != null && pendingAttempt.getStartedAt() != null) {
-            LocalDateTime deadline = pendingAttempt.getStartedAt().plusMinutes(quiz.getDurationMinutes());
+        if (quiz.getDurationMinutes() != null && attempt.getStartedAt() != null) {
+            LocalDateTime deadline = attempt.getStartedAt().plusMinutes(quiz.getDurationMinutes());
             if (now.isAfter(deadline)) {
                 throw new AppException(ErrorCode.QUIZ_TIME_EXCEEDED);
             }
@@ -228,14 +231,8 @@ public class QuizServiceImpl implements QuizService {
                     .divide(BigDecimal.valueOf(totalQuestions), 2, RoundingMode.HALF_UP);
         }
 
-        // Save the attempt
-        QuizAttempt attempt = new QuizAttempt();
-        attempt.setQuiz(quiz);
-        com.ex.learninghub.modules.user.entity.User student = new com.ex.learninghub.modules.user.entity.User();
-        student.setId(studentId);
-        attempt.setStudent(student);
         attempt.setScore(score);
-        attempt.setSubmittedAt(LocalDateTime.now());
+        attempt.setSubmittedAt(now);
         quizAttemptRepository.save(attempt);
 
         return QuizAttemptResponse.from(attempt, totalQuestions, correctAnswers, quiz.getTotalScore());

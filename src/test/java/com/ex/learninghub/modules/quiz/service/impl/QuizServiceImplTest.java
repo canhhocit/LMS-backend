@@ -98,8 +98,6 @@ class QuizServiceImplTest {
     void submitAttempt_calculatesScore_correctly() {
         when(quizRepository.findById(100L)).thenReturn(Optional.of(quiz));
         when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 10L)).thenReturn(true);
-        when(quizAttemptRepository.existsByQuizIdAndStudentId(100L, 1L)).thenReturn(false);
-        // Student has already started the quiz (startedAt set)
         com.ex.learninghub.modules.assessment.entity.QuizAttempt started =
                 com.ex.learninghub.modules.assessment.entity.QuizAttempt.builder()
                         .quiz(quiz)
@@ -128,10 +126,43 @@ class QuizServiceImplTest {
     }
 
     @Test
-    void submitAttempt_alreadyAttempted_throwsQuizAlreadyAttempted() {
+    void submitAttempt_allowsSubmission_afterStudentStartsQuiz() {
+        com.ex.learninghub.modules.assessment.entity.QuizAttempt started =
+                com.ex.learninghub.modules.assessment.entity.QuizAttempt.builder()
+                        .quiz(quiz)
+                        .student(student)
+                        .startedAt(java.time.LocalDateTime.now().minusMinutes(1))
+                        .build();
+
         when(quizRepository.findById(100L)).thenReturn(Optional.of(quiz));
         when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 10L)).thenReturn(true);
-        when(quizAttemptRepository.existsByQuizIdAndStudentId(100L, 1L)).thenReturn(true);
+        when(quizAttemptRepository.findByQuizIdAndStudentId(100L, 1L)).thenReturn(Optional.of(started));
+        when(questionRepository.findByQuizId(100L)).thenReturn(List.of(
+                question(1L, "A"), question(2L, "B")));
+        when(quizAttemptRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        QuizAttemptResponse response = quizService.submitAttempt(100L, 1L, attemptRequest());
+
+        assertThat(response.getCorrectAnswers()).isEqualTo(2);
+        assertThat(response.getScore()).isEqualByComparingTo(new BigDecimal("10"));
+        assertThat(started.getSubmittedAt()).isNotNull();
+    }
+
+    @Test
+    void submitAttempt_alreadyAttempted_throwsQuizAlreadyAttempted() {
+        com.ex.learninghub.modules.assessment.entity.QuizAttempt submitted =
+                com.ex.learninghub.modules.assessment.entity.QuizAttempt.builder()
+                        .quiz(quiz)
+                        .student(student)
+                        .startedAt(java.time.LocalDateTime.now().minusMinutes(5))
+                        .submittedAt(java.time.LocalDateTime.now().minusMinutes(1))
+                        .score(new BigDecimal("8.00"))
+                        .build();
+
+        when(quizRepository.findById(100L)).thenReturn(Optional.of(quiz));
+        when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 10L)).thenReturn(true);
+        when(quizAttemptRepository.findByQuizIdAndStudentId(100L, 1L)).thenReturn(Optional.of(submitted));
 
         assertThatThrownBy(() -> quizService.submitAttempt(100L, 1L, attemptRequest()))
                 .isInstanceOf(AppException.class);
