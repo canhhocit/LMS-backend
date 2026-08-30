@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/video-learning")
+@RequestMapping("/video-learning")
 @RequiredArgsConstructor
 public class VideoLearningController {
 

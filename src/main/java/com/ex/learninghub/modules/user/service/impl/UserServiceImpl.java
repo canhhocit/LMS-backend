@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.user.service.impl;
 
+import com.ex.learninghub.common.enums.AdminPermission;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
@@ -8,8 +9,10 @@ import com.ex.learninghub.modules.user.dto.request.UpdateProfileRequest;
 import com.ex.learninghub.modules.user.dto.request.UserCreateRequest;
 import com.ex.learninghub.modules.user.dto.response.UserResponse;
 import com.ex.learninghub.modules.user.entity.AdministrativeClass;
+import com.ex.learninghub.modules.user.entity.AdminPermissionEntity;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.AdministrativeClassRepository;
+import com.ex.learninghub.modules.user.repository.AdminPermissionRepository;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import com.ex.learninghub.modules.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AdministrativeClassRepository adminClassRepository;
+    private final AdminPermissionRepository adminPermissionRepository;
     private final com.ex.learninghub.modules.curriculum.repository.CurriculumRepository curriculumRepository;
 
     @Override
@@ -67,6 +71,10 @@ public class UserServiceImpl implements UserService {
                 .isFirstLogin(true)
                 .build();
 
+        if (request.getRole() == Role.ADMIN) {
+            user.setAdminPermissions(resolveDefaultAdminPermissions());
+        }
+
         if (request.getAdminClassId() != null) {
             AdministrativeClass adminClass = adminClassRepository.findById(request.getAdminClassId())
                     .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
@@ -80,6 +88,21 @@ public class UserServiceImpl implements UserService {
         }
 
         return userRepository.save(user);
+    }
+
+    private java.util.Set<AdminPermissionEntity> resolveDefaultAdminPermissions() {
+        java.util.Set<AdminPermissionEntity> permissions = new java.util.HashSet<>();
+        List<AdminPermission> defaultPermissions = List.of(
+                AdminPermission.VIEW_REPORTS,
+                AdminPermission.MANAGE_USERS
+        );
+
+        for (AdminPermission permission : defaultPermissions) {
+            adminPermissionRepository.findByCode(permission)
+                    .ifPresent(permissions::add);
+        }
+
+        return permissions;
     }
 
     @Override
