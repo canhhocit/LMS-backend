@@ -45,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AdministrativeClassRepository adminClassRepository;
+    private final com.ex.learninghub.modules.curriculum.repository.CurriculumRepository curriculumRepository;
 
     @Override
     @Transactional
@@ -70,6 +71,12 @@ public class UserServiceImpl implements UserService {
             AdministrativeClass adminClass = adminClassRepository.findById(request.getAdminClassId())
                     .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
             user.setAdminClass(adminClass);
+        }
+
+        if (request.getCurriculumId() != null) {
+            var curriculum = curriculumRepository.findById(request.getCurriculumId())
+                    .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+            user.setCurriculum(curriculum);
         }
 
         return userRepository.save(user);
@@ -311,6 +318,13 @@ public class UserServiceImpl implements UserService {
         user.setMajor(request.getMajor());
         user.setStudentCode(request.getStudentCode());
         user.setLecturerCode(request.getLecturerCode());
+        if (request.getCurriculumId() != null) {
+            var curriculum = curriculumRepository.findById(request.getCurriculumId())
+                    .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+            user.setCurriculum(curriculum);
+        } else {
+            user.setCurriculum(null);
+        }
         return UserResponse.from(userRepository.save(user));
     }
 

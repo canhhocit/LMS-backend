@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/classes")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_USERS')")
 @Tag(name = "Quản trị - Lớp học phần", description = "Các API CRUD lớp học phần (Clazz) và quản lý sinh viên trong lớp dành cho Admin")
 public class AdminClazzController {
 

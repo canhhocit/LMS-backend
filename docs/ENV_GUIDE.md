@@ -31,9 +31,9 @@ direnv allow
 
 | Biến | Mô tả | Bắt buộc | Giá trị mặc định | Ví dụ |
 |----------|-------------|----------|---------|---------|
-| `DB_URL` | Chuỗi kết nối JDBC tới MySQL | ✅ | `jdbc:mysql://localhost:3306/learninghub?...` | `jdbc:mysql://db:3306/learninghub?...` |
-| `DB_USERNAME` | Tên đăng nhập database | ✅ | `root` | `learninghub_user` |
-| `DB_PASSWORD` | Mật khẩu database | ✅ | `123456` | `MatKhauMan_2026!` |
+| `DB_URL` | Chuỗi kết nối JDBC tới PostgreSQL | ✅ | `jdbc:postgresql://localhost:5432/learninghub` | `jdbc:postgresql://db:5432/learninghub` |
+| `DB_USERNAME` | Tên đăng nhập database | ✅ | `postgres` | `learninghub_user` |
+| `DB_PASSWORD` | Mật khẩu database | ✅ | `postgres` | `MatKhauMan_2026!` |
 | `JWT_SECRET` | Khóa ký HS256 (≥32 ký tự) | ✅ | (giá trị dự phòng hardcoded) | `openssl rand -base64 32` |
 | `MAIL_USERNAME` | Tài khoản SMTP Brevo | ✅ | — | `user@domain.com` |
 | `MAIL_PASSWORD` | Mật khẩu SMTP Brevo | ✅ | — | `xkeysib-xxxxxxxxx` |
@@ -57,23 +57,24 @@ direnv allow
 
 ## Cách lấy thông tin xác thực
 
-### 1. MySQL Database
+### 1. PostgreSQL Database
 
 **Môi trường dev:**
 ```bash
 # Dùng Docker
 docker run -d \
-  --name learninghub-mysql \
-  -e MYSQL_ROOT_PASSWORD=your_password \
-  -e MYSQL_DATABASE=learninghub \
-  -p 3306:3306 \
-  mysql:8.0
+  --name learninghub-postgres \
+  -e POSTGRES_DB=learninghub \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  postgres:15
 ```
 Sau đó cấu hình:
 ```
-DB_URL=jdbc:mysql://localhost:3306/learninghub?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-DB_USERNAME=root
-DB_PASSWORD=your_password
+DB_URL=jdbc:postgresql://localhost:5432/learninghub
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
 ```
 
 **Production:** Nên dùng managed DB (AWS RDS, Azure Database, GCP Cloud SQL) — cập nhật `DB_URL` theo endpoint được cấp.

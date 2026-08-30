@@ -24,9 +24,16 @@ public class UserResponse {
     private String lecturerCode;
     private String faculty;
     private String major;
+    private Long curriculumId;
+    private java.util.List<String> permissions;
 
     /** Factory method to create UserResponse from User entity */
     public static UserResponse from(User user) {
+        java.util.List<String> perms = user.getAdminPermissions() != null ?
+                user.getAdminPermissions().stream()
+                        .map(p -> p.getCode().name())
+                        .collect(java.util.stream.Collectors.toList()) : java.util.List.of();
+
         return UserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
@@ -36,6 +43,8 @@ public class UserResponse {
                 .lecturerCode(user.getLecturerCode())
                 .faculty(user.getFaculty())
                 .major(user.getMajor())
+                .curriculumId(user.getCurriculum() != null ? user.getCurriculum().getId() : null)
+                .permissions(perms)
                 .build();
     }
 }

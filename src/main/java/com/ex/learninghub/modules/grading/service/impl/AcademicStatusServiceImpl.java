@@ -28,6 +28,7 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
     private final GradeRepository gradeRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final com.ex.learninghub.modules.grading.repository.GpaScaleRuleRepository gpaScaleRuleRepository;
 
     @Value("${app.academic.pass-score:5.0}")
     private BigDecimal passScore;
@@ -75,7 +76,12 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
     }
 
     private AcademicStatusResponse computeForStudent(Long studentId) {
+        User student = userRepository.findById(studentId).orElse(null);
         List<Grade> grades = gradeRepository.findByStudentId(studentId);
+        List<com.ex.learninghub.modules.grading.entity.GpaScaleRule> rules = List.of();
+        if (student != null && student.getCurriculum() != null) {
+            rules = gpaScaleRuleRepository.findByCurriculumIdOrderBySortOrderAsc(student.getCurriculum().getId());
+        }
 
         int totalCredits = 0;
         int passedCredits = 0;
@@ -94,7 +100,7 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
 
             if (score != null) {
                 // Quy đổi mọi môn có điểm sang hệ 4 (môn trượt = 0.0)
-                BigDecimal gpa4 = scoreToGpa4(score);
+                BigDecimal gpa4 = resolveGpa4(score, rules);
                 weightedSum += gpa4.doubleValue() * credits;
                 weightedCount += credits;
 
@@ -138,8 +144,19 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
                 .build();
     }
 
+    private BigDecimal resolveGpa4(BigDecimal score10, List<com.ex.learninghub.modules.grading.entity.GpaScaleRule> rules) {
+        if (rules != null && !rules.isEmpty()) {
+            for (var rule : rules) {
+                if (score10.compareTo(rule.getMinScore10()) >= 0) {
+                    return rule.getGpa4();
+                }
+            }
+        }
+        return scoreToGpa4(score10);
+    }
+
     /**
-     * Quy đổi điểm hệ 10 sang thang 4 chuẩn Việt Nam.
+     * Quy đổi điểm hệ 10 sang thang 4 chuẩn Việt Nam (fallback).
      */
     private static BigDecimal scoreToGpa4(BigDecimal score10) {
         double s = score10.doubleValue();

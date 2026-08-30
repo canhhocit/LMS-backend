@@ -51,6 +51,7 @@ public class AdminServiceImpl implements AdminService {
         long totalAssignments = assignmentRepository.count();
         long totalSubmissions = submissionRepository.count();
 
+        stats.put("totalUsers", totalStudents + totalLecturers + totalAdmins);
         stats.put("usersByRole", usersByRole);
         stats.put("totalClasses", totalClasses);
         stats.put("totalEnrollments", totalEnrollments);

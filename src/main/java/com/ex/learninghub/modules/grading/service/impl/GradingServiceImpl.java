@@ -40,6 +40,7 @@ public class GradingServiceImpl implements GradingService {
     private final AttendanceRepository attendanceRepository;
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
+    private final com.ex.learninghub.modules.grading.repository.GradingPolicyRepository gradingPolicyRepository;
 
     @Value("${app.attendance.max-absent-ratio:0.2}")
     private double maxAbsentRatio;
@@ -80,10 +81,23 @@ public class GradingServiceImpl implements GradingService {
         grade.setFinalScore(request.getFinalScore());
 
         if (request.getMidtermScore() != null && request.getFinalScore() != null) {
-            BigDecimal total = request.getMidtermScore()
-                    .multiply(new BigDecimal("0.4"))
-                    .add(request.getFinalScore().multiply(new BigDecimal("0.6")))
-                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal[] weights = resolveWeights(student);
+            BigDecimal attWeight = weights[0];
+            BigDecimal midWeight = weights[1];
+            BigDecimal finWeight = weights[2];
+
+            BigDecimal total;
+            if (attWeight.compareTo(BigDecimal.ZERO) == 0) {
+                total = request.getMidtermScore().multiply(midWeight)
+                        .add(request.getFinalScore().multiply(finWeight))
+                        .setScale(2, RoundingMode.HALF_UP);
+            } else {
+                BigDecimal attScore = resolveAttendanceScore10(classId, request.getStudentId());
+                total = attScore.multiply(attWeight)
+                        .add(request.getMidtermScore().multiply(midWeight))
+                        .add(request.getFinalScore().multiply(finWeight))
+                        .setScale(2, RoundingMode.HALF_UP);
+            }
             grade.setTotalScore(total);
         } else {
             grade.setTotalScore(null);
@@ -208,5 +222,32 @@ public class GradingServiceImpl implements GradingService {
         }
 
         return result;
+    }
+
+    /**
+     * Calc attendance score out of 10 based on attendance records.
+     * attendanceScore10 = 10 * (presentCount + 0.5 * lateCount) / totalCount.
+     * If totalCount == 0, returns 10.00.
+     */
+    private BigDecimal resolveAttendanceScore10(Long classId, Long studentId) {
+        long totalCount = attendanceRepository.countByClazzIdAndStudentId(classId, studentId);
+        if (totalCount == 0) {
+            return new BigDecimal("10.00");
+        }
+        long presentCount = attendanceRepository.countByClazzIdAndStudentIdAndStatus(classId, studentId, AttendanceStatus.PRESENT);
+        long lateCount = attendanceRepository.countByClazzIdAndStudentIdAndStatus(classId, studentId, AttendanceStatus.LATE);
+        double score = 10.0 * (presentCount + 0.5 * lateCount) / totalCount;
+        return BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal[] resolveWeights(User student) {
+        if (student != null && student.getCurriculum() != null) {
+            var policyOpt = gradingPolicyRepository.findByCurriculumId(student.getCurriculum().getId());
+            if (policyOpt.isPresent()) {
+                var p = policyOpt.get();
+                return new BigDecimal[]{p.getAttendanceWeight(), p.getMidtermWeight(), p.getFinalWeight()};
+            }
+        }
+        return new BigDecimal[]{new BigDecimal("0.000"), new BigDecimal("0.400"), new BigDecimal("0.600")};
     }
 }

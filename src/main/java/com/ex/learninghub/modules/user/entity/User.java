@@ -67,4 +67,17 @@ public class User extends BaseEntity {
     @Column(length = 20)
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "curriculum_id")
+    private com.ex.learninghub.modules.curriculum.entity.Curriculum curriculum;
+
+    @jakarta.persistence.ManyToMany(fetch = FetchType.EAGER)
+    @jakarta.persistence.JoinTable(
+        name = "user_admin_permissions",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    @Builder.Default
+    private java.util.Set<AdminPermissionEntity> adminPermissions = new java.util.HashSet<>();
 }

@@ -28,4 +28,5 @@ public class UserCreateRequest {
     private String faculty;
     private String major;
     private Long adminClassId;
+    private Long curriculumId;
 }

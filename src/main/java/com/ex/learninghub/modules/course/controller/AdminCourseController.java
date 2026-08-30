@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/courses")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
 @Tag(name = "Quản trị - Khóa học", description = "Các API CRUD khóa học (Course) dành cho Admin")
 public class AdminCourseController {
 

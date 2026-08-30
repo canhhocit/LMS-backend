@@ -62,6 +62,8 @@ public enum ErrorCode {
     REGISTRATION_CLOSED(4003, "Registration period is not open", HttpStatus.BAD_REQUEST),
     CREDIT_LIMIT_EXCEEDED(4004, "Total credits exceed registration limit", HttpStatus.BAD_REQUEST),
     PREREQUISITE_NOT_MET(4005, "Prerequisite course has not been completed", HttpStatus.BAD_REQUEST),
+    GRADING_POLICY_WEIGHTS_INVALID(5001, "Grading policy weights must sum to 1.000", HttpStatus.BAD_REQUEST),
+    GPA_SCALE_INVALID(5002, "GPA scale rules are invalid", HttpStatus.BAD_REQUEST),
     EXCEL_PARSE_ERROR(7001, "Failed to parse Excel file. Please check the file format", HttpStatus.BAD_REQUEST);
 
     private final int code;

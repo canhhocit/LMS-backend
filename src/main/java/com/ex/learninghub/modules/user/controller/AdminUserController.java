@@ -36,7 +36,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_USERS')")
 @Tag(name = "Quản trị người dùng", description = "CRUD tài khoản sinh viên / giảng viên, import/export Excel, reset mật khẩu")
 public class AdminUserController {
 

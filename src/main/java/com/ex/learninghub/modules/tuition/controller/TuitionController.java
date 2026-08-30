@@ -40,7 +40,7 @@ public class TuitionController {
 
     // ---- Admin: quản lý tuition_rates ----
     @PostMapping("/admin/tuition/rates")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_TUITION')")
     @Operation(
             summary = "Tạo mức học phí mới",
             description = "Admin tạo mới một mức học phí (ví dụ: theo tín chỉ, theo khối ngành, ...)."
@@ -50,7 +50,7 @@ public class TuitionController {
     }
 
     @PutMapping("/admin/tuition/rates/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_TUITION')")
     @Operation(
             summary = "Cập nhật mức học phí",
             description = "Admin cập nhật một mức học phí đã có."
@@ -63,7 +63,7 @@ public class TuitionController {
     }
 
     @DeleteMapping("/admin/tuition/rates/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_TUITION')")
     @Operation(
             summary = "Xóa mức học phí",
             description = "Admin xóa một mức học phí khỏi hệ thống."
@@ -87,7 +87,7 @@ public class TuitionController {
 
     // ---- Admin: generate / mark paid ----
     @PostMapping("/admin/tuition/{studentId}/generate")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_TUITION')")
     @Operation(
             summary = "Sinh hóa đơn học phí cho sinh viên",
             description = "Admin tạo hóa đơn học phí cho một sinh viên theo học kỳ và năm học cụ thể."
@@ -104,7 +104,7 @@ public class TuitionController {
     }
 
     @PostMapping("/admin/tuition/{invoiceId}/mark-paid")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_TUITION')")
     @Operation(
             summary = "Đánh dấu hóa đơn đã thanh toán",
             description = "Admin cập nhật trạng thái đã thanh toán cho một hóa đơn học phí."

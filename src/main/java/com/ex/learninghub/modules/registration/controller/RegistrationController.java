@@ -29,7 +29,7 @@ public class RegistrationController {
     // =================== Period management (ADMIN) ===================
 
     @PostMapping("/admin/registration-periods")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_REGISTRATION')")
     @Operation(
             summary = "Tạo đợt đăng ký học phần",
             description = "Admin tạo mới một đợt đăng ký học phần với thời gian mở/đóng và các ràng buộc."
@@ -40,7 +40,7 @@ public class RegistrationController {
     }
 
     @PutMapping("/admin/registration-periods/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_REGISTRATION')")
     @Operation(
             summary = "Cập nhật đợt đăng ký",
             description = "Admin cập nhật thông tin (thời gian, ...) của một đợt đăng ký học phần."
@@ -53,7 +53,7 @@ public class RegistrationController {
     }
 
     @DeleteMapping("/admin/registration-periods/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_REGISTRATION')")
     @Operation(
             summary = "Xóa đợt đăng ký",
             description = "Admin xóa một đợt đăng ký học phần."
@@ -66,7 +66,7 @@ public class RegistrationController {
     }
 
     @GetMapping("/admin/registration-periods")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_REGISTRATION')")
     @Operation(
             summary = "Lấy danh sách đợt đăng ký",
             description = "Trả về danh sách tất cả các đợt đăng ký học phần."

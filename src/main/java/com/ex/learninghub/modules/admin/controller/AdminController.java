@@ -21,7 +21,7 @@ public class AdminController {
     private final AdminService adminService;
 
     @GetMapping("/dashboard")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'VIEW_REPORTS')")
     @Operation(
             summary = "Thống kê tổng quan cho dashboard Admin",
             description = "Trả về các chỉ số tổng quan phục vụ trang dashboard của Admin: tổng số sinh viên, giảng viên, lớp học phần, khóa học, v.v."
