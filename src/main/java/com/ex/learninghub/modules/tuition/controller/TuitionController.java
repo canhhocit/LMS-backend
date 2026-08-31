@@ -76,7 +76,7 @@ public class TuitionController {
     }
 
     @GetMapping("/admin/tuition/rates")
-    @PreAuthorize("hasAnyRole('ADMIN','LECTURER')")
+    @PreAuthorize("hasAnyRole('ADMIN','LECTURER','STUDENT')")
     @Operation(
             summary = "Lấy danh sách mức học phí",
             description = "Trả về danh sách tất cả mức học phí đang được áp dụng."
