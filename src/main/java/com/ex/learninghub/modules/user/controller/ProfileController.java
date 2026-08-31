@@ -13,10 +13,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/me")
@@ -46,5 +49,17 @@ public class ProfileController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody UpdateProfileRequest request) {
         return ApiResponse.success(userService.updateProfile(userPrincipal, request));
+    }
+
+    @PostMapping("/profile/avatar")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Upload avatar cá nhân",
+            description = "Upload ảnh đại diện lên Cloudinary và lưu URL vào hồ sơ cá nhân của người dùng hiện tại."
+    )
+    public ApiResponse<UserResponse> uploadAvatar(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(userService.uploadAvatar(userPrincipal, file));
     }
 }

@@ -27,6 +27,7 @@ public interface UserService {
     // Profile
     UserResponse getProfile(UserPrincipal userPrincipal);
     UserResponse updateProfile(UserPrincipal userPrincipal, UpdateProfileRequest request);
+    UserResponse uploadAvatar(UserPrincipal userPrincipal, org.springframework.web.multipart.MultipartFile file);
 
     // Admin operations
     void resetPassword(Long userId);

@@ -1,5 +1,7 @@
 package com.ex.learninghub.modules.user.service.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.ex.learninghub.common.enums.AdminPermission;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
@@ -49,7 +51,11 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AdministrativeClassRepository adminClassRepository;
     private final AdminPermissionRepository adminPermissionRepository;
+    private final Cloudinary cloudinary;
     private final com.ex.learninghub.modules.curriculum.repository.CurriculumRepository curriculumRepository;
+
+    @Value("${app.upload.max-avatar-size:5MB}")
+    private org.springframework.util.unit.DataSize maxAvatarSize;
 
     @Override
     @Transactional
@@ -317,6 +323,43 @@ public class UserServiceImpl implements UserService {
         user.setMajor(request.getMajor());
         user.setAvatarUrl(request.getAvatarUrl());
         return UserResponse.from(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserResponse uploadAvatar(UserPrincipal userPrincipal, MultipartFile file) {
+        User user = userRepository.findById(userPrincipal.getUser().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (file == null || file.isEmpty()) {
+            throw new AppException(ErrorCode.SUBMISSION_FILE_EMPTY);
+        }
+        if (file.getSize() > maxAvatarSize.toBytes()) {
+            throw new AppException(ErrorCode.SUBMISSION_FILE_TOO_LARGE);
+        }
+
+        String contentType = file.getContentType();
+        java.util.Set<String> allowed = java.util.Set.of(
+                "image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"
+        );
+        if (contentType == null || !allowed.contains(contentType)) {
+            String original = file.getOriginalFilename();
+            String lower = original == null ? "" : original.toLowerCase();
+            boolean byExtension = lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png")
+                    || lower.endsWith(".webp") || lower.endsWith(".gif");
+            if (!byExtension) {
+                throw new AppException(ErrorCode.SUBMISSION_INVALID_FORMAT);
+            }
+        }
+
+        try {
+            java.util.Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", "image"));
+            String secureUrl = (String) result.get("secure_url");
+            user.setAvatarUrl(secureUrl);
+            return UserResponse.from(userRepository.save(user));
+        } catch (IOException e) {
+            throw new AppException(ErrorCode.SUBMISSION_UPLOAD_FAILED);
+        }
     }
 
     // ---- Admin operations ----
