@@ -24,7 +24,7 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'SYSTEM_CONFIG')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(
             summary = "Tạo khoa/bộ môn mới",
             description = "Tạo mới một khoa/bộ môn trong hệ thống."
@@ -34,7 +34,7 @@ public class DepartmentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'SYSTEM_CONFIG')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(
             summary = "Cập nhật khoa/bộ môn",
             description = "Cập nhật thông tin (tên, mã, mô tả, trưởng khoa) của một khoa/bộ môn."
@@ -47,7 +47,7 @@ public class DepartmentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'SYSTEM_CONFIG')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(
             summary = "Xóa khoa/bộ môn",
             description = "Xóa một khoa/bộ môn khỏi hệ thống."

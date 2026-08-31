@@ -29,14 +29,14 @@ public class CurriculumController {
 
     // ========== ADMIN: Curriculum CRUD ==========
     @PostMapping("/admin/curricula")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(summary = "Tạo chương trình khung mới", description = "Admin tạo mới một chương trình khung (Curriculum) theo từng ngành/khoa.")
     public ResponseEntity<ApiResponse<CurriculumResponse>> create(@Valid @RequestBody CurriculumRequest req) {
         return ResponseEntity.ok(ApiResponse.success(curriculumService.createCurriculum(req)));
     }
 
     @PutMapping("/admin/curricula/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(summary = "Cập nhật chương trình khung", description = "Admin cập nhật thông tin (tên, khoa, năm học, ...) của một chương trình khung.")
     public ResponseEntity<ApiResponse<CurriculumResponse>> update(@PathVariable Long id,
                                                                  @Valid @RequestBody CurriculumRequest req) {
@@ -44,7 +44,7 @@ public class CurriculumController {
     }
 
     @DeleteMapping("/admin/curricula/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(summary = "Xóa chương trình khung", description = "Admin xóa một chương trình khung.")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         curriculumService.deleteCurriculum(id);
@@ -66,7 +66,7 @@ public class CurriculumController {
 
     // ========== ADMIN: CurriculumCourse ==========
     @PostMapping("/admin/curricula/{curriculumId}/courses")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(summary = "Thêm môn học vào chương trình khung", description = "Admin thêm một môn học (kèm thông tin: tín chỉ, học kỳ gợi ý, ...) vào chương trình khung.")
     public ResponseEntity<ApiResponse<CurriculumCourseResponse>> addCourse(@PathVariable Long curriculumId,
                                                                           @Valid @RequestBody CurriculumCourseRequest req) {
@@ -74,7 +74,7 @@ public class CurriculumController {
     }
 
     @DeleteMapping("/admin/curricula/{curriculumId}/courses/{courseId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(summary = "Xóa môn học khỏi chương trình khung", description = "Admin gỡ một môn học ra khỏi chương trình khung.")
     public ResponseEntity<ApiResponse<Void>> removeCourse(@PathVariable Long curriculumId,
                                                           @PathVariable Long courseId) {
@@ -90,7 +90,7 @@ public class CurriculumController {
 
     // ========== ADMIN: Prerequisite ==========
     @PostMapping("/admin/courses/{courseId}/prerequisites")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(summary = "Thêm môn tiên quyết cho môn học", description = "Admin thêm một môn tiên quyết cho một môn học cụ thể.")
     public ResponseEntity<ApiResponse<PrerequisiteResponse>> addPrereq(@PathVariable Long courseId,
                                                                       @Valid @RequestBody PrerequisiteRequest req) {
@@ -98,7 +98,7 @@ public class CurriculumController {
     }
 
     @DeleteMapping("/admin/courses/{courseId}/prerequisites/{prereqId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_CURRICULUM')")
     @Operation(summary = "Xóa môn tiên quyết", description = "Admin gỡ quan hệ tiên quyết giữa hai môn học.")
     public ResponseEntity<ApiResponse<Void>> removePrereq(@PathVariable Long courseId,
                                                           @PathVariable Long prereqId) {

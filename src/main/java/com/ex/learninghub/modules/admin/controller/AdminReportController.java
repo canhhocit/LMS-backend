@@ -42,7 +42,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Quản trị - Báo cáo & Thống kê", description = "Các API phục vụ báo cáo, thống kê và xuất dữ liệu (Excel/PDF) cho Admin")
 public class AdminReportController {
 
@@ -54,6 +53,7 @@ public class AdminReportController {
     private final TranscriptPdfExporter transcriptPdfExporter;
 
     @GetMapping("/reports/enrollments-by-month")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'VIEW_REPORTS')")
     @Operation(
             summary = "Thống kê lượt đăng ký theo tháng",
             description = "Trả về dữ liệu số lượt đăng ký lớp học phần theo từng tháng, phục vụ biểu đồ báo cáo của Admin."
@@ -63,6 +63,7 @@ public class AdminReportController {
     }
 
     @GetMapping("/reports/average-score-by-clazz")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'VIEW_REPORTS')")
     @Operation(
             summary = "Thống kê điểm trung bình theo lớp học phần",
             description = "Trả về điểm trung bình tổng kết của từng lớp học phần, phục vụ báo cáo chất lượng đào tạo."
@@ -72,6 +73,7 @@ public class AdminReportController {
     }
 
     @GetMapping("/reports/enrollments-by-month/export")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'VIEW_REPORTS')")
     @Operation(
             summary = "Xuất thống kê đăng ký theo tháng ra Excel",
             description = "Tải xuống file Excel chứa số lượng đăng ký theo từng tháng phục vụ báo cáo admin."
@@ -105,6 +107,7 @@ public class AdminReportController {
     }
 
     @GetMapping("/reports/average-score-by-clazz/export")
+    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'VIEW_REPORTS')")
     @Operation(
             summary = "Xuất điểm trung bình theo lớp ra PDF",
             description = "Tải xuống file PDF tổng hợp điểm trung bình của từng lớp học phần."
