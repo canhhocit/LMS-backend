@@ -27,6 +27,7 @@ public class UserCreateRequest {
     private LocalDate dateOfBirth;
     private String faculty;
     private String major;
+    private String avatarUrl;
     private Long adminClassId;
     private Long curriculumId;
 }

@@ -254,7 +254,7 @@ public class QuizServiceImpl implements QuizService {
         if (userPrincipal.getUser().getRole() == Role.ADMIN) {
             return; // Admin can access all classes
         }
-        if (!clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
+        if (clazz.getLecturer() == null || !clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
     }

@@ -1,5 +1,8 @@
 package com.ex.learninghub.modules.assessment.service.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.ex.learninghub.common.enums.SubmissionType;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
@@ -19,12 +22,18 @@ import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.unit.DataSize;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +44,25 @@ public class AssessmentServiceImpl implements AssessmentService {
     private final SubmissionRepository submissionRepository;
     private final ClazzRepository clazzRepository;
     private final NotificationService notificationService;
+    private final Cloudinary cloudinary;
+
+    @Value("${app.upload.max-assignment-file-size:50MB}")
+    private DataSize maxAssignmentFileSize;
+
+    private static final Set<String> ALLOWED_SUBMISSION_TYPES = Set.of(
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain",
+            "application/zip",
+            "application/x-zip-compressed",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/jpg"
+    );
 
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
         if (clazz.getLecturer() == null ||
@@ -108,15 +136,75 @@ public class AssessmentServiceImpl implements AssessmentService {
             throw new AppException(ErrorCode.SUBMISSION_EXISTS);
         }
         LocalDateTime now = LocalDateTime.now();
+        SubmissionType submissionType = request.getSubmissionType() != null ? request.getSubmissionType() : SubmissionType.FILE;
+        String fileUrl = request.getFileUrl();
+        String fileUrls = request.getFileUrls() == null || request.getFileUrls().isEmpty() ? null : String.join(",", request.getFileUrls());
+        String externalLink = request.getExternalLink();
+
+        if (submissionType == SubmissionType.FILE || submissionType == SubmissionType.IMAGE) {
+            fileUrl = request.getFileUrl() != null ? request.getFileUrl() : (fileUrls != null ? fileUrls.split(",")[0] : null);
+            externalLink = null;
+        } else {
+            fileUrl = null;
+            fileUrls = null;
+        }
+
+        if (submissionType == SubmissionType.GOOGLE_DRIVE_LINK && (externalLink == null || !externalLink.matches("(?i)^https?:\\/\\/.*drive\\.google\\.com\\/.*$"))) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        if (submissionType == SubmissionType.GITHUB_LINK && (externalLink == null || !externalLink.matches("(?i)^https?:\\/\\/github\\.com\\/.*$"))) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        if ((submissionType == SubmissionType.FILE || submissionType == SubmissionType.IMAGE) && (fileUrl == null || fileUrl.isBlank()) && (fileUrls == null || fileUrls.isBlank())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
         boolean late = assignment.getDueDate() != null && now.isAfter(assignment.getDueDate());
         Submission submission = Submission.builder()
                 .assignment(assignment)
                 .student(student)
-                .fileUrl(request.getFileUrl())
+                .submissionType(submissionType)
+                .fileUrl(fileUrl)
+                .fileUrls(fileUrls)
+                .externalLink(externalLink)
                 .submittedAt(now)
                 .isLate(late)
                 .build();
         return SubmissionResponse.from(submissionRepository.save(submission));
+    }
+
+    @Override
+    @Transactional
+    public String uploadSubmissionFile(Long assignmentId, MultipartFile file, UserPrincipal userPrincipal) {
+        return uploadSubmissionFiles(assignmentId, List.of(file), userPrincipal).get(0);
+    }
+
+    @Override
+    @Transactional
+    public List<String> uploadSubmissionFiles(Long assignmentId, List<MultipartFile> files, UserPrincipal userPrincipal) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
+        if (files == null || files.isEmpty()) {
+            throw new AppException(ErrorCode.SUBMISSION_FILE_EMPTY);
+        }
+
+        return files.stream().filter(file -> file != null && !file.isEmpty()).map(file -> {
+            if (file.getSize() > maxAssignmentFileSize.toBytes()) {
+                throw new AppException(ErrorCode.SUBMISSION_FILE_TOO_LARGE);
+            }
+            String contentType = file.getContentType();
+            if (contentType == null || !ALLOWED_SUBMISSION_TYPES.contains(contentType)) {
+                throw new AppException(ErrorCode.SUBMISSION_INVALID_FORMAT);
+            }
+            try {
+                String resourceType = contentType.startsWith("image/") ? "image" : "raw";
+                Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resourceType));
+                return (String) result.get("secure_url");
+            } catch (IOException ex) {
+                throw new AppException(ErrorCode.SUBMISSION_UPLOAD_FAILED);
+            }
+        }).collect(Collectors.toList());
     }
 
     @Override

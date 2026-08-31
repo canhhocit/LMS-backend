@@ -315,6 +315,7 @@ public class UserServiceImpl implements UserService {
         user.setDateOfBirth(request.getDateOfBirth());
         user.setFaculty(request.getFaculty());
         user.setMajor(request.getMajor());
+        user.setAvatarUrl(request.getAvatarUrl());
         return UserResponse.from(userRepository.save(user));
     }
 
@@ -339,6 +340,7 @@ public class UserServiceImpl implements UserService {
         user.setDateOfBirth(request.getDateOfBirth());
         user.setFaculty(request.getFaculty());
         user.setMajor(request.getMajor());
+        user.setAvatarUrl(request.getAvatarUrl());
         user.setStudentCode(request.getStudentCode());
         user.setLecturerCode(request.getLecturerCode());
         if (request.getCurriculumId() != null) {

@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -90,6 +91,32 @@ public class AssessmentController {
             @Valid @RequestBody SubmissionRequest request,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(assessmentService.submitAssignment(id, request, userPrincipal));
+    }
+
+    @PostMapping("/assignments/{id}/submit-file")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(
+            summary = "Upload file bài nộp lên Cloudinary",
+            description = "Sinh viên upload file bài nộp cho một bài tập và nhận về URL đã lưu trên Cloudinary."
+    )
+    public ApiResponse<String> uploadSubmissionFile(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(assessmentService.uploadSubmissionFile(id, file, userPrincipal));
+    }
+
+    @PostMapping("/assignments/{id}/submit-files")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(
+            summary = "Upload nhiều file bài nộp lên Cloudinary",
+            description = "Sinh viên upload nhiều file/folder content cho cùng một bài tập và nhận về danh sách URL đã lưu trên Cloudinary."
+    )
+    public ApiResponse<List<String>> uploadSubmissionFiles(
+            @PathVariable Long id,
+            @RequestParam("files") List<MultipartFile> files,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(assessmentService.uploadSubmissionFiles(id, files, userPrincipal));
     }
 
     @PutMapping("/submissions/{id}/grade")

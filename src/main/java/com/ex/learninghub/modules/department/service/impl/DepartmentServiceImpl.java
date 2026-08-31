@@ -26,7 +26,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Transactional
     public DepartmentResponse create(DepartmentRequest request) {
         if (departmentRepository.existsByCode(request.getCode())) {
-            throw new AppException(ErrorCode.COURSE_ALREADY_EXISTS); // generic
+            throw new AppException(ErrorCode.DEPARTMENT_ALREADY_EXISTS);
         }
         if (request.getHeadUserId() != null) {
             userRepository.findById(request.getHeadUserId())

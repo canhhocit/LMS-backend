@@ -29,6 +29,10 @@ public enum ErrorCode {
     CLAZZ_ALREADY_EXISTS(2005, "Class code already exists", HttpStatus.BAD_REQUEST),
     ADMIN_CLASS_NOT_FOUND(2007, "Administrative class not found", HttpStatus.NOT_FOUND),
     ADMIN_CLASS_ALREADY_EXISTS(2008, "Administrative class already exists", HttpStatus.BAD_REQUEST),
+    CURRICULUM_NOT_FOUND(2009, "Curriculum not found", HttpStatus.NOT_FOUND),
+    DEPARTMENT_ALREADY_EXISTS(2010, "Department code already exists", HttpStatus.BAD_REQUEST),
+    TUITION_RATE_ALREADY_EXISTS(2011, "Tuition rate already exists for this academic year", HttpStatus.BAD_REQUEST),
+    TUITION_RATE_NOT_FOUND(2012, "Tuition rate not found", HttpStatus.NOT_FOUND),
     
     ENROLLMENT_EXISTS(3001, "User is already enrolled in this course", HttpStatus.BAD_REQUEST),
     ENROLLMENT_NOT_FOUND(3002, "Enrollment not found", HttpStatus.NOT_FOUND),
@@ -50,6 +54,10 @@ public enum ErrorCode {
     VIDEO_TOO_LARGE(3020, "Video file exceeds maximum allowed size", HttpStatus.PAYLOAD_TOO_LARGE),
     VIDEO_INVALID_FORMAT(3021, "Unsupported video format", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     VIDEO_UPLOAD_FAILED(3022, "Failed to upload video to storage", HttpStatus.INTERNAL_SERVER_ERROR),
+    SUBMISSION_FILE_EMPTY(3023, "Submission file is empty", HttpStatus.BAD_REQUEST),
+    SUBMISSION_FILE_TOO_LARGE(3024, "Submission file exceeds maximum allowed size", HttpStatus.PAYLOAD_TOO_LARGE),
+    SUBMISSION_INVALID_FORMAT(3025, "Unsupported submission file format", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+    SUBMISSION_UPLOAD_FAILED(3026, "Failed to upload submission file to storage", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_REFRESH_TOKEN(4033, "Invalid or expired refresh token", HttpStatus.UNAUTHORIZED),
     
     ATTENDANCE_NOT_QUALIFIED(4030, "Student does not meet attendance requirement", HttpStatus.BAD_REQUEST),

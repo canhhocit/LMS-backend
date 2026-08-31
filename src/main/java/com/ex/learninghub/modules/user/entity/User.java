@@ -55,6 +55,9 @@ public class User extends BaseEntity {
     @Column(length = 100)
     private String major;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_class_id")
     private AdministrativeClass adminClass;

@@ -6,3 +6,4 @@ public enum NotificationType {
     NEW_ANNOUNCEMENT,
     ACADEMIC_WARNING
 }
+

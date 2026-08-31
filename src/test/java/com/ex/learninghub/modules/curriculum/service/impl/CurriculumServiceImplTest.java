@@ -141,6 +141,20 @@ class CurriculumServiceImplTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PREREQUISITE_NOT_MET);
     }
 
+    @Test
+    void addPrerequisite_throws_whenCycleWouldBeCreated() {
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course1));
+        when(courseRepository.findById(11L)).thenReturn(Optional.of(course2));
+        when(prerequisiteRepository.existsByCourseIdAndPrerequisiteCourseId(10L, 11L)).thenReturn(false);
+        CoursePrerequisite reverse = CoursePrerequisite.builder().courseId(11L).prerequisiteCourseId(10L).build();
+        reverse.setId(7L);
+        when(prerequisiteRepository.findByCourseId(11L)).thenReturn(List.of(reverse));
+
+        assertThatThrownBy(() -> curriculumService.addPrerequisite(10L, new PrerequisiteRequest(11L)))
+                .isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PREREQUISITE_NOT_MET);
+    }
+
     // ===== checkMissingPrerequisites =====
     @Test
     void checkMissingPrerequisites_returnsEmpty_whenNoPrereqs() {

@@ -39,7 +39,7 @@ public class TuitionServiceImpl implements TuitionService {
     @Transactional
     public TuitionRateResponse createRate(TuitionRateRequest request) {
         if (rateRepository.existsByAcademicYear(request.getAcademicYear())) {
-            throw new AppException(ErrorCode.COURSE_ALREADY_EXISTS); // generic duplicate
+            throw new AppException(ErrorCode.TUITION_RATE_ALREADY_EXISTS);
         }
         TuitionRate r = TuitionRate.builder()
                 .academicYear(request.getAcademicYear())
@@ -53,7 +53,7 @@ public class TuitionServiceImpl implements TuitionService {
     @Transactional
     public TuitionRateResponse updateRate(Long id, TuitionRateRequest request) {
         TuitionRate r = rateRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TUITION_RATE_NOT_FOUND));
         r.setPricePerCredit(request.getPricePerCredit());
         if (request.getIsActive() != null) r.setIsActive(request.getIsActive());
         return TuitionRateResponse.from(rateRepository.save(r));
@@ -77,7 +77,7 @@ public class TuitionServiceImpl implements TuitionService {
     @Transactional(readOnly = true)
     public TuitionRateResponse getRate(Long id) {
         return TuitionRateResponse.from(rateRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND)));
+                .orElseThrow(() -> new AppException(ErrorCode.TUITION_RATE_NOT_FOUND)));
     }
 
     // ============== Invoices ==============
@@ -104,7 +104,7 @@ public class TuitionServiceImpl implements TuitionService {
         }
 
         TuitionRate rate = rateRepository.findByAcademicYear(academicYear)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TUITION_RATE_NOT_FOUND));
 
         // Tính tổng tín chỉ của sinh viên trong kỳ này (theo enrollments chưa xóa).
         // Vì model không có semester trên enrollment, lấy tất cả enrollments hiện tại
@@ -135,7 +135,7 @@ public class TuitionServiceImpl implements TuitionService {
     @Transactional
     public TuitionInvoiceResponse markPaid(Long invoiceId) {
         TuitionInvoice inv = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         if ("PAID".equals(inv.getStatus())) {
             return TuitionInvoiceResponse.from(inv); // idempotent
         }

@@ -6,6 +6,7 @@ import com.ex.learninghub.modules.assessment.dto.request.GradeSubmissionRequest;
 import com.ex.learninghub.modules.assessment.dto.request.SubmissionRequest;
 import com.ex.learninghub.modules.assessment.dto.response.AssignmentResponse;
 import com.ex.learninghub.modules.assessment.dto.response.SubmissionResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -20,6 +21,10 @@ public interface AssessmentService {
     List<AssignmentResponse> getAssignmentsByClass(Long classId);
 
     SubmissionResponse submitAssignment(Long assignmentId, SubmissionRequest request, UserPrincipal userPrincipal);
+
+    String uploadSubmissionFile(Long assignmentId, MultipartFile file, UserPrincipal userPrincipal);
+
+    List<String> uploadSubmissionFiles(Long assignmentId, List<MultipartFile> files, UserPrincipal userPrincipal);
 
     SubmissionResponse gradeSubmission(Long submissionId, GradeSubmissionRequest request, UserPrincipal userPrincipal);
 

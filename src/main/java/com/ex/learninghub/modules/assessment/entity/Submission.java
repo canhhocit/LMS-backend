@@ -1,9 +1,12 @@
 package com.ex.learninghub.modules.assessment.entity;
 
+import com.ex.learninghub.common.enums.SubmissionType;
 import com.ex.learninghub.common.model.BaseEntity;
 import com.ex.learninghub.modules.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -35,6 +38,17 @@ public class Submission extends BaseEntity {
 
     @Column(name = "file_url", length = 500)
     private String fileUrl;
+
+    @Column(name = "file_urls", columnDefinition = "TEXT")
+    private String fileUrls;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "submission_type", nullable = false, length = 30)
+    @Builder.Default
+    private SubmissionType submissionType = SubmissionType.FILE;
+
+    @Column(name = "external_link", length = 500)
+    private String externalLink;
 
     @Column(name = "submitted_at")
     @Builder.Default

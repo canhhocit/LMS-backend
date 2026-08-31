@@ -18,4 +18,6 @@ public class UpdateProfileRequest {
     private String faculty;
 
     private String major;
+
+    private String avatarUrl;
 }

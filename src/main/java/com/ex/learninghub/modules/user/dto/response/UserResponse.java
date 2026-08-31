@@ -24,6 +24,7 @@ public class UserResponse {
     private String lecturerCode;
     private String faculty;
     private String major;
+    private String avatarUrl;
     private Long curriculumId;
     private java.util.List<String> permissions;
 
@@ -43,6 +44,7 @@ public class UserResponse {
                 .lecturerCode(user.getLecturerCode())
                 .faculty(user.getFaculty())
                 .major(user.getMajor())
+                .avatarUrl(user.getAvatarUrl())
                 .curriculumId(user.getCurriculum() != null ? user.getCurriculum().getId() : null)
                 .permissions(perms)
                 .build();

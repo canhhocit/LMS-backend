@@ -64,7 +64,8 @@ class DepartmentServiceImplTest {
 
         assertThatThrownBy(() -> departmentService.create(
                 DepartmentRequest.builder().code("CNTT").name("Khoa CNTT").build()))
-                .isInstanceOf(AppException.class);
+                .isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DEPARTMENT_ALREADY_EXISTS);
     }
 
     @Test

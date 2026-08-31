@@ -59,7 +59,7 @@ public class CurriculumServiceImpl implements CurriculumService {
     @Transactional
     public CurriculumResponse updateCurriculum(Long id, CurriculumRequest request) {
         Curriculum c = curriculumRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND)); // generic not-found
+                .orElseThrow(() -> new AppException(ErrorCode.CURRICULUM_NOT_FOUND));
         c.setName(request.getName());
         c.setFaculty(request.getFaculty());
         c.setAcademicYear(request.getAcademicYear());
@@ -86,7 +86,7 @@ public class CurriculumServiceImpl implements CurriculumService {
     public CurriculumResponse getCurriculum(Long id) {
         return curriculumRepository.findById(id)
                 .map(CurriculumResponse::from)
-                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.CURRICULUM_NOT_FOUND));
     }
 
     // =================== CurriculumCourse ===================
@@ -95,7 +95,7 @@ public class CurriculumServiceImpl implements CurriculumService {
     @Transactional
     public CurriculumCourseResponse addCourseToCurriculum(Long curriculumId, CurriculumCourseRequest request) {
         if (!curriculumRepository.existsById(curriculumId)) {
-            throw new AppException(ErrorCode.CLAZZ_NOT_FOUND);
+            throw new AppException(ErrorCode.CURRICULUM_NOT_FOUND);
         }
         courseRepository.findById(request.getCourseId())
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
@@ -142,6 +142,10 @@ public class CurriculumServiceImpl implements CurriculumService {
 
         if (prerequisiteRepository.existsByCourseIdAndPrerequisiteCourseId(
                 courseId, request.getPrerequisiteCourseId())) {
+            throw new AppException(ErrorCode.PREREQUISITE_NOT_MET);
+        }
+
+        if (wouldCreateCycle(courseId, request.getPrerequisiteCourseId())) {
             throw new AppException(ErrorCode.PREREQUISITE_NOT_MET);
         }
 
@@ -200,5 +204,30 @@ public class CurriculumServiceImpl implements CurriculumService {
                 .map(CoursePrerequisite::getPrerequisiteCourseId)
                 .filter(id -> !passed.contains(id))
                 .collect(Collectors.toList());
+    }
+
+    private boolean wouldCreateCycle(Long courseId, Long prerequisiteCourseId) {
+        java.util.Set<Long> visited = new java.util.HashSet<>();
+        return hasPath(prerequisiteCourseId, courseId, visited);
+    }
+
+    private boolean hasPath(Long currentCourseId, Long targetCourseId, java.util.Set<Long> visited) {
+        if (currentCourseId == null) {
+            return false;
+        }
+        if (currentCourseId.equals(targetCourseId)) {
+            return true;
+        }
+        if (!visited.add(currentCourseId)) {
+            return false;
+        }
+
+        List<CoursePrerequisite> incoming = prerequisiteRepository.findByCourseId(currentCourseId);
+        for (CoursePrerequisite prerequisite : incoming) {
+            if (hasPath(prerequisite.getPrerequisiteCourseId(), targetCourseId, visited)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
