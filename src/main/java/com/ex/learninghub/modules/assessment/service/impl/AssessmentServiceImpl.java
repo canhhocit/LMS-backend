@@ -114,6 +114,12 @@ public class AssessmentServiceImpl implements AssessmentService {
         assignment.setMaxScore(request.getMaxScore());
         var saved = assignmentRepository.save(assignment);
 
+        // Notify all enrolled students about the assignment update
+        notificationService.notifyClazz(assignment.getClazz().getId(), NotificationType.ASSIGNMENT_UPDATED,
+                "Bài tập được cập nhật: " + request.getTitle(),
+                "Hạn nộp: " + request.getDueDate(),
+                saved.getId());
+
         return AssignmentResponse.from(saved);
     }
 

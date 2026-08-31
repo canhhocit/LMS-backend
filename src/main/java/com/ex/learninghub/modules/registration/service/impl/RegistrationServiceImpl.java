@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.registration.service.impl;
 
+import com.ex.learninghub.common.enums.NotificationType;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
@@ -15,6 +16,7 @@ import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.registration.dto.request.RegistrationPeriodRequest;
 import com.ex.learninghub.modules.registration.dto.response.RegistrationPeriodResponse;
 import com.ex.learninghub.modules.registration.dto.response.RegistrationResponse;
@@ -43,6 +45,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final CoursePrerequisiteRepository prerequisiteRepository;
     private final com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
     private final com.ex.learninghub.modules.grading.service.AcademicStatusService academicStatusService;
+    private final NotificationService notificationService;
 
     /** Trần tín chỉ áp dụng cho sinh viên bị probation (warningLevel >= 2). */
     @org.springframework.beans.factory.annotation.Value("${app.registration.max-credits-probation:14}")
@@ -178,6 +181,26 @@ public class RegistrationServiceImpl implements RegistrationService {
                             .build())
                     .toList();
             lessonProgressRepository.saveAll(progressRecords);
+        }
+        
+        // Notify student about enrollment confirmation
+        notificationService.notifyUser(
+            student.getId(),
+            NotificationType.COURSE_REGISTERED,
+            "Đã đăng ký lớp: " + clazz.getClassName(),
+            "Bạn đã đăng ký thành công lớp " + clazz.getClassName(),
+            clazz.getId()
+        );
+        
+        // Notify lecturer about new student enrollment
+        if (clazz.getLecturer() != null) {
+            notificationService.notifyUser(
+                clazz.getLecturer().getId(),
+                NotificationType.COURSE_REGISTERED,
+                "Sinh viên mới: " + student.getFullName(),
+                student.getFullName() + " vừa đăng ký lớp " + clazz.getClassName(),
+                clazz.getId()
+            );
         }
 
         return RegistrationResponse.from(savedEnrollment);

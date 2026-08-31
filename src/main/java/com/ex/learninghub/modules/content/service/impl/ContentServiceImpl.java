@@ -132,7 +132,18 @@ public class ContentServiceImpl implements ContentService {
                 .content(request.getContent())
                 .videoUrl(request.getVideoUrl())
                 .build();
-        return LessonResponse.from(lessonRepository.save(lesson));
+        Lesson saved = lessonRepository.save(lesson);
+        
+        // Notify students about new lesson
+        notificationService.notifyClazz(
+            clazz.getId(),
+            com.ex.learninghub.common.enums.NotificationType.NEW_LESSON,
+            "Bài học mới: " + saved.getTitle(),
+            "Giảng viên đã đăng bài học mới trong chương " + chapter.getTitle(),
+            saved.getId()
+        );
+        
+        return LessonResponse.from(saved);
     }
 
     @Override
@@ -188,6 +199,15 @@ public class ContentServiceImpl implements ContentService {
                 .content(request.getContent())
                 .build();
         var savedAnnouncement = announcementRepository.save(announcement);
+        
+        // Notify all enrolled students about the new announcement
+        notificationService.notifyClazz(
+            announcement.getClazz().getId(),
+            com.ex.learninghub.common.enums.NotificationType.NEW_ANNOUNCEMENT,
+            "Thông báo mới: " + request.getTitle(),
+            request.getContent(),
+            savedAnnouncement.getId()
+        );
 
         return AnnouncementResponse.from(savedAnnouncement);
     }

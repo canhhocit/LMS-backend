@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.enrollment.service.impl;
 
+import com.ex.learninghub.common.enums.NotificationType;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
@@ -13,6 +14,7 @@ import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
 import com.ex.learninghub.modules.enrollment.service.ProgressService;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class ProgressServiceImpl implements ProgressService {
     private final LessonProgressRepository lessonProgressRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonRepository lessonRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -56,6 +59,26 @@ public class ProgressServiceImpl implements ProgressService {
         progress.setIsCompleted(true);
         progress.setCompletedAt(LocalDateTime.now());
         lessonProgressRepository.save(progress);
+        
+        // Notify student about lesson completion
+        notificationService.notifyUser(
+            enrollment.getStudent().getId(),
+            NotificationType.LESSON_COMPLETED,
+            "Bài học đã hoàn thành: " + lesson.getTitle(),
+            "Bạn đã hoàn thành bài học " + lesson.getTitle(),
+            lesson.getId()
+        );
+        
+        // Notify lecturer about student's progress
+        if (enrollment.getClazz().getLecturer() != null) {
+            notificationService.notifyUser(
+                enrollment.getClazz().getLecturer().getId(),
+                NotificationType.LESSON_COMPLETED,
+                "Sinh viên hoàn thành bài học",
+                enrollment.getStudent().getFullName() + " đã hoàn thành: " + lesson.getTitle(),
+                lesson.getId()
+            );
+        }
     }
 
     @Override

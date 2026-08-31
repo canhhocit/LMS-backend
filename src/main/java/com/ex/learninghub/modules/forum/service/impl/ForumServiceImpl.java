@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.forum.service.impl;
 
+import com.ex.learninghub.common.enums.NotificationType;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
@@ -15,6 +16,7 @@ import com.ex.learninghub.modules.forum.entity.ForumPost;
 import com.ex.learninghub.modules.forum.repository.ForumCommentRepository;
 import com.ex.learninghub.modules.forum.repository.ForumPostRepository;
 import com.ex.learninghub.modules.forum.service.ForumService;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ public class ForumServiceImpl implements ForumService {
     private final ForumCommentRepository forumCommentRepository;
     private final ClazzRepository clazzRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -49,7 +52,18 @@ public class ForumServiceImpl implements ForumService {
                 .title(request.getTitle())
                 .content(request.getContent())
                 .build();
-        return ForumResponse.Post.from(forumPostRepository.save(post));
+        ForumPost saved = forumPostRepository.save(post);
+        
+        // Notify all class members about new forum post
+        notificationService.notifyClazz(
+            clazz.getId(),
+            NotificationType.NEW_FORUM_POST,
+            "Bài viết tôn ngỏn mới: " + request.getTitle(),
+            principal.getUser().getFullName() + " đã đăng: " + request.getTitle(),
+            saved.getId()
+        );
+        
+        return ForumResponse.Post.from(saved);
     }
 
     @Override
@@ -94,7 +108,18 @@ public class ForumServiceImpl implements ForumService {
                 .author(principal.getUser())
                 .content(request.getContent())
                 .build();
-        return ForumResponse.Comment.from(forumCommentRepository.save(comment));
+        ForumComment saved = forumCommentRepository.save(comment);
+        
+        // Notify post author and class about new comment
+        notificationService.notifyClazz(
+            post.getClazz().getId(),
+            NotificationType.NEW_FORUM_COMMENT,
+            "Có bình luận mới: " + post.getTitle(),
+            principal.getUser().getFullName() + " đã bình luận: " + request.getContent().substring(0, Math.min(100, request.getContent().length())),
+            saved.getId()
+        );
+        
+        return ForumResponse.Comment.from(saved);
     }
 
     @Override

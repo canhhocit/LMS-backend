@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.quiz.service.impl;
 
+import com.ex.learninghub.common.enums.NotificationType;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
@@ -13,6 +14,7 @@ import com.ex.learninghub.modules.assessment.repository.QuizRepository;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.quiz.dto.request.QuestionRequest;
 import com.ex.learninghub.modules.quiz.dto.request.QuizAttemptRequest;
 import com.ex.learninghub.modules.quiz.dto.request.QuizRequest;
@@ -41,6 +43,7 @@ public class QuizServiceImpl implements QuizService {
     private final ClazzRepository clazzRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final NotificationService notificationService;
 
     // ==================== Quiz CRUD ====================
 
@@ -58,6 +61,15 @@ public class QuizServiceImpl implements QuizService {
         quiz.setTotalScore(request.getTotalScore());
 
         Quiz saved = quizRepository.save(quiz);
+        
+        notificationService.notifyClazz(
+            clazz.getId(),
+            NotificationType.NEW_QUIZ,
+            "Bài kiểm tra mới",
+            "Giảng viên đã tạo bài kiểm tra: " + quiz.getTitle(),
+            saved.getId()
+        );
+        
         return QuizResponse.from(saved);
     }
 
@@ -84,6 +96,15 @@ public class QuizServiceImpl implements QuizService {
         existing.setTotalScore(request.getTotalScore());
 
         Quiz saved = quizRepository.save(existing);
+        
+        notificationService.notifyClazz(
+            existing.getClazz().getId(),
+            NotificationType.QUIZ_UPDATED,
+            "Bài kiểm tra được cập nhật",
+            "Giảng viên đã cập nhật bài kiểm tra: " + saved.getTitle(),
+            saved.getId()
+        );
+        
         return QuizResponse.from(saved);
     }
 
