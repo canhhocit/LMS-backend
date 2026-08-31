@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.content.controller;
 
+import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.content.entity.InVideoQuiz;
 import com.ex.learninghub.modules.content.entity.StudentVideoNote;
 import com.ex.learninghub.modules.content.entity.VideoProgress;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -22,24 +24,30 @@ public class VideoLearningController {
 
     /**
      * Update or insert video progress for a student.
-     * Request body contains enrollmentId, lessonId, lastWatchedSeconds, maxWatchedSeconds.
+     * Uses authenticated user ID instead of accepting it from request.
      */
     @PostMapping("/progress")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<VideoProgress> upsertProgress(@RequestBody VideoProgressDto dto) {
+    public ResponseEntity<VideoProgress> upsertProgress(
+            @RequestBody VideoProgressDto dto,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         VideoProgress vp = videoLearningService.upsertProgress(
                 dto.getEnrollmentId(),
                 dto.getLessonId(),
                 dto.getLastWatchedSeconds(),
-                dto.getMaxWatchedSeconds()
+                dto.getMaxWatchedSeconds(),
+                userPrincipal
         );
         return ResponseEntity.ok(vp);
     }
 
     @GetMapping("/progress/lesson/{lessonId}/enrollment/{enrollmentId}")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<VideoProgress> getProgress(@PathVariable Long lessonId, @PathVariable Long enrollmentId) {
-        return videoLearningService.getProgress(enrollmentId, lessonId)
+    public ResponseEntity<VideoProgress> getProgress(
+            @PathVariable Long lessonId,
+            @PathVariable Long enrollmentId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return videoLearningService.getProgress(enrollmentId, lessonId, userPrincipal)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -53,23 +61,29 @@ public class VideoLearningController {
 
     @PostMapping("/quizzes")
     @PreAuthorize("hasAnyRole('LECTURER','ADMIN')")
-    public ResponseEntity<InVideoQuiz> createQuiz(@RequestBody InVideoQuiz quiz) {
-        InVideoQuiz saved = videoLearningService.createQuiz(quiz);
+    public ResponseEntity<InVideoQuiz> createQuiz(
+            @RequestBody InVideoQuiz quiz,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        InVideoQuiz saved = videoLearningService.createQuiz(quiz, userPrincipal);
         return ResponseEntity.ok(saved);
     }
 
-    @GetMapping("/notes/lesson/{lessonId}/user/{userId}")
+    @GetMapping("/notes/lesson/{lessonId}")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<List<StudentVideoNote>> getNotes(@PathVariable Long lessonId, @PathVariable Long userId) {
-        List<StudentVideoNote> notes = videoLearningService.getNotes(userId, lessonId);
+    public ResponseEntity<List<StudentVideoNote>> getNotes(
+            @PathVariable Long lessonId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        List<StudentVideoNote> notes = videoLearningService.getNotes(userPrincipal.getUser().getId(), lessonId);
         return ResponseEntity.ok(notes);
     }
 
     @PostMapping("/notes")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<StudentVideoNote> addNote(@RequestBody StudentVideoNoteDto dto) {
+    public ResponseEntity<StudentVideoNote> addNote(
+            @RequestBody StudentVideoNoteDto dto,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         StudentVideoNote note = videoLearningService.addNote(
-                dto.getUserId(),
+                userPrincipal.getUser().getId(),
                 dto.getLessonId(),
                 dto.getNoteText(),
                 dto.getTimestampSeconds()
@@ -88,7 +102,6 @@ public class VideoLearningController {
 
     @Data
     public static class StudentVideoNoteDto {
-        private Long userId;
         private Long lessonId;
         private String noteText;
         private BigDecimal timestampSeconds;

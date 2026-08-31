@@ -1,7 +1,12 @@
 package com.ex.learninghub.modules.content.service;
 
+import com.ex.learninghub.common.enums.Role;
+import com.ex.learninghub.common.exception.AppException;
+import com.ex.learninghub.common.exception.ErrorCode;
+import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.content.entity.VideoProgress;
 import com.ex.learninghub.modules.content.repository.VideoProgressRepository;
+import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.content.entity.InVideoQuiz;
@@ -32,11 +37,18 @@ public class VideoLearningService {
     private final UserRepository userRepo;
 
     @Transactional
-    public VideoProgress upsertProgress(Long enrollmentId, Long lessonId, BigDecimal lastWatched, BigDecimal maxWatched) {
+    public VideoProgress upsertProgress(Long enrollmentId, Long lessonId, BigDecimal lastWatched, BigDecimal maxWatched, UserPrincipal userPrincipal) {
+        // Verify the enrollment belongs to the authenticated student
+        Enrollment enrollment = enrollmentRepo.findById(enrollmentId)
+                .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
+        
+        if (!enrollment.getStudent().getId().equals(userPrincipal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
         Optional<VideoProgress> opt = videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId);
         VideoProgress vp = opt.orElseGet(() -> {
             VideoProgress newVp = new VideoProgress();
-            Enrollment enrollment = enrollmentRepo.getReferenceById(enrollmentId);
             Lesson lesson = lessonRepo.getReferenceById(lessonId);
             newVp.setEnrollment(enrollment);
             newVp.setLesson(lesson);
@@ -49,9 +61,9 @@ public class VideoLearningService {
         if (maxWatched.compareTo(vp.getMaxWatchedSeconds()) > 0) {
             vp.setMaxWatchedSeconds(maxWatched);
         }
-        // determine completion (80% of lesson duration)
+        // determine completion (80% of lesson duration in seconds)
         Lesson lesson = vp.getLesson();
-        if (lesson.getDuration() != null) {
+        if (lesson.getDuration() != null && lesson.getDuration() > 0) {
             BigDecimal threshold = new BigDecimal(lesson.getDuration()).multiply(new BigDecimal("0.8"));
             if (vp.getMaxWatchedSeconds().compareTo(threshold) >= 0) {
                 vp.setIsCompleted(true);
@@ -65,8 +77,23 @@ public class VideoLearningService {
         return quizRepo.findByLessonIdOrderByTriggerAtSecondsAsc(lessonId);
     }
 
-    public InVideoQuiz createQuiz(InVideoQuiz quiz) {
+    public InVideoQuiz createQuiz(InVideoQuiz quiz, UserPrincipal userPrincipal) {
+        // Verify the lecturer owns the class containing the lesson
+        Lesson lesson = quiz.getLesson();
+        if (lesson != null && lesson.getChapter() != null) {
+            Clazz clazz = lesson.getChapter().getClazz();
+            verifyLecturerOwnsClazz(clazz, userPrincipal);
+        }
         return quizRepo.save(quiz);
+    }
+
+    private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
+        if (userPrincipal.getUser().getRole() == Role.ADMIN) {
+            return; // Admin can access all classes
+        }
+        if (clazz.getLecturer() == null || !clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
     }
 
     public List<StudentVideoNote> getNotes(Long userId, Long lessonId) {
@@ -85,7 +112,15 @@ public class VideoLearningService {
         return noteRepo.save(note);
     }
 
-    public Optional<VideoProgress> getProgress(Long enrollmentId, Long lessonId) {
+    public Optional<VideoProgress> getProgress(Long enrollmentId, Long lessonId, UserPrincipal userPrincipal) {
+        // Verify the enrollment belongs to the authenticated student
+        Enrollment enrollment = enrollmentRepo.findById(enrollmentId)
+                .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
+        
+        if (!enrollment.getStudent().getId().equals(userPrincipal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
         return videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId);
     }
 }
