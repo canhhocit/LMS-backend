@@ -52,16 +52,23 @@ public class AssessmentServiceImpl implements AssessmentService {
     private static final Set<String> ALLOWED_SUBMISSION_TYPES = Set.of(
             "application/pdf",
             "application/msword",
+            "application/vnd.ms-word",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/vnd.ms-excel",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
             "text/plain",
             "application/zip",
             "application/x-zip-compressed",
+            "application/x-rar-compressed",
+            "application/vnd.rar",
+            "application/octet-stream",
             "image/jpeg",
             "image/png",
             "image/webp",
-            "image/jpg"
+            "image/jpg",
+            "image/pjpeg"
     );
 
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
@@ -180,6 +187,25 @@ public class AssessmentServiceImpl implements AssessmentService {
         return uploadSubmissionFiles(assignmentId, List.of(file), userPrincipal).get(0);
     }
 
+    private boolean isAllowedSubmissionType(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType != null && ALLOWED_SUBMISSION_TYPES.contains(contentType)) {
+            return true;
+        }
+
+        String filename = file.getOriginalFilename();
+        if (filename == null || filename.isBlank()) {
+            return false;
+        }
+
+        String lower = filename.toLowerCase();
+        return lower.endsWith(".pdf") || lower.endsWith(".doc") || lower.endsWith(".docx")
+                || lower.endsWith(".xls") || lower.endsWith(".xlsx") || lower.endsWith(".ppt")
+                || lower.endsWith(".pptx") || lower.endsWith(".txt") || lower.endsWith(".zip")
+                || lower.endsWith(".rar") || lower.endsWith(".png") || lower.endsWith(".jpg")
+                || lower.endsWith(".jpeg") || lower.endsWith(".webp");
+    }
+
     @Override
     @Transactional
     public List<String> uploadSubmissionFiles(Long assignmentId, List<MultipartFile> files, UserPrincipal userPrincipal) {
@@ -194,12 +220,12 @@ public class AssessmentServiceImpl implements AssessmentService {
                 throw new AppException(ErrorCode.SUBMISSION_FILE_TOO_LARGE);
             }
             String contentType = file.getContentType();
-            if (contentType == null || !ALLOWED_SUBMISSION_TYPES.contains(contentType)) {
+            if (!isAllowedSubmissionType(file)) {
                 throw new AppException(ErrorCode.SUBMISSION_INVALID_FORMAT);
             }
             try {
-                String resourceType = contentType.startsWith("image/") ? "image" : "raw";
-                Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resourceType));
+                String resolvedType = contentType != null && contentType.startsWith("image/") ? "image" : "raw";
+                Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resolvedType));
                 return (String) result.get("secure_url");
             } catch (IOException ex) {
                 throw new AppException(ErrorCode.SUBMISSION_UPLOAD_FAILED);
