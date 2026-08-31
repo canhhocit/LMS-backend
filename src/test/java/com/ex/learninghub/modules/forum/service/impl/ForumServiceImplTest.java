@@ -8,6 +8,7 @@ import com.ex.learninghub.modules.course.entity.Course;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.forum.dto.request.ForumPostRequest;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.forum.dto.response.ForumResponse;
 import com.ex.learninghub.modules.forum.entity.ForumPost;
 import com.ex.learninghub.modules.forum.repository.ForumCommentRepository;
@@ -45,6 +46,9 @@ class ForumServiceImplTest {
 
     @Mock
     private EnrollmentRepository enrollmentRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ForumServiceImpl forumService;

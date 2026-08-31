@@ -12,6 +12,7 @@ import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,9 @@ class ProgressServiceImplTest {
 
     @Mock
     private LessonRepository lessonRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ProgressServiceImpl progressService;

@@ -12,6 +12,7 @@ import com.ex.learninghub.modules.course.repository.ClassScheduleRepository;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.registration.entity.RegistrationPeriod;
 import com.ex.learninghub.modules.registration.repository.RegistrationPeriodRepository;
 import com.ex.learninghub.modules.user.entity.User;
@@ -59,6 +60,8 @@ class RegistrationServiceImplTest {
     private com.ex.learninghub.modules.curriculum.repository.CoursePrerequisiteRepository prerequisiteRepository;
     @Mock
     private com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private RegistrationServiceImpl registrationService;
