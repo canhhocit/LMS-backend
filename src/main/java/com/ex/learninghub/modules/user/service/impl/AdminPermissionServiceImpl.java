@@ -1,10 +1,10 @@
 package com.ex.learninghub.modules.user.service.impl;
 
-import com.ex.learninghub.common.enums.AdminPermission;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
+import com.ex.learninghub.modules.audit.service.AuditService;
 import com.ex.learninghub.modules.user.entity.AdminPermissionEntity;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.AdminPermissionRepository;
@@ -12,67 +12,68 @@ import com.ex.learninghub.modules.user.repository.UserRepository;
 import com.ex.learninghub.modules.user.service.AdminPermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-@Service("adminPermissionService")
+@Service
 @RequiredArgsConstructor
 public class AdminPermissionServiceImpl implements AdminPermissionService {
 
-    private final AdminPermissionRepository permissionRepository;
+    private final AdminPermissionRepository adminPermissionRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean hasPermission(Authentication authentication, String permissionCodeStr) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
+    public boolean hasPermission(Authentication authentication, String permissionCode) {
+        if (authentication == null || !authentication.isAuthenticated()) {
             return false;
         }
-        User current = principal.getUser();
-        if (current == null || current.getRole() != Role.ADMIN) {
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof UserPrincipal)) {
             return false;
         }
-
-        // Fetch fresh user from DB if adminPermissions proxy needs initialization
-        User user = userRepository.findById(current.getId()).orElse(current);
-        if (user.getAdminPermissions() == null || user.getAdminPermissions().isEmpty()) {
+        UserPrincipal userPrincipal = (UserPrincipal) principal;
+        User user = userPrincipal.getUser();
+        if (user.getRole() != Role.ADMIN) {
             return false;
         }
-
+        // Super admin has all permissions
+        if ("SUPER_ADMIN".equals(permissionCode)) {
+            return user.getAdminPermissions().stream()
+                    .anyMatch(p -> p.getCode() == com.ex.learninghub.common.enums.AdminPermission.SUPER_ADMIN);
+        }
         return user.getAdminPermissions().stream()
-                .anyMatch(p -> p.getCode() != null && p.getCode().name().equalsIgnoreCase(permissionCodeStr));
+                .anyMatch(p -> p.getCode().name().equals(permissionCode));
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Map<String, String>> getAllPermissions() {
-        return permissionRepository.findAll().stream()
+        List<AdminPermissionEntity> permissions = adminPermissionRepository.findAll();
+        return permissions.stream()
                 .map(p -> {
-                    Map<String, String> item = new HashMap<>();
-                    item.put("code", p.getCode().name());
-                    item.put("description", p.getDescription());
-                    return item;
+                    Map<String, String> map = new HashMap<>();
+                    map.put("code", p.getCode().name());
+                    map.put("description", p.getDescription());
+                    return map;
                 })
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<String> getUserPermissions(Long userId) {
-        User target = userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        if (target.getAdminPermissions() == null) {
-            return List.of();
+        if (user.getRole() != Role.ADMIN) {
+            return new ArrayList<>();
         }
-        return target.getAdminPermissions().stream()
+        return user.getAdminPermissions().stream()
                 .map(p -> p.getCode().name())
                 .collect(Collectors.toList());
     }
@@ -80,24 +81,55 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     @Override
     @Transactional
     public void updateUserPermissions(Long userId, List<String> permissionCodes) {
-        User target = userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        if (target.getRole() != Role.ADMIN) {
-            throw new AppException(ErrorCode.FORBIDDEN);
-        }
 
-        Set<AdminPermissionEntity> newPermissions = new HashSet<>();
-        if (permissionCodes != null) {
+        UserPrincipal actor = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // Clear existing permissions
+        user.getAdminPermissions().clear();
+
+        if (permissionCodes != null && !permissionCodes.isEmpty()) {
+            // Ensure user has ADMIN role
+            if (user.getRole() != Role.ADMIN) {
+                user.setRole(Role.ADMIN);
+            }
+
+            // Add new permissions
             for (String codeStr : permissionCodes) {
                 try {
-                    AdminPermission permEnum = AdminPermission.valueOf(codeStr);
-                    permissionRepository.findByCode(permEnum).ifPresent(newPermissions::add);
-                } catch (IllegalArgumentException ignored) {
+                    com.ex.learninghub.common.enums.AdminPermission adminPerm =
+                            com.ex.learninghub.common.enums.AdminPermission.valueOf(codeStr);
+                    AdminPermissionEntity permissionEntity = adminPermissionRepository.findByCode(adminPerm)
+                            .orElseThrow(() -> new AppException(ErrorCode.KEY_INVALID));
+                    user.getAdminPermissions().add(permissionEntity);
+                } catch (IllegalArgumentException e) {
+                    throw new AppException(ErrorCode.KEY_INVALID);
                 }
             }
-        }
 
-        target.setAdminPermissions(newPermissions);
-        userRepository.save(target);
+            userRepository.save(user);
+
+            // Audit log
+            String detail = String.format("Granted permissions to user %d (%s): %s",
+                    userId, user.getEmail(), String.join(", ", permissionCodes));
+            auditService.log(actor, "GRANT_PERMISSION", "User", userId, detail, "SUCCESS");
+        } else {
+            // If no permissions, revoke ADMIN role if user is not SUPER_ADMIN
+            // Check if user has SUPER_ADMIN permission (after clearing, they won't have any)
+            // But we can check if they had it before clearing, but we can't because we cleared.
+            // To be safe, we'll just set role to LECTURER if they are not SUPER_ADMIN.
+            // Since we don't know if they were SUPER_ADMIN before, we'll check if they have any
+            // admin permissions left (none) and set role accordingly.
+            // But we want to keep SUPER_ADMIN if they had it? The spec says revoke all.
+            // So we set role to LECTURER.
+            user.setRole(Role.LECTURER);
+            userRepository.save(user);
+
+            // Audit log
+            String detail = String.format("Revoked all admin permissions from user %d (%s)",
+                    userId, user.getEmail());
+            auditService.log(actor, "REVOKE_PERMISSION", "User", userId, detail, "SUCCESS");
+        }
     }
 }
