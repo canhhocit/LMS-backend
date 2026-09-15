@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/me")
+@RequestMapping("/me/classes")
 @RequiredArgsConstructor
 @Tag(name = "Lớp học phần của tôi", description = "API lấy danh sách lớp học phần theo vai trò của người dùng hiện tại")
 public class MyClassController {
@@ -32,7 +32,7 @@ public class MyClassController {
     private final ClazzEnrollmentService enrollmentService;
     private final ClazzService clazzService;
 
-    @GetMapping("/classes")
+    @GetMapping("")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Lấy danh sách lớp học phần của tôi",
@@ -57,7 +57,7 @@ public class MyClassController {
         return ApiResponse.success(classes);
     }
 
-    @GetMapping("/classes/available")
+    @GetMapping("/available")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(summary = "Lấy danh sách lớp còn mở đăng ký", description = "Sinh viên xem các lớp đang mở cho phép đăng ký, loại bỏ các lớp đã tham gia.")
     public ApiResponse<List<ClazzResponse>> getAvailableClassesForRegistration(
@@ -74,7 +74,7 @@ public class MyClassController {
         return ApiResponse.success(available);
     }
 
-    @GetMapping("/classes/{id}")
+    @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Lấy chi tiết lớp học phần", description = "Sinh viên đã ghi danh, giảng viên phụ trách hoặc admin có thể xem chi tiết lớp học phần.")
     public ApiResponse<ClazzResponse> getClazzDetail(
@@ -97,7 +97,7 @@ public class MyClassController {
         return ApiResponse.success(clazzService.getClazzById(id));
     }
 
-    @GetMapping("/classes/{id}/students")
+    @GetMapping("/{id}/students")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Lấy danh sách sinh viên trong lớp học phần", description = "Chỉ người có quyền truy cập lớp mới được xem danh sách sinh viên.")
     public ApiResponse<List<UserResponse>> getStudentsInClazz(

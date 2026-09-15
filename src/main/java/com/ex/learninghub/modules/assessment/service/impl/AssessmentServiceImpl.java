@@ -91,14 +91,12 @@ public class AssessmentServiceImpl implements AssessmentService {
                 .dueDate(request.getDueDate())
                 .maxScore(request.getMaxScore())
                 .build();
-        var saved = assignmentRepository.save(assignment);
-
+        Assignment saved = assignmentRepository.save(assignment);
         // Notify all enrolled students about the new assignment (WebSocket + DB)
         notificationService.notifyClazz(classId, NotificationType.NEW_ASSIGNMENT,
                 "New assignment: " + request.getTitle(),
                 "An assignment has been posted. Due: " + request.getDueDate(),
                 saved.getId());
-
         return AssignmentResponse.from(saved);
     }
 
@@ -112,14 +110,12 @@ public class AssessmentServiceImpl implements AssessmentService {
         assignment.setDescription(request.getDescription());
         assignment.setDueDate(request.getDueDate());
         assignment.setMaxScore(request.getMaxScore());
-        var saved = assignmentRepository.save(assignment);
-
+        Assignment saved = assignmentRepository.save(assignment);
         // Notify all enrolled students about the assignment update
         notificationService.notifyClazz(assignment.getClazz().getId(), NotificationType.ASSIGNMENT_UPDATED,
                 "Bài tập được cập nhật: " + request.getTitle(),
                 "Hạn nộp: " + request.getDueDate(),
                 saved.getId());
-
         return AssignmentResponse.from(saved);
     }
 

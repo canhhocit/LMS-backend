@@ -36,7 +36,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_USERS')")
+@PreAuthorize("hasPermission(null, 'MANAGE_USERS')")
 @Tag(name = "Quản trị người dùng", description = "CRUD tài khoản sinh viên / giảng viên, import/export Excel, reset mật khẩu")
 public class AdminUserController {
 
@@ -78,7 +78,7 @@ public class AdminUserController {
 
     @GetMapping("/admins")
     @Operation(summary = "Danh sách admin", description = "Trả về danh sách tất cả các tài khoản quản trị viên.")
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'SYSTEM_CONFIG')")
+    @PreAuthorize("hasPermission(null, 'SYSTEM_CONFIG')")
     public ApiResponse<List<UserResponse>> getAdmins() {
         return ApiResponse.success(userService.getAdmins());
     }

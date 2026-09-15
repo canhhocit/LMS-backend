@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/admin/reports")
 @RequiredArgsConstructor
 @Tag(name = "Quản trị - Báo cáo & Thống kê", description = "Các API phục vụ báo cáo, thống kê và xuất dữ liệu (Excel/PDF) cho Admin")
 public class AdminReportController {
@@ -72,7 +72,7 @@ public class AdminReportController {
         return ApiResponse.success(adminService.getAverageScoreByClazz());
     }
 
-    @GetMapping("/reports/enrollments-by-month/export")
+    @GetMapping("/enrollments-by-month/export")
     @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'VIEW_REPORTS')")
     @Operation(
             summary = "Xuất thống kê đăng ký theo tháng ra Excel",
@@ -106,7 +106,7 @@ public class AdminReportController {
         }
     }
 
-    @GetMapping("/reports/average-score-by-clazz/export")
+    @GetMapping("/average-score-by-clazz/export")
     @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'VIEW_REPORTS')")
     @Operation(
             summary = "Xuất điểm trung bình theo lớp ra PDF",
@@ -156,7 +156,7 @@ public class AdminReportController {
         }
     }
 
-    @GetMapping("/reports/clazz/{clazzId}/export")
+    @GetMapping("/clazz/{clazzId}/export")
     @Operation(
             summary = "Xuất bảng điểm lớp học phần ra Excel",
             description = "Xuất danh sách điểm (giữa kỳ, cuối kỳ, tổng kết) của tất cả sinh viên trong một lớp học phần ra file Excel (.xlsx)."
@@ -183,7 +183,7 @@ public class AdminReportController {
         gradeExcelExporter.export(rows, clazz.getClassName(), response);
     }
 
-    @GetMapping("/reports/transcript/{studentId}/export")
+    @GetMapping("/transcript/{studentId}/export")
     @Operation(
             summary = "Xuất bảng điểm (transcript) của sinh viên ra PDF",
             description = "Xuất bảng điểm toàn khóa của một sinh viên ra file PDF, bao gồm GPA và danh sách điểm các môn đã học."

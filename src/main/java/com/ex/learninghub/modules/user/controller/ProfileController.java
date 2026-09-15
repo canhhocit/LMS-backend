@@ -22,14 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/me")
+@RequestMapping("/me/profile")
 @RequiredArgsConstructor
 @Tag(name = "Hồ sơ cá nhân", description = "Các API sinh viên/giảng viên xem và cập nhật hồ sơ cá nhân của mình")
 public class ProfileController {
 
     private final UserService userService;
 
-    @GetMapping("/profile")
+    @GetMapping("")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Xem hồ sơ cá nhân",
@@ -39,7 +39,7 @@ public class ProfileController {
         return ApiResponse.success(userService.getProfile(userPrincipal));
     }
 
-    @PutMapping("/profile")
+    @PutMapping("")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Cập nhật hồ sơ cá nhân",
@@ -51,7 +51,7 @@ public class ProfileController {
         return ApiResponse.success(userService.updateProfile(userPrincipal, request));
     }
 
-    @PostMapping("/profile/avatar")
+    @PostMapping("/avatar")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Upload avatar cá nhân",

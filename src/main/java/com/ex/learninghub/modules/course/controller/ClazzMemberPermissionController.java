@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/clazzes")
+@RequestMapping("/clazzes/{clazzId}/permissions")
 @RequiredArgsConstructor
 public class ClazzMemberPermissionController {
 
@@ -34,7 +34,7 @@ public class ClazzMemberPermissionController {
     private final ClazzMemberPermissionRepository memberPermissionRepository;
     private final ClazzAuthorizationService authorizationService;
 
-    @PostMapping("/{clazzId}/permissions")
+    @PostMapping("")
     public ResponseEntity<Void> grantPermissions(
             @PathVariable Long clazzId,
             @RequestBody GrantPermissionsRequest request,
@@ -68,7 +68,7 @@ public class ClazzMemberPermissionController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{clazzId}/permissions/{userId}")
+    @GetMapping("/{userId}")
     public ResponseEntity<List<String>> getPermissions(
             @PathVariable Long clazzId,
             @PathVariable Long userId,
@@ -87,7 +87,7 @@ public class ClazzMemberPermissionController {
         return ResponseEntity.ok(permissionCodes);
     }
 
-    @DeleteMapping("/{clazzId}/permissions/{userId}")
+    @DeleteMapping("/{userId}")
     public ResponseEntity<Void> revokeAllPermissions(
             @PathVariable Long clazzId,
             @PathVariable Long userId,

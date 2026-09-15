@@ -27,6 +27,7 @@ import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.response.ApiResponse;
 import com.ex.learninghub.common.security.JwtAuthenticationFilter;
+import com.ex.learninghub.common.security.RateLimitingFilter;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 
@@ -40,6 +41,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserRepository userRepository;
+    private final RateLimitingFilter rateLimitingFilter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${app.cors.allowed-origins:http://localhost:5173}")
@@ -113,6 +115,7 @@ public class SecurityConfig {
                     response.getWriter().write(objectMapper.writeValueAsString(body));
                 })
             )
+            .addFilterBefore(rateLimitingFilter, JwtAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -5,7 +5,7 @@ import com.ex.learninghub.modules.user.service.AdminPermissionService;
 import com.ex.learninghub.modules.course.service.ClazzAuthorizationService;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.entity.Clazz;
-import com.ex.learninghub.common.security.UserPrincipal;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
