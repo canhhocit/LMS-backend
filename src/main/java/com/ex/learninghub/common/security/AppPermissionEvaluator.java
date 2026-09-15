@@ -2,25 +2,18 @@ package com.ex.learninghub.common.security;
 
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.modules.user.service.AdminPermissionService;
+import com.ex.learninghub.modules.course.service.ClazzAuthorizationService;
+import com.ex.learninghub.common.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Component;
-
 import java.io.Serializable;
-import java.util.Collections;
 
 /**
- * Custom PermissionEvaluator để gọn kiểm tra quyền trong @PreAuthorize.
- * <p>
- * Cú pháp sử dụng: {@code @PreAuthorize("hasPermission(null, 'MANAGE_CURRICULUM')")}
- * <p>
- * Hoặc với targetId/targetType: {@code @PreAuthorize("hasPermission(#clazzId, 'CLAZZ', 'MANAGE_CLAZZ')")}
+ * Custom PermissionEvaluator để kiểm tra quyền trong các biểu thức @PreAuthorize.
+ * Hỗ trợ quyền ADMIN và quyền CLAZZ thông qua ClazzAuthorizationService.
  */
 @Component
 @RequiredArgsConstructor
@@ -28,7 +21,7 @@ import java.util.Collections;
 public class AppPermissionEvaluator implements PermissionEvaluator {
 
     private final AdminPermissionService adminPermissionService;
-    private final UserDetailsService userDetailsService;
+    private final ClazzAuthorizationService clazzAuthorizationService;
 
     @Override
     public boolean hasPermission(Authentication authentication, Object targetDomainObject, Object permission) {
@@ -36,7 +29,6 @@ public class AppPermissionEvaluator implements PermissionEvaluator {
             log.warn("hasPermission called with null authentication");
             return false;
         }
-
         String permissionCode = String.valueOf(permission);
         return checkPermission(authentication, permissionCode, null, null);
     }
@@ -48,7 +40,6 @@ public class AppPermissionEvaluator implements PermissionEvaluator {
             log.warn("hasPermission called with null authentication");
             return false;
         }
-
         String permissionCode = String.valueOf(permission);
         return checkPermission(authentication, permissionCode, targetType, targetId);
     }
@@ -57,41 +48,28 @@ public class AppPermissionEvaluator implements PermissionEvaluator {
                                     String permissionCode,
                                     String targetType,
                                     Serializable targetId) {
-        // Lấy user từ authentication
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof UserPrincipal userPrincipal)) {
             log.warn("Principal is not UserPrincipal: {}", principal);
             return false;
         }
-
-        // Nếu user có role ADMIN → kiểm tra quyền admin
+        // ADMIN luôn cho phép
         if (userPrincipal.getUser().getRole() == Role.ADMIN) {
             boolean allowed = adminPermissionService.hasPermission(authentication, permissionCode);
             log.debug("Admin permission check: user={}, permission={}, allowed={}",
                     userPrincipal.getUsername(), permissionCode, allowed);
             return allowed;
         }
-
-        // Nếu targetType == "CLAZZ" → có thể mở rộng cho quyền giảng viên (cải tiến 1)
+        // CLAZZ permission
         if ("CLAZZ".equals(targetType) && targetId != null) {
-            // TODO: gọi ClazzAuthorizationService sau khi cải tiến 1 được merge
-            // Ví dụ: return clazzAuthorizationService.canManage(targetId, userPrincipal, permissionCode);
-            log.debug("CLAZZ permission not yet implemented: user={}, clazzId={}, permission={}",
-                    userPrincipal.getUsername(), targetId, permissionCode);
-            return false;
+            boolean allowed = clazzAuthorizationService.canManage(
+                    Long.valueOf(targetId.toString()), userPrincipal, permissionCode);
+            log.debug("CLAZZ permission check: user={}, clazzId={}, permission={}, allowed={}",
+                    userPrincipal.getUsername(), targetId, permissionCode, allowed);
+            return allowed;
         }
-
-        // Mặc định: chỉ ADMIN mới được qua
         log.debug("Access denied: user={}, role={}, permission={}, targetType={}",
-                userPrincipal.getUsername(), userPrincipal.getUser().getRole(),
-                permissionCode, targetType);
+                userPrincipal.getUsername(), userPrincipal.getUser().getRole(), permissionCode, targetType);
         return false;
-    }
-
-    /**
-     * Helper để lấy Authentication từ SecurityContext nếu cần dùng trong service.
-     */
-    public Authentication getCurrentAuthentication() {
-        return org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
     }
 }

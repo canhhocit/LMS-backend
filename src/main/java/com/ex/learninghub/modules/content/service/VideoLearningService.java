@@ -8,7 +8,8 @@ import com.ex.learninghub.modules.content.entity.VideoProgress;
 import com.ex.learninghub.modules.content.repository.VideoProgressRepository;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
-import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
+import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
+import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
 import com.ex.learninghub.modules.content.entity.InVideoQuiz;
 import com.ex.learninghub.modules.content.repository.InVideoQuizRepository;
 import com.ex.learninghub.modules.content.entity.StudentVideoNote;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +37,7 @@ public class VideoLearningService {
     private final InVideoQuizRepository quizRepo;
     private final StudentVideoNoteRepository noteRepo;
     private final UserRepository userRepo;
+    private final LessonProgressRepository lessonProgressRepo;
 
     @Transactional
     public VideoProgress upsertProgress(Long enrollmentId, Long lessonId, BigDecimal lastWatched, BigDecimal maxWatched, UserPrincipal userPrincipal) {
@@ -67,7 +70,8 @@ public class VideoLearningService {
             BigDecimal threshold = new BigDecimal(lesson.getDuration()).multiply(new BigDecimal("0.8"));
             if (vp.getMaxWatchedSeconds().compareTo(threshold) >= 0) {
                 vp.setIsCompleted(true);
-                // TODO: Mark lesson progress completed in existing LessonProgress service
+                // Đánh dấu LessonProgress hoàn thành
+                markLessonCompleted(enrollmentId, lessonId);
             }
         }
         return videoProgressRepo.save(vp);
@@ -122,5 +126,21 @@ public class VideoLearningService {
         }
 
         return videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId);
+    }
+
+    /**
+     * Đánh dấu LessonProgress là đã hoàn thành và ghi thời gian.
+     */
+    private void markLessonCompleted(Long enrollmentId, Long lessonId) {
+        LessonProgress lp = lessonProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
+                .orElseGet(() -> {
+                    LessonProgress newLp = new LessonProgress();
+                    newLp.setEnrollment(enrollmentRepo.getReferenceById(enrollmentId));
+                    newLp.setLesson(lessonRepo.getReferenceById(lessonId));
+                    return newLp;
+                });
+        lp.setIsCompleted(true);
+        lp.setCompletedAt(LocalDateTime.now());
+        lessonProgressRepo.save(lp);
     }
 }
