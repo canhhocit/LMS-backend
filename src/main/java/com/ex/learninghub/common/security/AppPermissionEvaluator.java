@@ -3,6 +3,8 @@ package com.ex.learninghub.common.security;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.modules.user.service.AdminPermissionService;
 import com.ex.learninghub.modules.course.service.ClazzAuthorizationService;
+import com.ex.learninghub.modules.course.repository.ClazzRepository;
+import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.common.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ public class AppPermissionEvaluator implements PermissionEvaluator {
 
     private final AdminPermissionService adminPermissionService;
     private final ClazzAuthorizationService clazzAuthorizationService;
+    private final ClazzRepository clazzRepository;
 
     @Override
     public boolean hasPermission(Authentication authentication, Object targetDomainObject, Object permission) {
@@ -62,10 +65,12 @@ public class AppPermissionEvaluator implements PermissionEvaluator {
         }
         // CLAZZ permission
         if ("CLAZZ".equals(targetType) && targetId != null) {
-            boolean allowed = clazzAuthorizationService.canManage(
-                    Long.valueOf(targetId.toString()), userPrincipal, permissionCode);
+            Long clazzId = Long.valueOf(targetId.toString());
+            Clazz clazz = clazzRepository.findById(clazzId)
+                    .orElseThrow(() -> new RuntimeException("Clazz not found"));
+            boolean allowed = clazzAuthorizationService.canManage(clazz, userPrincipal, permissionCode);
             log.debug("CLAZZ permission check: user={}, clazzId={}, permission={}, allowed={}",
-                    userPrincipal.getUsername(), targetId, permissionCode, allowed);
+                    userPrincipal.getUsername(), clazzId, permissionCode, allowed);
             return allowed;
         }
         log.debug("Access denied: user={}, role={}, permission={}, targetType={}",
