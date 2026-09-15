@@ -5,13 +5,17 @@ import com.ex.learninghub.modules.audit.dto.AuditLogResponse;
 import com.ex.learninghub.modules.audit.entity.AuditLog;
 import com.ex.learninghub.modules.audit.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;\nimport org.springframework.core.io.ByteArrayResource;\nimport org.springframework.http.HttpHeaders;\nimport org.springframework.http.MediaType;\nimport java.nio.charset.StandardCharsets;
+import org.springframework.web.bind.annotation.*;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/admin/audit-logs")
@@ -28,14 +32,12 @@ public class AuditController {
             @RequestParam(defaultValue = "20") int size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-
         Page<AuditLog> logsPage;
         if (resourceType != null && !resourceType.isEmpty()) {
             logsPage = auditLogRepository.findByResourceTypeOrderByCreatedAtDesc(resourceType, pageable);
         } else {
             logsPage = auditLogRepository.findAllByOrderByCreatedAtDesc(pageable);
         }
-
         Page<AuditLogResponse> responsePage = logsPage.map(log -> AuditLogResponse.builder()
                 .id(log.getId())
                 .actorId(log.getActorId())
@@ -48,7 +50,6 @@ public class AuditController {
                 .result(log.getResult())
                 .createdAt(log.getCreatedAt())
                 .build());
-
         return ResponseEntity.ok(ApiResponse.success(responsePage));
     }
 
@@ -60,7 +61,6 @@ public class AuditController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<AuditLog> logsPage = auditLogRepository.findByActorIdOrderByCreatedAtDesc(userId, pageable);
-
         Page<AuditLogResponse> responsePage = logsPage.map(log -> AuditLogResponse.builder()
                 .id(log.getId())
                 .actorId(log.getActorId())
@@ -73,10 +73,12 @@ public class AuditController {
                 .result(log.getResult())
                 .createdAt(log.getCreatedAt())
                 .build());
-
         return ResponseEntity.ok(ApiResponse.success(responsePage));
+    }
+
     @GetMapping(value = "/export", produces = "text/csv")
-    public ResponseEntity<ByteArrayResource> exportAuditLogsCsv(@RequestParam(required = false) String resourceType,
+    public ResponseEntity<ByteArrayResource> exportAuditLogsCsv(
+            @RequestParam(required = false) String resourceType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -96,7 +98,7 @@ public class AuditController {
                     log.getAction(),
                     log.getResourceType(),
                     log.getResourceId(),
-                    log.getDetail().replaceAll("\n", " "),
+                    log.getDetail().replaceAll("\\n", " "),
                     log.getIpAddress(),
                     log.getResult(),
                     log.getCreatedAt().toString()
@@ -110,5 +112,4 @@ public class AuditController {
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(resource);
     }
-
-    }
+}
