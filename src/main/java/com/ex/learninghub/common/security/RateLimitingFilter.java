@@ -9,6 +9,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
@@ -23,43 +25,48 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final Map<String, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
+    // Fallback in‑memory lock for rare cases where Redis is unavailable
+    private final Map<String, RateLimiter> inMemoryLimiters = new ConcurrentHashMap<>();
+    // Redis template for distributed counters
+    private final StringRedisTemplate redisTemplate;
+
+    
+    public RateLimitingFilter(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     // Định nghĩa rules cho từng endpoint
     private static final Map<String, RateLimitRule> RULES = Map.of(
-        "/auth/login", new RateLimitRule(5, Duration.ofMinutes(1)),         // 5 lần/phút
-        "/auth/forgot-password", new RateLimitRule(3, Duration.ofHours(1)), // 3 lần/giờ
-        "/auth/reset-password", new RateLimitRule(5, Duration.ofHours(1)),  // 5 lần/giờ
-        "/auth/refresh", new RateLimitRule(20, Duration.ofMinutes(1))       // 20 lần/phút
+            "/auth/login", new RateLimitRule(5, Duration.ofMinutes(1)),         // 5 lần/phút
+            "/auth/forgot-password", new RateLimitRule(3, Duration.ofHours(1)), // 3 lần/giờ
+            "/auth/reset-password", new RateLimitRule(5, Duration.ofHours(1)),  // 5 lần/giờ
+            "/auth/refresh", new RateLimitRule(20, Duration.ofMinutes(1))       // 20 lần/phút
     );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-
-        // Wrap request to allow reading body multiple times
-        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
-
+                ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request, 1024 * 1024);
         String path = wrappedRequest.getRequestURI();
-        // Chỉ áp dụng cho các endpoint auth (bỏ qua context path /api/v1 nếu có)
         String normalizedPath = path.replaceFirst("^/api/v1", "");
         RateLimitRule rule = RULES.get(normalizedPath);
         if (rule == null) {
             filterChain.doFilter(wrappedRequest, response);
             return;
         }
-
-        // Xây dựng key: IP + identifier (cho login lấy từ body)
         String key = buildKey(wrappedRequest, normalizedPath);
         if (key == null) {
             log.warn("Cannot build rate limit key for {} from IP {}", normalizedPath, resolveClientIp(wrappedRequest));
             filterChain.doFilter(wrappedRequest, response);
             return;
         }
-
-        RateLimiter rateLimiter = rateLimiters.computeIfAbsent(key, k -> createRateLimiter(rule));
-
-        if (rateLimiter.acquirePermission()) {
+        // Try Redis first
+        Boolean allowed = tryRedisRateLimit(key, rule);
+        if (allowed == null) { // Redis unavailable, fallback to in‑memory
+            RateLimiter limiter = inMemoryLimiters.computeIfAbsent(key, k -> createRateLimiter(rule));
+            allowed = limiter.acquirePermission();
+        }
+        if (allowed) {
             filterChain.doFilter(wrappedRequest, response);
         } else {
             log.warn("Rate limit exceeded for key: {}", key);
@@ -74,9 +81,26 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * Use Redis INCR with expiry to enforce the limit. Returns null if Redis throws an exception.
+     */
+    private Boolean tryRedisRateLimit(String key, RateLimitRule rule) {
+        try {
+            Long current = redisTemplate.opsForValue().increment(key);
+            if (current == null) return false;
+            if (current == 1) {
+                // Set TTL on first hit
+                redisTemplate.expire(key, rule.window());
+            }
+            return current <= rule.capacity();
+        } catch (Exception e) {
+            log.debug("Redis rate limiter failed, falling back to in‑memory: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private String buildKey(HttpServletRequest request, String path) {
         String ip = resolveClientIp(request);
-        // Nếu là login, thêm identifier (email) từ body
         if ("/auth/login".equals(path)) {
             String identifier = extractIdentifierFromRequest(request);
             if (identifier == null) {
@@ -93,19 +117,13 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                 return null;
             }
             byte[] content = wrapper.getContentAsByteArray();
-            if (content.length == 0) {
-                return null;
-            }
+            if (content.length == 0) return null;
             String body = new String(content, request.getCharacterEncoding());
             @SuppressWarnings("unchecked")
             Map<String, Object> json = objectMapper.readValue(body, Map.class);
             Object identifier = json.get("identifier");
-            if (identifier == null) {
-                identifier = json.get("email");
-            }
-            if (identifier == null) {
-                identifier = json.get("username");
-            }
+            if (identifier == null) identifier = json.get("email");
+            if (identifier == null) identifier = json.get("username");
             return identifier != null ? identifier.toString() : null;
         } catch (Exception e) {
             log.debug("Failed to parse request body for rate limiting: {}", e.getMessage());
@@ -117,7 +135,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         RateLimiterConfig config = RateLimiterConfig.custom()
                 .limitForPeriod(rule.capacity())
                 .limitRefreshPeriod(rule.window())
-                .timeoutDuration(Duration.ofSeconds(0)) // no wait, just reject if limit exceeded
+                .timeoutDuration(Duration.ofSeconds(0))
                 .build();
         return RateLimiter.of("rate-limiter-" + System.currentTimeMillis(), config);
     }

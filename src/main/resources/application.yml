@@ -1,8 +1,6 @@
-server:
-  servlet:
-    context-path: /api/v1
-
 spring:
+  profiles:
+    active: ${SPRING_PROFILE:dev}
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -34,6 +32,10 @@ spring:
           auth: true
           starttls:
             enable: true
+
+server:
+  servlet:
+    context-path: /api/v1
 
 jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
