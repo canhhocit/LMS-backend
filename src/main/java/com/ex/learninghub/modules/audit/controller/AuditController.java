@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;\nimport org.springframework.core.io.ByteArrayResource;\nimport org.springframework.http.HttpHeaders;\nimport org.springframework.http.MediaType;\nimport java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/admin/audit-logs")
@@ -75,5 +75,40 @@ public class AuditController {
                 .build());
 
         return ResponseEntity.ok(ApiResponse.success(responsePage));
+    @GetMapping(value = "/export", produces = "text/csv")
+    public ResponseEntity<ByteArrayResource> exportAuditLogsCsv(@RequestParam(required = false) String resourceType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<AuditLog> logs;
+        if (resourceType != null && !resourceType.isEmpty()) {
+            logs = auditLogRepository.findByResourceTypeOrderByCreatedAtDesc(resourceType, pageable);
+        } else {
+            logs = auditLogRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("id,actorId,actorEmail,action,resourceType,resourceId,detail,ipAddress,result,createdAt\n");
+        for (AuditLog log : logs) {
+            sb.append(String.format("%d,%d,%s,%s,%s,%d,%s,%s,%s,%s\n",
+                    log.getId(),
+                    log.getActorId(),
+                    log.getActorEmail(),
+                    log.getAction(),
+                    log.getResourceType(),
+                    log.getResourceId(),
+                    log.getDetail().replaceAll("\n", " "),
+                    log.getIpAddress(),
+                    log.getResult(),
+                    log.getCreatedAt().toString()
+            ));
+        }
+        byte[] bytes = sb.toString().getBytes(StandardCharsets.UTF_8);
+        ByteArrayResource resource = new ByteArrayResource(bytes);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=audit_logs.csv")
+                .contentLength(bytes.length)
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(resource);
     }
-}
+
+    }
