@@ -49,7 +49,7 @@ import java.util.List;
 @Slf4j
 public class UserServiceImpl implements UserService {
 
-    @Value("${app.default-password:Password@123}")
+    @Value("${app.default-password:123456}")
     private String defaultPassword;
 
     private final UserRepository userRepository;
