@@ -5,17 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +35,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     // Redis template for distributed counters
     private final StringRedisTemplate redisTemplate;
 
-    
     public RateLimitingFilter(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
@@ -46,18 +50,19 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-                ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request, 1024 * 1024);
-        String path = wrappedRequest.getRequestURI();
+        String path = request.getRequestURI();
         String normalizedPath = path.replaceFirst("^/api/v1", "");
         RateLimitRule rule = RULES.get(normalizedPath);
         if (rule == null) {
-            filterChain.doFilter(wrappedRequest, response);
+            filterChain.doFilter(request, response);
             return;
         }
-        String key = buildKey(wrappedRequest, normalizedPath);
+
+        CachedBodyHttpServletRequest cachedRequest = new CachedBodyHttpServletRequest(request);
+        String key = buildKey(cachedRequest, normalizedPath);
         if (key == null) {
-            log.warn("Cannot build rate limit key for {} from IP {}", normalizedPath, resolveClientIp(wrappedRequest));
-            filterChain.doFilter(wrappedRequest, response);
+            log.warn("Cannot build rate limit key for {} from IP {}", normalizedPath, resolveClientIp(cachedRequest));
+            filterChain.doFilter(cachedRequest, response);
             return;
         }
         // Try Redis first
@@ -67,7 +72,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             allowed = limiter.acquirePermission();
         }
         if (allowed) {
-            filterChain.doFilter(wrappedRequest, response);
+            filterChain.doFilter(cachedRequest, response);
         } else {
             log.warn("Rate limit exceeded for key: {}", key);
             response.setStatus(429);
@@ -99,7 +104,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
     }
 
-    private String buildKey(HttpServletRequest request, String path) {
+    private String buildKey(CachedBodyHttpServletRequest request, String path) {
         String ip = resolveClientIp(request);
         if ("/auth/login".equals(path)) {
             String identifier = extractIdentifierFromRequest(request);
@@ -111,15 +116,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         return path + ":" + ip;
     }
 
-    private String extractIdentifierFromRequest(HttpServletRequest request) {
+    private String extractIdentifierFromRequest(CachedBodyHttpServletRequest request) {
         try {
-            if (!(request instanceof ContentCachingRequestWrapper wrapper)) {
-                return null;
-            }
-            byte[] content = wrapper.getContentAsByteArray();
-            if (content.length == 0) {
-                content = wrapper.getInputStream().readAllBytes();
-            }
+            byte[] content = request.getBody();
             if (content.length == 0) return null;
             String encoding = request.getCharacterEncoding();
             String body = new String(content, encoding != null ? encoding : "UTF-8");
@@ -157,4 +156,51 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private record RateLimitRule(int capacity, Duration window) {}
+
+    private static class CachedBodyHttpServletRequest extends HttpServletRequestWrapper {
+        private final byte[] cachedBody;
+
+        public CachedBodyHttpServletRequest(HttpServletRequest request) throws IOException {
+            super(request);
+            this.cachedBody = request.getInputStream().readAllBytes();
+        }
+
+        @Override
+        public ServletInputStream getInputStream() {
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(this.cachedBody);
+            return new ServletInputStream() {
+                @Override
+                public boolean isFinished() {
+                    return byteArrayInputStream.available() == 0;
+                }
+
+                @Override
+                public boolean isReady() {
+                    return true;
+                }
+
+                @Override
+                public void setReadListener(ReadListener readListener) {}
+
+                @Override
+                public int read() {
+                    return byteArrayInputStream.read();
+                }
+
+                @Override
+                public int read(byte[] b, int off, int len) {
+                    return byteArrayInputStream.read(b, off, len);
+                }
+            };
+        }
+
+        @Override
+        public BufferedReader getReader() throws IOException {
+            return new BufferedReader(new InputStreamReader(this.getInputStream(), getCharacterEncoding() != null ? getCharacterEncoding() : "UTF-8"));
+        }
+
+        public byte[] getBody() {
+            return cachedBody;
+        }
+    }
 }

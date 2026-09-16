@@ -22,6 +22,7 @@ public class GlobalExceptionHandler {
     /** Malformed JSON request body or missing body → 400 */
     @ExceptionHandler(value = HttpMessageNotReadableException.class)
     ResponseEntity<ApiResponse<Object>> handlingHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("HttpMessageNotReadableException caught: {}", ex.getMessage(), ex);
         String message = "Malformed JSON request";
         if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
             message = "Dữ liệu yêu cầu (request body) không được để trống";
