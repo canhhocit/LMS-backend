@@ -82,22 +82,47 @@ public class ProgressServiceImpl implements ProgressService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ProgressResponse getProgressByEnrollment(Long enrollmentId, UserPrincipal principal) {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
 
         verifyCanView(enrollment, principal);
 
-        List<LessonProgress> progresses = lessonProgressRepository.findByEnrollmentId(enrollmentId);
-        long completed = progresses.stream().filter(LessonProgress::getIsCompleted).count();
-        long total = progresses.size();
+        // Fetch all lessons in the class and existing progress records
+        List<Lesson> clazzLessons = lessonRepository.findByClazzId(enrollment.getClazz().getId());
+        List<LessonProgress> existingProgresses = lessonProgressRepository.findByEnrollmentId(enrollmentId);
 
-        List<LessonProgressItem> items = progresses.stream()
+        java.util.Set<Long> existingLessonIds = existingProgresses.stream()
+                .map(p -> p.getLesson().getId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<LessonProgress> newProgresses = new java.util.ArrayList<>();
+        for (Lesson lesson : clazzLessons) {
+            if (!existingLessonIds.contains(lesson.getId())) {
+                LessonProgress lp = LessonProgress.builder()
+                        .enrollment(enrollment)
+                        .lesson(lesson)
+                        .isCompleted(false)
+                        .build();
+                newProgresses.add(lp);
+            }
+        }
+
+        if (!newProgresses.isEmpty()) {
+            lessonProgressRepository.saveAll(newProgresses);
+            existingProgresses = new java.util.ArrayList<>(existingProgresses);
+            existingProgresses.addAll(newProgresses);
+        }
+
+        long completed = existingProgresses.stream().filter(p -> Boolean.TRUE.equals(p.getIsCompleted())).count();
+        long total = clazzLessons.size();
+
+        List<LessonProgressItem> items = existingProgresses.stream()
                 .map(p -> LessonProgressItem.builder()
                         .lessonId(p.getLesson().getId())
                         .lessonTitle(p.getLesson().getTitle())
-                        .isCompleted(p.getIsCompleted())
+                        .isCompleted(Boolean.TRUE.equals(p.getIsCompleted()))
                         .completedAt(p.getCompletedAt())
                         .build())
                 .toList();
