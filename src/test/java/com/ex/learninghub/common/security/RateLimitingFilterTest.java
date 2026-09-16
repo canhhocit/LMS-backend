@@ -34,13 +34,16 @@ public class RateLimitingFilterTest {
     @Mock
     private StringRedisTemplate redisTemplate;
 
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private LoginRequest loginRequest;
 
     @BeforeEach
     void setUp() {
         RateLimitingFilter rateLimitingFilter = new RateLimitingFilter(redisTemplate);
-        AuthController authController = new AuthController(authService);
+        AuthController authController = new AuthController(authService, tokenBlacklistService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(authController)
                 .setControllerAdvice(new GlobalExceptionHandler())

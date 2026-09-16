@@ -22,10 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, @Lazy UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, 
+                                   @Lazy UserDetailsService userDetailsService,
+                                   TokenBlacklistService tokenBlacklistService) {
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -34,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+            if (StringUtils.hasText(jwt) && !tokenBlacklistService.isBlacklisted(jwt) && tokenProvider.validateToken(jwt)) {
                 String email = tokenProvider.getEmailFromJWT(jwt);
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);

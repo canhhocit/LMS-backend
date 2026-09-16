@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ex.learninghub.common.security.TokenBlacklistService;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @PostMapping("/login")
     @Operation(
@@ -77,5 +80,20 @@ public class AuthController {
     )
     public ApiResponse<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ApiResponse.success(authService.refresh(request.getRefreshToken()));
+    }
+
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Đăng xuất hệ thống",
+            description = "Thu hồi JWT token hiện tại bằng cách thêm vào Redis blacklist."
+    )
+    public ApiResponse<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            tokenBlacklistService.blacklistToken(token, 86400000L);
+        }
+        return ApiResponse.success(null);
     }
 }
