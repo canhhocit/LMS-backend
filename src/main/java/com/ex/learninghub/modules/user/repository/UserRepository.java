@@ -21,6 +21,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByRole(Role role);
     long countByRole(Role role);
     List<User> findByAdminClassId(Long adminClassId);
+    long countByAdminClassId(Long adminClassId);
 
 
     @Query("SELECT u FROM User u WHERE u.role = :role AND " +

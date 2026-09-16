@@ -34,7 +34,7 @@ public class AdminClassServiceImpl implements AdminClassService {
                 .faculty(request.getFaculty())
                 .academicYear(request.getAcademicYear())
                 .build();
-        return AdminClassResponse.from(adminClassRepository.save(ac));
+        return AdminClassResponse.from(adminClassRepository.save(ac), 0);
     }
 
     @Override
@@ -45,7 +45,8 @@ public class AdminClassServiceImpl implements AdminClassService {
         ac.setClassName(request.getClassName());
         ac.setFaculty(request.getFaculty());
         ac.setAcademicYear(request.getAcademicYear());
-        return AdminClassResponse.from(adminClassRepository.save(ac));
+        int count = (int) userRepository.countByAdminClassId(id);
+        return AdminClassResponse.from(adminClassRepository.save(ac), count);
     }
 
     @Override
@@ -59,14 +60,15 @@ public class AdminClassServiceImpl implements AdminClassService {
     @Override
     public List<AdminClassResponse> getAllAdminClasses() {
         return adminClassRepository.findAll().stream()
-                .map(AdminClassResponse::from)
+                .map(ac -> AdminClassResponse.from(ac, (int) userRepository.countByAdminClassId(ac.getId())))
                 .collect(Collectors.toList());
     }
 
     @Override
     public AdminClassResponse getAdminClassById(Long id) {
-        return AdminClassResponse.from(adminClassRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND)));
+        AdministrativeClass ac = adminClassRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
+        return AdminClassResponse.from(ac, (int) userRepository.countByAdminClassId(id));
     }
 
     @Override

@@ -14,15 +14,21 @@ public class AdminClassResponse {
     private String className;
     private String faculty;
     private String academicYear;
+    private Integer studentCount;
     private LocalDateTime createdAt;
 
-    public static AdminClassResponse from(AdministrativeClass ac) {
+    public static AdminClassResponse from(AdministrativeClass ac, int studentCount) {
         return AdminClassResponse.builder()
                 .id(ac.getId())
                 .className(ac.getClassName())
                 .faculty(ac.getFaculty())
                 .academicYear(ac.getAcademicYear())
+                .studentCount(studentCount)
                 .createdAt(ac.getCreatedAt())
                 .build();
+    }
+
+    public static AdminClassResponse from(AdministrativeClass ac) {
+        return from(ac, 0);
     }
 }
