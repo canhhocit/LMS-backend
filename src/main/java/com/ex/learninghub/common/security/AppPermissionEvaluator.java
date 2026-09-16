@@ -6,8 +6,7 @@ import com.ex.learninghub.modules.course.service.ClazzAuthorizationService;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.entity.Clazz;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.core.Authentication;
@@ -18,13 +17,20 @@ import java.io.Serializable;
  * Hỗ trợ quyền ADMIN và quyền CLAZZ thông qua ClazzAuthorizationService.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class AppPermissionEvaluator implements PermissionEvaluator {
 
     private final AdminPermissionService adminPermissionService;
     private final ClazzAuthorizationService clazzAuthorizationService;
     private final ClazzRepository clazzRepository;
+
+    public AppPermissionEvaluator(@Lazy AdminPermissionService adminPermissionService,
+                                  @Lazy ClazzAuthorizationService clazzAuthorizationService,
+                                  @Lazy ClazzRepository clazzRepository) {
+        this.adminPermissionService = adminPermissionService;
+        this.clazzAuthorizationService = clazzAuthorizationService;
+        this.clazzRepository = clazzRepository;
+    }
 
     @Override
     public boolean hasPermission(Authentication authentication, Object targetDomainObject, Object permission) {
