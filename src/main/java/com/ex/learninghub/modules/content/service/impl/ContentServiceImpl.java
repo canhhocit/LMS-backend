@@ -20,6 +20,7 @@ import com.ex.learninghub.modules.course.repository.ChapterRepository;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.repository.LessonRepository;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
+import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class ContentServiceImpl implements ContentService {
     private final AnnouncementRepository announcementRepository;
     private final com.ex.learninghub.modules.notification.service.NotificationService notificationService;
     private final EnrollmentRepository enrollmentRepository;
+    private final LessonProgressRepository lessonProgressRepository;
 
     @Override
     public void verifyAccessToClass(Long classId, UserPrincipal userPrincipal) {
@@ -103,6 +105,11 @@ public class ContentServiceImpl implements ContentService {
         Clazz clazz = clazzRepository.findById(chapter.getClazzId())
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
         verifyLecturerOwnsClazz(clazz, userPrincipal);
+        List<Lesson> lessons = lessonRepository.findByChapterIdOrderBySortOrderAsc(chapterId);
+        if (!lessons.isEmpty()) {
+            List<Long> lessonIds = lessons.stream().map(Lesson::getId).collect(Collectors.toList());
+            lessonProgressRepository.deleteByLessonIdIn(lessonIds);
+        }
         chapterRepository.delete(chapter);
     }
 
@@ -180,6 +187,7 @@ public class ContentServiceImpl implements ContentService {
         Clazz clazz = clazzRepository.findById(chapter.getClazzId())
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
         verifyLecturerOwnsClazz(clazz, userPrincipal);
+        lessonProgressRepository.deleteByLessonId(lessonId);
         lessonRepository.delete(lesson);
     }
 

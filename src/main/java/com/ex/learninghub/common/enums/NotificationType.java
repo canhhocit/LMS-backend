@@ -12,6 +12,7 @@ public enum NotificationType {
     LESSON_COMPLETED,
     COURSE_REGISTERED,
     NEW_LESSON,
-    ASSIGNMENT_UPDATED
+    ASSIGNMENT_UPDATED,
+    NEW_STUDENT
 }
 
