@@ -11,13 +11,13 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?sslmode=require}
+    url: ${POSTGRES_URL:jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?sslmode=require&prepareThreshold=0}
     driver-class-name: org.postgresql.Driver
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
   flyway:
     enabled: true
