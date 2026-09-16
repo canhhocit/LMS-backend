@@ -13,6 +13,8 @@ public class UpdateProfileRequest {
     @NotBlank(message = "Full name cannot be blank")
     private String fullName;
 
+    private String personalEmail;
+
     private LocalDate dateOfBirth;
 
     private String faculty;

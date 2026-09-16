@@ -19,6 +19,7 @@ public class UserResponse {
     private Long id;
     private String fullName;
     private String email;
+    private String personalEmail;
     private Role role;
     private String studentCode;
     private String lecturerCode;
@@ -41,6 +42,7 @@ public class UserResponse {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
+                .personalEmail(user.getPersonalEmail())
                 .role(user.getRole())
                 .studentCode(user.getStudentCode())
                 .lecturerCode(user.getLecturerCode())

@@ -329,6 +329,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userPrincipal.getUser().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         user.setFullName(request.getFullName());
+        user.setPersonalEmail(request.getPersonalEmail());
         user.setDateOfBirth(request.getDateOfBirth());
         user.setFaculty(request.getFaculty());
         user.setMajor(request.getMajor());

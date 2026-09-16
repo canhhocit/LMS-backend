@@ -122,7 +122,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
-        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+        Optional<User> userOpt = userRepository.findByEmailOrPersonalEmail(request.getEmail());
         if (userOpt.isEmpty()) {
             // Do not reveal whether email exists — always return 200
             return;
@@ -142,8 +142,12 @@ public class AuthServiceImpl implements AuthService {
         passwordResetTokenRepository.save(resetToken);
 
         String resetLink = frontendUrl + "/reset-password?token=" + token;
+        String recipientEmail = (user.getPersonalEmail() != null && !user.getPersonalEmail().isBlank())
+                ? user.getPersonalEmail()
+                : user.getEmail();
+
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(user.getEmail());
+        message.setTo(recipientEmail);
         message.setSubject("LearningHub — Reset Your Password");
         message.setText("Click the link below to reset your password (valid for 30 minutes):\n\n" + resetLink);
         try {
