@@ -136,6 +136,13 @@ public class RegistrationServiceImpl implements RegistrationService {
         Clazz clazz = clazzRepository.findById(clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
+        if (clazz.getMaxStudents() != null) {
+            long current = enrollmentRepository.countByClazzId(clazzId);
+            if (current + 1 > clazz.getMaxStudents()) {
+                throw new AppException(ErrorCode.CLAZZ_FULL);
+            }
+        }
+
         // Tín chỉ của lớp muốn đăng ký
         int addingCredits = clazz.getCourse() != null && clazz.getCourse().getCredit() != null
                 ? clazz.getCourse().getCredit() : 0;

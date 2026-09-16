@@ -2,8 +2,8 @@ package com.ex.learninghub.modules.storage.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -11,20 +11,10 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CloudinaryService {
 
     private final Cloudinary cloudinary;
-
-    public CloudinaryService(
-            @Value("${cloudinary.cloud-name:demo}") String cloudName,
-            @Value("${cloudinary.api-key:123456}") String apiKey,
-            @Value("${cloudinary.api-secret:secret}") String apiSecret) {
-        this.cloudinary = new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", cloudName,
-                "api_key", apiKey,
-                "api_secret", apiSecret
-        ));
-    }
 
     public String uploadFile(MultipartFile file) {
         try {

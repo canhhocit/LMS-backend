@@ -139,6 +139,18 @@ class RegistrationServiceImplTest {
     }
 
     @Test
+    void register_throwsClazzFull_whenCapacityExceeded() {
+        newClazz.setMaxStudents(30);
+        when(periodRepository.findByIsActiveTrue()).thenReturn(Optional.of(openPeriod));
+        when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 20L)).thenReturn(false);
+        when(clazzRepository.findById(20L)).thenReturn(Optional.of(newClazz));
+        when(enrollmentRepository.countByClazzId(20L)).thenReturn(30L);
+
+        assertThatThrownBy(() -> registrationService.register(20L, new UserPrincipal(student)))
+                .isInstanceOf(AppException.class);
+    }
+
+    @Test
     void register_throwsClazzNotFound() {
         when(periodRepository.findByIsActiveTrue()).thenReturn(Optional.of(openPeriod));
         when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 20L)).thenReturn(false);

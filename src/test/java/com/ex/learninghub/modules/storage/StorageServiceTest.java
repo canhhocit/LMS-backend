@@ -1,5 +1,7 @@
 package com.ex.learninghub.modules.storage;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.ex.learninghub.modules.storage.service.CloudinaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +16,12 @@ class StorageServiceTest {
 
     @BeforeEach
     void setUp() {
-        cloudinaryService = new CloudinaryService("demo", "123456", "secret");
+        Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+                "cloud_name", "demo",
+                "api_key", "123456",
+                "api_secret", "secret"
+        ));
+        cloudinaryService = new CloudinaryService(cloudinary);
     }
 
     @Test
