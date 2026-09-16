@@ -93,3 +93,6 @@ File JAR đầu ra: `target/learninghub-0.0.1-SNAPSHOT.jar`
 ## 📄 Giấy phép (License) & Tác giả
 - Đồ án Tốt nghiệp Đại học (DATN)
 - Phát triển bởi **LearningHub Team**
+
+
+# HIỆN TẠI REDIS Ở DEV ĐANG ĂN RAM MÁY TÍNH, CHƯA CẤU HÌNH REDIS CHO DOCKER
