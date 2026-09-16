@@ -38,8 +38,9 @@ public class QrCodeAttendanceServiceImpl implements QrCodeAttendanceService {
 
     @Override
     public QrSessionResponse generateQrSession(Long classId, UserPrincipal lecturerPrincipal) {
-        Clazz clazz = clazzRepository.findById(classId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        if (!clazzRepository.existsById(classId)) {
+            throw new AppException(ErrorCode.CLAZZ_NOT_FOUND);
+        }
 
         String sessionToken = UUID.randomUUID().toString();
         // Generate 6-digit dynamic OTP

@@ -19,7 +19,6 @@ import org.springframework.data.redis.core.ValueOperations;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -62,7 +61,7 @@ class QrCodeAttendanceServiceImplTest {
 
     @Test
     void generateQrSession_returnsValidQrSession() {
-        when(clazzRepository.findById(100L)).thenReturn(Optional.of(clazz));
+        when(clazzRepository.existsById(100L)).thenReturn(true);
 
         QrSessionResponse response = qrCodeAttendanceService.generateQrSession(100L, new UserPrincipal(lecturer));
 
