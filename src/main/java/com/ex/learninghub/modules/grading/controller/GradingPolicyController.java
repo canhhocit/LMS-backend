@@ -33,14 +33,14 @@ public class GradingPolicyController {
 
     // Admin endpoints
     @GetMapping("/admin/curricula/{curriculumId}/grading-policy")
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_GRADING_POLICY')")
+    @PreAuthorize("hasPermission(null, 'MANAGE_GRADING_POLICY')")
     @Operation(summary = "Admin lấy công thức tính điểm của khóa", description = "Lấy trọng số chuyên cần, giữa kỳ, cuối kỳ của khóa đào tạo.")
     public ResponseEntity<ApiResponse<GradingPolicyResponse>> getGradingPolicy(@PathVariable Long curriculumId) {
         return ResponseEntity.ok(ApiResponse.success(gradingPolicyService.getGradingPolicy(curriculumId)));
     }
 
     @PutMapping("/admin/curricula/{curriculumId}/grading-policy")
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_GRADING_POLICY')")
+    @PreAuthorize("hasPermission(null, 'MANAGE_GRADING_POLICY')")
     @Operation(summary = "Admin cập nhật công thức tính điểm của khóa", description = "Cập nhật trọng số chuyên cần, giữa kỳ, cuối kỳ (tổng phải bằng 1.0).")
     public ResponseEntity<ApiResponse<GradingPolicyResponse>> updateGradingPolicy(
             @PathVariable Long curriculumId,
@@ -49,14 +49,14 @@ public class GradingPolicyController {
     }
 
     @GetMapping("/admin/curricula/{curriculumId}/gpa-scale")
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_GRADING_POLICY')")
+    @PreAuthorize("hasPermission(null, 'MANAGE_GRADING_POLICY')")
     @Operation(summary = "Admin lấy thang quy đổi GPA của khóa", description = "Lấy các quy tắc quy đổi điểm hệ 10 sang GPA hệ 4 của khóa đào tạo.")
     public ResponseEntity<ApiResponse<List<GpaScaleRuleResponse>>> getGpaScaleRules(@PathVariable Long curriculumId) {
         return ResponseEntity.ok(ApiResponse.success(gradingPolicyService.getGpaScaleRules(curriculumId)));
     }
 
     @PutMapping("/admin/curricula/{curriculumId}/gpa-scale")
-    @PreAuthorize("hasRole('ADMIN') and @adminPermissionService.hasPermission(authentication, 'MANAGE_GRADING_POLICY')")
+    @PreAuthorize("hasPermission(null, 'MANAGE_GRADING_POLICY')")
     @Operation(summary = "Admin cập nhật thang quy đổi GPA của khóa", description = "Thay thế toàn bộ quy tắc quy đổi GPA hệ 10 -> hệ 4 cho khóa đào tạo.")
     public ResponseEntity<ApiResponse<List<GpaScaleRuleResponse>>> updateGpaScaleRules(
             @PathVariable Long curriculumId,

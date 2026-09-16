@@ -166,6 +166,8 @@ public class RegistrationServiceImpl implements RegistrationService {
         Enrollment e = Enrollment.builder()
                 .student(student)
                 .clazz(clazz)
+                .semester(period.getSemester())
+                .academicYear(period.getAcademicYear())
                 .enrolledAt(LocalDateTime.now())
                 .status("ACTIVE")
                 .build();

@@ -106,10 +106,10 @@ public class TuitionServiceImpl implements TuitionService {
         TuitionRate rate = rateRepository.findByAcademicYear(academicYear)
                 .orElseThrow(() -> new AppException(ErrorCode.TUITION_RATE_NOT_FOUND));
 
-        // Tính tổng tín chỉ của sinh viên trong kỳ này (theo enrollments chưa xóa).
-        // Vì model không có semester trên enrollment, lấy tất cả enrollments hiện tại
-        // và tính tổng credit các course đang enroll.
+        // Tính tổng tín chỉ của sinh viên trong kỳ này (lọc theo semester và academicYear)
         int totalCredits = enrollmentRepository.findByStudentId(studentId).stream()
+                .filter(e -> (semester == null || e.getSemester() == null || semester.equals(e.getSemester()))
+                          && (academicYear == null || e.getAcademicYear() == null || academicYear.equals(e.getAcademicYear())))
                 .filter(e -> e.getClazz() != null && e.getClazz().getCourse() != null
                         && e.getClazz().getCourse().getCredit() != null)
                 .mapToInt(e -> e.getClazz().getCourse().getCredit())

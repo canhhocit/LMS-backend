@@ -20,7 +20,7 @@ public class AcademicRiskController {
     private final AcademicRiskWarningService academicRiskWarningService;
 
     @GetMapping("/class/{classId}/student/{studentId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN', 'STUDENT')")
     @Operation(
             summary = "Tính toán nguy cơ rủi ro học tập cá nhân của sinh viên",
             description = "Đánh giá tỷ lệ vắng mặt và điểm số để xếp loại mức độ rủi ro (SAFE, WARNING, CRITICAL)."
@@ -32,7 +32,7 @@ public class AcademicRiskController {
     }
 
     @GetMapping("/class/{classId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')")
     @Operation(
             summary = "Lấy báo cáo tổng hợp danh sách sinh viên có nguy cơ rủi ro trong lớp",
             description = "Giảng viên / Cố vấn học tập xem danh sách sinh viên có nguy cơ bị cấm thi hoặc học lại."

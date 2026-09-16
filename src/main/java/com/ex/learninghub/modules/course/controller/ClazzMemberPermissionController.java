@@ -34,6 +34,18 @@ public class ClazzMemberPermissionController {
     private final ClazzMemberPermissionRepository memberPermissionRepository;
     private final ClazzAuthorizationService authorizationService;
 
+    private void assertAdminOrOwner(Clazz clazz, UserPrincipal principal) {
+        if (principal == null || principal.getUser() == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        boolean isAdmin = principal.getUser().getRole() == Role.ADMIN;
+        boolean isOwner = clazz.getLecturer() != null
+                && clazz.getLecturer().getId().equals(principal.getUser().getId());
+        if (!isAdmin && !isOwner) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
     @PostMapping("")
     public ResponseEntity<Void> grantPermissions(
             @PathVariable Long clazzId,
@@ -43,11 +55,16 @@ public class ClazzMemberPermissionController {
         Clazz clazz = clazzRepository.findById(clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
-        authorizationService.assertCanManage(clazz, principal, ClazzPermissionCode.MANAGE_CONTENT.name());
+        assertAdminOrOwner(clazz, principal);
 
         User targetUser = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         if (targetUser.getRole() != Role.LECTURER) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        // Không cho tự cấp quyền cho chính mình hoặc cho chủ lớp
+        if (targetUser.getId().equals(principal.getUser().getId()) ||
+                (clazz.getLecturer() != null && targetUser.getId().equals(clazz.getLecturer().getId()))) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
@@ -77,7 +94,7 @@ public class ClazzMemberPermissionController {
         Clazz clazz = clazzRepository.findById(clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
-        authorizationService.assertCanManage(clazz, principal, ClazzPermissionCode.MANAGE_CONTENT.name());
+        assertAdminOrOwner(clazz, principal);
 
         List<ClazzMemberPermission> grants = memberPermissionRepository.findByClazzIdAndUserId(clazzId, userId);
         List<String> permissionCodes = grants.stream()
@@ -96,7 +113,7 @@ public class ClazzMemberPermissionController {
         Clazz clazz = clazzRepository.findById(clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
-        authorizationService.assertCanManage(clazz, principal, ClazzPermissionCode.MANAGE_CONTENT.name());
+        assertAdminOrOwner(clazz, principal);
 
         memberPermissionRepository.deleteByClazzIdAndUserId(clazzId, userId);
         return ResponseEntity.noContent().build();

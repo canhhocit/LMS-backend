@@ -41,4 +41,10 @@ public class Enrollment extends BaseEntity {
     @Column(name = "is_retake", nullable = false)
     @Builder.Default
     private Boolean isRetake = false;
+
+    @Column(name = "semester", length = 20)
+    private String semester;
+
+    @Column(name = "academic_year", length = 20)
+    private String academicYear;
 }

@@ -25,7 +25,7 @@ public class AiQuizController {
     private final AiQuestionGeneratorService aiQuestionGeneratorService;
 
     @PostMapping("/generate-ai")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')")
     @Operation(
             summary = "Tự động trích xuất & sinh câu hỏi trắc nghiệm bằng AI",
             description = "Đọc nội dung bài giảng/văn bản và dùng AI tạo danh sách câu hỏi trắc nghiệm mẫu."
@@ -36,7 +36,7 @@ public class AiQuizController {
     }
 
     @PostMapping("/{quizId}/generate-ai")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')")
     @Operation(
             summary = "Tự động sinh và gán câu hỏi AI trực tiếp vào Quiz",
             description = "Sinh danh sách câu hỏi bằng AI và lưu trực tiếp vào đề thi trắc nghiệm (Quiz)."

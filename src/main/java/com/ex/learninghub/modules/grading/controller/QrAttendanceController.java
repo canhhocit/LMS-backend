@@ -23,7 +23,7 @@ public class QrAttendanceController {
     private final QrCodeAttendanceService qrCodeAttendanceService;
 
     @PostMapping("/session/{classId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')")
     @Operation(
             summary = "Giảng viên tạo mã QR động điểm danh",
             description = "Tạo phiên điểm danh QR code kèm mã OTP thay đổi liên tục mỗi 10 giây."

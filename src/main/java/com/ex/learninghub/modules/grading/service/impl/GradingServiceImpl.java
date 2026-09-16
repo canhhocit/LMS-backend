@@ -245,7 +245,12 @@ public class GradingServiceImpl implements GradingService {
             var policyOpt = gradingPolicyRepository.findByCurriculumId(student.getCurriculum().getId());
             if (policyOpt.isPresent()) {
                 var p = policyOpt.get();
-                return new BigDecimal[]{p.getAttendanceWeight(), p.getMidtermWeight(), p.getFinalWeight()};
+                if (p.getAttendanceWeight() != null && p.getMidtermWeight() != null && p.getFinalWeight() != null) {
+                    BigDecimal sum = p.getAttendanceWeight().add(p.getMidtermWeight()).add(p.getFinalWeight());
+                    if (sum.subtract(BigDecimal.ONE).abs().doubleValue() <= 0.001) {
+                        return new BigDecimal[]{p.getAttendanceWeight(), p.getMidtermWeight(), p.getFinalWeight()};
+                    }
+                }
             }
         }
         return new BigDecimal[]{new BigDecimal("0.000"), new BigDecimal("0.400"), new BigDecimal("0.600")};

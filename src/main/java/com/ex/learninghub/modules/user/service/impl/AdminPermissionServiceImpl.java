@@ -36,18 +36,12 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
             return false;
         }
         Object principal = authentication.getPrincipal();
-        if (!(principal instanceof UserPrincipal)) {
+        if (!(principal instanceof UserPrincipal userPrincipal)) {
             return false;
         }
-        UserPrincipal userPrincipal = (UserPrincipal) principal;
         User user = userPrincipal.getUser();
         if (user.getRole() != Role.ADMIN) {
             return false;
-        }
-        // Super admin has all permissions
-        if ("SUPER_ADMIN".equals(permissionCode)) {
-            return user.getAdminPermissions().stream()
-                    .anyMatch(p -> p.getCode() == com.ex.learninghub.common.enums.AdminPermission.SUPER_ADMIN);
         }
         return user.getAdminPermissions().stream()
                 .anyMatch(p -> p.getCode().name().equals(permissionCode));
