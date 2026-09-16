@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
@@ -30,7 +29,7 @@ public class CloudinaryService {
     public String uploadFile(MultipartFile file) {
         try {
             String resourceType = isVideo(file.getOriginalFilename()) ? "video" : "auto";
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resourceType));
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resourceType));
             String url = (String) uploadResult.get("secure_url");
             log.info("Upload file lên Cloudinary thành công: {}", url);
             return url;

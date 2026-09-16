@@ -3,7 +3,6 @@ package com.ex.learninghub.modules.search;
 import com.ex.learninghub.modules.course.entity.Course;
 import com.ex.learninghub.modules.course.repository.CourseRepository;
 import com.ex.learninghub.modules.search.service.GlobalSearchService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
