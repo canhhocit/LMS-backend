@@ -19,12 +19,16 @@ import com.ex.learninghub.common.response.ApiResponse;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    /** Malformed JSON request body → 400 */
+    /** Malformed JSON request body or missing body → 400 */
     @ExceptionHandler(value = HttpMessageNotReadableException.class)
     ResponseEntity<ApiResponse<Object>> handlingHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        String message = "Malformed JSON request";
+        if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
+            message = "Dữ liệu yêu cầu (request body) không được để trống";
+        }
         ApiResponse<Object> apiResponse = ApiResponse.builder()
                 .code(HttpStatus.BAD_REQUEST.value())
-                .message("Malformed JSON request")
+                .message(message)
                 .build();
         return ResponseEntity.badRequest().body(apiResponse);
     }
