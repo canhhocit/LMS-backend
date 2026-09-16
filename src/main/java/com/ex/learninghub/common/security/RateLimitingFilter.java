@@ -117,8 +117,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                 return null;
             }
             byte[] content = wrapper.getContentAsByteArray();
+            if (content.length == 0) {
+                content = wrapper.getInputStream().readAllBytes();
+            }
             if (content.length == 0) return null;
-            String body = new String(content, request.getCharacterEncoding());
+            String encoding = request.getCharacterEncoding();
+            String body = new String(content, encoding != null ? encoding : "UTF-8");
             @SuppressWarnings("unchecked")
             Map<String, Object> json = objectMapper.readValue(body, Map.class);
             Object identifier = json.get("identifier");
