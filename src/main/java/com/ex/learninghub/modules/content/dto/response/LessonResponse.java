@@ -13,6 +13,8 @@ public class LessonResponse {
     private String title;
     private String content;
     private String videoUrl;
+    private String attachmentUrl;
+    private String attachmentName;
     private Long chapterId;
     private LocalDateTime createdAt;
 
@@ -22,7 +24,9 @@ public class LessonResponse {
                 .title(lesson.getTitle())
                 .content(lesson.getContent())
                 .videoUrl(lesson.getVideoUrl())
-                .chapterId(lesson.getChapter() != null ? lesson.getChapter().getId() : null)
+                .attachmentUrl(lesson.getAttachmentUrl())
+                .attachmentName(lesson.getAttachmentName())
+                .chapterId(lesson.getChapter() != null ? lesson.getChapter().getId() : (lesson.getChapterId() != null ? lesson.getChapterId() : null))
                 .createdAt(lesson.getCreatedAt())
                 .build();
     }

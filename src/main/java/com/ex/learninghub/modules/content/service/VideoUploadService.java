@@ -79,5 +79,41 @@ public class VideoUploadService {
         }
     }
 
+    @Transactional
+    public String uploadLessonAttachment(Long lessonId, MultipartFile file, UserPrincipal principal) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+
+        Long chapterId = lesson.getChapterId();
+        com.ex.learninghub.modules.course.entity.Chapter chapterEntity =
+                chapterRepository.findById(chapterId)
+                        .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        var clazz = clazzRepository.findById(chapterEntity.getClazzId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+
+        boolean isAdmin = principal.getUser().getRole() == com.ex.learninghub.common.enums.Role.ADMIN;
+        boolean isOwner = clazz.getLecturer() != null
+                && clazz.getLecturer().getId().equals(principal.getUser().getId());
+        if (!isAdmin && !isOwner) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        if (file == null || file.isEmpty()) {
+            throw new AppException(ErrorCode.VIDEO_FILE_EMPTY);
+        }
+
+        try {
+            Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap("resource_type", "auto"));
+            String secureUrl = (String) result.get("secure_url");
+            lesson.setAttachmentUrl(secureUrl);
+            lesson.setAttachmentName(file.getOriginalFilename());
+            lessonRepository.save(lesson);
+            return secureUrl;
+        } catch (IOException ex) {
+            throw new AppException(ErrorCode.VIDEO_UPLOAD_FAILED);
+        }
+    }
+
     private final com.ex.learninghub.modules.course.repository.ChapterRepository chapterRepository;
 }

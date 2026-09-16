@@ -131,6 +131,8 @@ public class ContentServiceImpl implements ContentService {
                 .title(request.getTitle())
                 .content(request.getContent())
                 .videoUrl(request.getVideoUrl())
+                .attachmentUrl(request.getAttachmentUrl())
+                .attachmentName(request.getAttachmentName())
                 .build();
         Lesson saved = lessonRepository.save(lesson);
         
@@ -159,6 +161,13 @@ public class ContentServiceImpl implements ContentService {
         lesson.setTitle(request.getTitle());
         lesson.setContent(request.getContent());
         lesson.setVideoUrl(request.getVideoUrl());
+        if (request.getAttachmentUrl() != null) {
+            lesson.setAttachmentUrl(request.getAttachmentUrl());
+        }
+        if (request.getAttachmentName() != null) {
+            lesson.setAttachmentName(request.getAttachmentName());
+        }
+        return LessonResponse.from(lessonRepository.save(lesson));
         return LessonResponse.from(lessonRepository.save(lesson));
     }
 

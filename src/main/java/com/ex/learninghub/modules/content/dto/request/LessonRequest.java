@@ -16,4 +16,8 @@ public class LessonRequest {
     private String content;
 
     private String videoUrl;
+
+    private String attachmentUrl;
+
+    private String attachmentName;
 }

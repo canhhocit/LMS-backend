@@ -33,6 +33,12 @@ public class Lesson extends BaseEntity {
     @Column(name = "video_url", length = 500)
     private String videoUrl;
 
+    @Column(name = "attachment_url", length = 500)
+    private String attachmentUrl;
+
+    @Column(name = "attachment_name", length = 255)
+    private String attachmentName;
+
     @Column(nullable = false)
     @Builder.Default
     private Integer duration = 0;

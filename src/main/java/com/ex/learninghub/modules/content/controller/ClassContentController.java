@@ -206,4 +206,19 @@ public class ClassContentController {
         String url = videoUploadService.uploadLessonVideo(id, file, userPrincipal);
         return ApiResponse.success(url);
     }
+
+    @PostMapping("/lessons/{id}/upload-attachment")
+    @PreAuthorize("hasRole('LECTURER') or hasRole('ADMIN')")
+    @Operation(
+            summary = "Upload tài liệu bài học lên Cloudinary",
+            description = "Upload file tài liệu đính kèm cho bài học, lưu trên Cloudinary và trả về URL tài liệu."
+    )
+    public ApiResponse<String> uploadAttachment(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam("file")
+            org.springframework.web.multipart.MultipartFile file,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        String url = videoUploadService.uploadLessonAttachment(id, file, userPrincipal);
+        return ApiResponse.success(url);
+    }
 }
