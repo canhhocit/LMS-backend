@@ -168,7 +168,6 @@ public class ContentServiceImpl implements ContentService {
             lesson.setAttachmentName(request.getAttachmentName());
         }
         return LessonResponse.from(lessonRepository.save(lesson));
-        return LessonResponse.from(lessonRepository.save(lesson));
     }
 
     @Override
