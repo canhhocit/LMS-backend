@@ -14,7 +14,7 @@ public class ChangePasswordRequest {
     @NotBlank(message = "New password cannot be blank")
     @Pattern(
         regexp = "^(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{6,}$",
-        message = "New password must be at least 6 characters and contain at least one special character"
+        message = "Mật khẩu mới phải có ít nhất 6 ký tự và chứa ít nhất 1 ký tự đặc biệt (VD: @, #, $, !...)"
     )
     private String newPassword;
 }

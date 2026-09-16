@@ -111,7 +111,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED); // or a specific password error
+            throw new AppException(ErrorCode.OLD_PASSWORD_INCORRECT);
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
