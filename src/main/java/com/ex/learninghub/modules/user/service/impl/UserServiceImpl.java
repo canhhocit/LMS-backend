@@ -17,7 +17,10 @@ import com.ex.learninghub.modules.user.repository.AdministrativeClassRepository;
 import com.ex.learninghub.modules.user.repository.AdminPermissionRepository;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import com.ex.learninghub.modules.user.service.UserService;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -42,6 +45,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     @Value("${app.default-password:Password@123}")
@@ -222,6 +226,8 @@ public class UserServiceImpl implements UserService {
         return value != null ? value : "";
     }
 
+    private static final DataFormatter DATA_FORMATTER = new DataFormatter();
+
     private List<User> importUsers(MultipartFile file, Role role) {
         List<User> users = new ArrayList<>();
         // Template: STT | Lớp | MSV | Họ đệm | Tên | Ngày sinh
@@ -285,24 +291,28 @@ public class UserServiceImpl implements UserService {
                     // Ignore parsing error, keep null
                 }
 
-                users.add(userRepository.save(user));
+                users.add(user);
             }
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Error parsing Excel file for import: ", e);
             throw new AppException(ErrorCode.EXCEL_PARSE_ERROR);
         }
 
-        return users;
+        return userRepository.saveAll(users);
     }
 
     private String getCellValue(org.apache.poi.ss.usermodel.Cell cell) {
         if (cell == null) return "";
-        switch (cell.getCellType()) {
-            case STRING: return cell.getStringCellValue().trim();
-            case NUMERIC: return String.valueOf((long) cell.getNumericCellValue());
-            default: return "";
+        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+            try {
+                return cell.getLocalDateTimeCellValue().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            } catch (Exception e) {
+                return DATA_FORMATTER.formatCellValue(cell).trim();
+            }
         }
+        return DATA_FORMATTER.formatCellValue(cell).trim();
     }
 
     // ---- Profile ----
