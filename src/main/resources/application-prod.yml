@@ -3,7 +3,7 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=require}
+    url: ${POSTGRES_URL:jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?sslmode=require}
     driver-class-name: org.postgresql.Driver
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
