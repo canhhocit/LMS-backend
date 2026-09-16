@@ -209,7 +209,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     @Transactional
     public void unregister(Long clazzId, UserPrincipal principal) {
-        RegistrationPeriod period = getOpenPeriod();
+        getOpenPeriod(); // Kiểm tra đợt đăng ký đang mở
         User student = principal.getUser();
 
         Enrollment e = enrollmentRepository.findByStudentIdAndClazzId(student.getId(), clazzId)

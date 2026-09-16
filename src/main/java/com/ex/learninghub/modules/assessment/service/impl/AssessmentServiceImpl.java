@@ -211,8 +211,9 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional
     public List<String> uploadSubmissionFiles(Long assignmentId, List<MultipartFile> files, UserPrincipal userPrincipal) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
+        if (!assignmentRepository.existsById(assignmentId)) {
+            throw new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND);
+        }
         if (files == null || files.isEmpty()) {
             throw new AppException(ErrorCode.SUBMISSION_FILE_EMPTY);
         }

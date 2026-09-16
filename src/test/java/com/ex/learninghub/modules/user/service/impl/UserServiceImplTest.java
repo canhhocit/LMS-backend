@@ -3,7 +3,7 @@ package com.ex.learninghub.modules.user.service.impl;
 import com.ex.learninghub.common.enums.AdminPermission;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.modules.user.dto.request.UserCreateRequest;
-import com.ex.learninghub.modules.user.entity.AdministrativeClass;
+
 import com.ex.learninghub.modules.user.entity.AdminPermissionEntity;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.AdministrativeClassRepository;
@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
-import java.util.Set;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

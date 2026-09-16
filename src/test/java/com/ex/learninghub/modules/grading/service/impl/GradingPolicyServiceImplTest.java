@@ -7,7 +7,7 @@ import com.ex.learninghub.modules.curriculum.repository.CurriculumRepository;
 import com.ex.learninghub.modules.grading.dto.request.GpaScaleRuleRequest;
 import com.ex.learninghub.modules.grading.dto.request.GradingPolicyRequest;
 import com.ex.learninghub.modules.grading.dto.response.GradingPolicyResponse;
-import com.ex.learninghub.modules.grading.entity.GradingPolicy;
+
 import com.ex.learninghub.modules.grading.repository.GpaScaleRuleRepository;
 import com.ex.learninghub.modules.grading.repository.GradingPolicyRepository;
 import org.junit.jupiter.api.BeforeEach;

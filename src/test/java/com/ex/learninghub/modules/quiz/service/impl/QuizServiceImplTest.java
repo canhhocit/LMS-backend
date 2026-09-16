@@ -2,7 +2,7 @@ package com.ex.learninghub.modules.quiz.service.impl;
 
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
-import com.ex.learninghub.common.security.UserPrincipal;
+
 import com.ex.learninghub.modules.assessment.entity.Question;
 import com.ex.learninghub.modules.assessment.entity.Quiz;
 import com.ex.learninghub.modules.assessment.repository.QuestionRepository;
@@ -51,14 +51,15 @@ class QuizServiceImplTest {
     private QuizServiceImpl quizService;
 
     private User student;
-    private UserPrincipal studentPrincipal;
+
     private Quiz quiz;
 
     @BeforeEach
     void setUp() {
         student = User.builder().email("sv@test.edu.vn").role(Role.STUDENT).build();
         student.setId(1L);
-        studentPrincipal = new UserPrincipal(student);
+
+
 
         Clazz clazz = Clazz.builder().className("INT1001").build();
         clazz.setId(10L);
