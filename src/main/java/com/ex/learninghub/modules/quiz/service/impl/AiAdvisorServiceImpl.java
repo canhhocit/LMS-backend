@@ -81,16 +81,13 @@ public class AiAdvisorServiceImpl implements AiAdvisorService {
 
         double totalGradeSum = 0;
         int gradeCount = 0;
-        double lowGradeCount = 0;
 
         for (Grade g : grades) {
             if (g.getTotalScore() != null) {
                 double score = g.getTotalScore().doubleValue();
                 totalGradeSum += score;
                 gradeCount++;
-                if (score < 5.0) {
-                    lowGradeCount++;
-                }
+
             }
         }
 

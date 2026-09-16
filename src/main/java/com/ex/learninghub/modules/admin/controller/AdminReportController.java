@@ -52,7 +52,7 @@ public class AdminReportController {
     private final com.ex.learninghub.modules.user.repository.UserRepository userRepository;
     private final TranscriptPdfExporter transcriptPdfExporter;
 
-    @GetMapping("/reports/enrollments-by-month")
+    @GetMapping("/enrollments-by-month")
     @PreAuthorize("hasPermission(null, 'VIEW_REPORTS')")
     @Operation(
             summary = "Thống kê lượt đăng ký theo tháng",
@@ -62,7 +62,7 @@ public class AdminReportController {
         return ApiResponse.success(adminService.getEnrollmentsByMonth());
     }
 
-    @GetMapping("/reports/average-score-by-clazz")
+    @GetMapping("/average-score-by-clazz")
     @PreAuthorize("hasPermission(null, 'VIEW_REPORTS')")
     @Operation(
             summary = "Thống kê điểm trung bình theo lớp học phần",

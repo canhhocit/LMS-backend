@@ -1,6 +1,5 @@
 package com.ex.learninghub.modules.course.controller;
 
-import com.ex.learninghub.common.enums.ClazzPermissionCode;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
@@ -12,7 +11,6 @@ import com.ex.learninghub.modules.course.entity.ClazzPermission;
 import com.ex.learninghub.modules.course.repository.ClazzMemberPermissionRepository;
 import com.ex.learninghub.modules.course.repository.ClazzPermissionRepository;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
-import com.ex.learninghub.modules.course.service.ClazzAuthorizationService;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +30,6 @@ public class ClazzMemberPermissionController {
     private final UserRepository userRepository;
     private final ClazzPermissionRepository clazzPermissionRepository;
     private final ClazzMemberPermissionRepository memberPermissionRepository;
-    private final ClazzAuthorizationService authorizationService;
 
     private void assertAdminOrOwner(Clazz clazz, UserPrincipal principal) {
         if (principal == null || principal.getUser() == null) {
