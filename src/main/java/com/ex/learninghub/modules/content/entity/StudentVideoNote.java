@@ -21,6 +21,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,6 +32,7 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Table(name = "student_video_notes")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class StudentVideoNote {
 
     @Id
@@ -36,10 +41,12 @@ public class StudentVideoNote {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lesson_id", nullable = false)
+    @JsonIgnore
     private Lesson lesson;
 
     @Column(name = "note_text", nullable = false, columnDefinition = "TEXT")
@@ -51,4 +58,14 @@ public class StudentVideoNote {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @JsonProperty("lessonId")
+    public Long getLessonId() {
+        return lesson != null ? lesson.getId() : null;
+    }
+
+    @JsonProperty("userId")
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
+    }
 }

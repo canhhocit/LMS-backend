@@ -1,4 +1,7 @@
 spring:
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
   data:
     redis:
       url: ${REDIS_URL:}

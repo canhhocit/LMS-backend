@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,6 +19,7 @@ import lombok.Setter;
 @Builder
 @Entity
 @Table(name = "administrative_classes")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class AdministrativeClass extends BaseEntity {
 
     @Column(name = "class_name", unique = true, nullable = false, length = 50)
