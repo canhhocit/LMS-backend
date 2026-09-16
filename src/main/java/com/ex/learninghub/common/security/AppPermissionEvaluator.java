@@ -6,6 +6,7 @@ import com.ex.learninghub.modules.course.service.ClazzAuthorizationService;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.entity.Clazz;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.security.access.PermissionEvaluator;
