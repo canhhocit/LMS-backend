@@ -17,6 +17,7 @@ import com.ex.learninghub.modules.user.repository.AdministrativeClassRepository;
 import com.ex.learninghub.modules.user.repository.AdminPermissionRepository;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import com.ex.learninghub.modules.user.service.UserService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
