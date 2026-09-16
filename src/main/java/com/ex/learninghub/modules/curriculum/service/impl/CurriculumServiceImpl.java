@@ -45,6 +45,7 @@ public class CurriculumServiceImpl implements CurriculumService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = {"curricula", "curriculaList"}, allEntries = true)
     public CurriculumResponse createCurriculum(CurriculumRequest request) {
         Curriculum c = Curriculum.builder()
                 .name(request.getName())
@@ -57,6 +58,7 @@ public class CurriculumServiceImpl implements CurriculumService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = {"curricula", "curriculaList"}, allEntries = true)
     public CurriculumResponse updateCurriculum(Long id, CurriculumRequest request) {
         Curriculum c = curriculumRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CURRICULUM_NOT_FOUND));
@@ -69,12 +71,14 @@ public class CurriculumServiceImpl implements CurriculumService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = {"curricula", "curriculaList"}, allEntries = true)
     public void deleteCurriculum(Long id) {
         curriculumRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(value = "curriculaList")
     public List<CurriculumResponse> listCurricula() {
         return curriculumRepository.findAll().stream()
                 .map(CurriculumResponse::from)
@@ -83,6 +87,7 @@ public class CurriculumServiceImpl implements CurriculumService {
 
     @Override
     @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(value = "curricula", key = "#id")
     public CurriculumResponse getCurriculum(Long id) {
         return curriculumRepository.findById(id)
                 .map(CurriculumResponse::from)
