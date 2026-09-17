@@ -1,0 +1,212 @@
+package com.ex.learninghub.common.email;
+
+import com.ex.learninghub.modules.tuition.entity.TuitionInvoice;
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
+/**
+ * Service gửi email HTML không trả lời (no-reply) cho các sự kiện quan trọng.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class EmailService {
+
+    private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.from:no-reply@learninghub.edu.vn}")
+    private String fromAddress;
+
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+    private static final NumberFormat VND =
+            NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+
+    // ===================================================================
+    //  Tuition: gửi email xác nhận thanh toán
+    // ===================================================================
+
+    @Async("taskExecutor")
+    public void sendTuitionPaymentConfirmation(TuitionInvoice invoice) {
+        String to = resolveEmail(invoice);
+        if (to == null) {
+            log.warn("[Email] Sinh viên {} không có email – bỏ qua gửi xác nhận học phí",
+                    invoice.getStudent() != null ? invoice.getStudent().getFullName() : "?");
+            return;
+        }
+
+        try {
+            MimeMessage msg = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
+            helper.setFrom(fromAddress, "LearningHub – Phòng Tài chính [no-reply]");
+            helper.setTo(to);
+            helper.setSubject("[LearningHub] Xác nhận thanh toán học phí – Mã HĐ #TUITION-" + invoice.getId());
+            helper.setText(buildPaymentConfirmationHtml(invoice), true); // true = HTML
+            mailSender.send(msg);
+            log.info("[Email] Đã gửi xác nhận thanh toán học phí tới {} (invoiceId={})", to, invoice.getId());
+        } catch (Exception e) {
+            log.warn("[Email] Gửi mail xác nhận học phí thất bại (có thể do môi trường dev/offline): {}", e.getMessage());
+        }
+    }
+
+    // ===================================================================
+    //  Private helpers
+    // ===================================================================
+
+    /** Ưu tiên email cá nhân (personalEmail) của sinh viên, fallback về email tổ chức. */
+    private String resolveEmail(TuitionInvoice invoice) {
+        if (invoice.getStudent() == null) return null;
+        var student = invoice.getStudent();
+        if (student.getPersonalEmail() != null && !student.getPersonalEmail().isBlank()) {
+            return student.getPersonalEmail();
+        }
+        if (student.getEmail() != null && !student.getEmail().isBlank()) {
+            return student.getEmail();
+        }
+        return null;
+    }
+
+    private String buildPaymentConfirmationHtml(TuitionInvoice inv) {
+        String studentName = inv.getStudent() != null ? inv.getStudent().getFullName() : "Sinh viên";
+        String studentId   = inv.getStudent() != null && inv.getStudent().getStudentCode() != null
+                ? inv.getStudent().getStudentCode() : "—";
+        String paidAtStr   = inv.getPaidAt() != null ? inv.getPaidAt().format(DATE_FMT) : "—";
+        String dueDateStr  = inv.getDueDate() != null ? inv.getDueDate().format(DATE_FMT) : "—";
+        String amountStr   = VND.format(inv.getAmount() != null ? inv.getAmount() : BigDecimal.ZERO);
+        String ppCreditStr = VND.format(inv.getPricePerCredit() != null ? inv.getPricePerCredit() : BigDecimal.ZERO);
+        int credits        = inv.getTotalCredits() != null ? inv.getTotalCredits() : 0;
+        String invoiceId   = "#TUITION-" + inv.getId();
+        String semester    = inv.getSemester() != null ? inv.getSemester() : "—";
+        String acadYear    = inv.getAcademicYear() != null ? inv.getAcademicYear() : "—";
+
+        return """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8"/>
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                  <title>Xác nhận thanh toán học phí</title>
+                </head>
+                <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Inter,'Segoe UI',Arial,sans-serif;">
+                  <table width="100%%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:40px 20px;">
+                    <tr><td align="center">
+                      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%%;">
+
+                        <!-- HEADER -->
+                        <tr>
+                          <td style="background:linear-gradient(135deg,#4f46e5 0%%,#2563eb 100%%);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
+                            <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:16px;">
+                              <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:0.5px;">🎓 LearningHub</span>
+                            </div>
+                            <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">Xác nhận thanh toán học phí</h1>
+                            <p style="color:#c7d2fe;margin:8px 0 0;font-size:14px;">Giao dịch đã được ghi nhận thành công</p>
+                          </td>
+                        </tr>
+
+                        <!-- SUCCESS BADGE -->
+                        <tr>
+                          <td style="background:#ffffff;padding:28px 40px 20px;text-align:center;">
+                            <div style="display:inline-flex;align-items:center;gap:10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:999px;padding:10px 22px;">
+                              <span style="font-size:20px;">✅</span>
+                              <span style="color:#065f46;font-weight:700;font-size:15px;">Thanh toán thành công</span>
+                            </div>
+                          </td>
+                        </tr>
+
+                        <!-- STUDENT INFO -->
+                        <tr>
+                          <td style="background:#ffffff;padding:0 40px 20px;">
+                            <p style="margin:0 0 4px;color:#64748b;font-size:13px;">Kính gửi,</p>
+                            <p style="margin:0;color:#1e293b;font-size:16px;font-weight:700;">%s</p>
+                            <p style="margin:4px 0 0;color:#64748b;font-size:13px;">Mã sinh viên: <strong>%s</strong></p>
+                          </td>
+                        </tr>
+
+                        <!-- INVOICE CARD -->
+                        <tr>
+                          <td style="background:#ffffff;padding:0 40px 28px;">
+                            <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+                              <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-weight:700;color:#334155;font-size:14px;">Hóa đơn học phí</span>
+                                <span style="font-size:13px;color:#6366f1;font-weight:600;">%s</span>
+                              </div>
+                              <table width="100%%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                                %s
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+
+                        <!-- TOTAL AMOUNT -->
+                        <tr>
+                          <td style="background:#ffffff;padding:0 40px 28px;">
+                            <div style="background:linear-gradient(135deg,#4f46e5 0%%,#2563eb 100%%);border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
+                              <span style="color:#c7d2fe;font-size:14px;font-weight:600;">Tổng số tiền đã thanh toán:</span>
+                              <span style="color:#ffffff;font-size:22px;font-weight:800;">%s</span>
+                            </div>
+                          </td>
+                        </tr>
+
+                        <!-- FOOTER NOTE -->
+                        <tr>
+                          <td style="background:#ffffff;padding:0 40px 28px;">
+                            <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;">
+                              <p style="margin:0;color:#78350f;font-size:13px;line-height:1.6;">
+                                📌 <strong>Lưu ý:</strong> Email này được gửi tự động từ hệ thống LearningHub. Vui lòng không trả lời email này.
+                                Nếu bạn có thắc mắc về hóa đơn, hãy liên hệ Phòng Tài chính – Kế toán của trường hoặc đăng nhập vào
+                                cổng thông tin sinh viên để kiểm tra.
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+
+                        <!-- FOOTER -->
+                        <tr>
+                          <td style="background:#1e293b;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;">
+                            <p style="color:#94a3b8;font-size:12px;margin:0 0 4px;">© 2026 LearningHub – Hệ thống quản lý học tập</p>
+                            <p style="color:#475569;font-size:11px;margin:0;">Email tự động – no-reply@learninghub.edu.vn</p>
+                          </td>
+                        </tr>
+
+                      </table>
+                    </td></tr>
+                  </table>
+                </body>
+                </html>
+                """.formatted(
+                studentName, studentId,
+                invoiceId,
+                buildInvoiceRows(semester, acadYear, credits, ppCreditStr, paidAtStr, dueDateStr),
+                amountStr
+        );
+    }
+
+    private static String buildInvoiceRows(String semester, String acadYear, int credits,
+                                           String ppCredit, String paidAt, String dueDate) {
+        return buildRow("Học kỳ", semester, false)
+             + buildRow("Năm học", acadYear, true)
+             + buildRow("Số tín chỉ", credits + " tín chỉ", false)
+             + buildRow("Đơn giá / tín chỉ", ppCredit, true)
+             + buildRow("Thời gian thanh toán", paidAt, false)
+             + buildRow("Hạn thanh toán gốc", dueDate, true);
+    }
+
+    private static String buildRow(String label, String value, boolean shaded) {
+        String bg = shaded ? "#f8fafc" : "#ffffff";
+        return "<tr>"
+             + "<td style=\"padding:11px 20px;color:#64748b;font-size:13px;background:" + bg + ";border-bottom:1px solid #f1f5f9;\">" + label + ":</td>"
+             + "<td style=\"padding:11px 20px;color:#1e293b;font-size:13px;font-weight:600;background:" + bg + ";border-bottom:1px solid #f1f5f9;text-align:right;\">" + value + "</td>"
+             + "</tr>";
+    }
+}

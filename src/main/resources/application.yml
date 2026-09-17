@@ -37,6 +37,7 @@ spring:
     port: 587
     username: ${MAIL_USERNAME:${SMTP_USERNAME:}}
     password: ${MAIL_PASSWORD:${SMTP_PASSWORD:}}
+    from: ${MAIL_FROM:no-reply@learninghub.edu.vn}
     properties:
       mail:
         smtp:

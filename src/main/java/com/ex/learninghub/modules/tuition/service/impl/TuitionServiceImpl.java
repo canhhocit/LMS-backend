@@ -1,10 +1,13 @@
 package com.ex.learninghub.modules.tuition.service.impl;
 
+import com.ex.learninghub.common.email.EmailService;
+import com.ex.learninghub.common.enums.NotificationType;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
+import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.tuition.dto.request.TuitionRateRequest;
 import com.ex.learninghub.modules.tuition.dto.response.TuitionInvoiceResponse;
 import com.ex.learninghub.modules.tuition.dto.response.TuitionRateResponse;
@@ -33,6 +36,8 @@ public class TuitionServiceImpl implements TuitionService {
     private final TuitionInvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
 
     // ============== Rates ==============
     @Override
@@ -147,8 +152,22 @@ public class TuitionServiceImpl implements TuitionService {
             return TuitionInvoiceResponse.from(inv);
         }
         inv.setStatus("PAID");
-        inv.setPaidAt(LocalDateTime.now());
-        return TuitionInvoiceResponse.from(invoiceRepository.save(inv));
+        inv.setPaidAt(java.time.LocalDateTime.now());
+        TuitionInvoice saved = invoiceRepository.save(inv);
+
+        // Gửi email xác nhận (async, no-reply)
+        emailService.sendTuitionPaymentConfirmation(saved);
+
+        // Thông báo trong ứng dụng
+        notificationService.notifyUser(
+                saved.getStudent().getId(),
+                NotificationType.COURSE_REGISTERED,
+                "Đã thanh toán học phí thành công",
+                "Hóa đơn học phí kỳ " + saved.getSemester() + " năm " + saved.getAcademicYear()
+                        + " đã được ghi nhận. Kiểm tra email cá nhân của bạn để xem hóa đơn.",
+                saved.getId());
+
+        return TuitionInvoiceResponse.from(saved);
     }
 
     @Override
@@ -160,7 +179,23 @@ public class TuitionServiceImpl implements TuitionService {
             return TuitionInvoiceResponse.from(inv); // idempotent
         }
         inv.setStatus("PAID");
-        inv.setPaidAt(LocalDateTime.now());
-        return TuitionInvoiceResponse.from(invoiceRepository.save(inv));
+        inv.setPaidAt(java.time.LocalDateTime.now());
+        TuitionInvoice saved = invoiceRepository.save(inv);
+
+        // Gửi email xác nhận khi Admin đánh dấu đã thanh toán
+        emailService.sendTuitionPaymentConfirmation(saved);
+
+        // Thông báo trong ứng dụng
+        if (saved.getStudent() != null) {
+            notificationService.notifyUser(
+                    saved.getStudent().getId(),
+                    NotificationType.COURSE_REGISTERED,
+                    "Học phí đã được xác nhận",
+                    "Hóa đơn học phí kỳ " + saved.getSemester() + " năm " + saved.getAcademicYear()
+                            + " đã được phong Tài chính xác nhận. Kiểm tra email để xem hóa đơn.",
+                    saved.getId());
+        }
+
+        return TuitionInvoiceResponse.from(saved);
     }
 }
