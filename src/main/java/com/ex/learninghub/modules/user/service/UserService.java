@@ -17,6 +17,7 @@ public interface UserService {
     List<User> importStudentsFromExcel(MultipartFile file);
     List<User> importLecturersFromExcel(MultipartFile file);
 
+    Page<UserResponse> getStudents(String keyword, String adminClassName, Pageable pageable);
     Page<UserResponse> getStudents(String keyword, Pageable pageable);
     Page<UserResponse> getLecturers(String keyword, Pageable pageable);
     UserResponse getUserById(Long id);

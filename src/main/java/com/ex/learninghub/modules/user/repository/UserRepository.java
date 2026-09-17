@@ -4,6 +4,7 @@ import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.modules.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,7 +27,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:email) OR (u.personalEmail IS NOT NULL AND LOWER(u.personalEmail) = LOWER(:email))")
     Optional<User> findByEmailOrPersonalEmail(@Param("email") String email);
 
+    @EntityGraph(attributePaths = {"adminClass", "curriculum"})
+    Page<User> findByRoleAndAdminClass_ClassName(Role role, String adminClassName, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"adminClass", "curriculum"})
+    @Query("SELECT u FROM User u WHERE u.role = :role AND u.adminClass.className = :adminClassName AND " +
+           "(LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(u.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(u.lecturerCode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<User> findByRoleAdminClassAndKeyword(@Param("role") Role role,
+                                              @Param("adminClassName") String adminClassName,
+                                              @Param("keyword") String keyword,
+                                              Pageable pageable);
+
+    @EntityGraph(attributePaths = {"adminClass", "curriculum"})
     @Query("SELECT u FROM User u WHERE u.role = :role AND " +
            "(:keyword IS NULL OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
@@ -36,6 +51,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                     @Param("keyword") String keyword,
                                     Pageable pageable);
 
+    @EntityGraph(attributePaths = {"adminClass", "curriculum"})
     Page<User> findByRole(Role role, Pageable pageable);
 
     List<User> findByRole(Role role);

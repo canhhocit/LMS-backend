@@ -153,16 +153,33 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<UserResponse> getStudents(String keyword, Pageable pageable) {
-        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        Page<User> users = kw == null
-            ? userRepository.findByRole(Role.STUDENT, pageable)
-            : userRepository.findByRoleAndKeyword(Role.STUDENT, kw, pageable);
-        return users
-                .map(UserResponse::from);
+        return getStudents(keyword, null, pageable);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getStudents(String keyword, String adminClassName, Pageable pageable) {
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        String cls = (adminClassName != null && !adminClassName.isBlank()) ? adminClassName.trim() : null;
+        
+        Page<User> users;
+        if (cls != null && kw != null) {
+            users = userRepository.findByRoleAdminClassAndKeyword(Role.STUDENT, cls, kw, pageable);
+        } else if (cls != null) {
+            users = userRepository.findByRoleAndAdminClass_ClassName(Role.STUDENT, cls, pageable);
+        } else if (kw != null) {
+            users = userRepository.findByRoleAndKeyword(Role.STUDENT, kw, pageable);
+        } else {
+            users = userRepository.findByRole(Role.STUDENT, pageable);
+        }
+        
+        return users.map(UserResponse::from);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<UserResponse> getLecturers(String keyword, Pageable pageable) {
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
         Page<User> users = kw == null
@@ -173,6 +190,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));

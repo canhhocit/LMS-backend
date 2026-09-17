@@ -1,4 +1,9 @@
 spring:
+  jmx:
+    enabled: false
+  application:
+    admin:
+      enabled: false
   jackson:
     serialization:
       fail-on-empty-beans: false

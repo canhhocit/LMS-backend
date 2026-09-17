@@ -47,6 +47,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final com.ex.learninghub.modules.grading.service.AcademicStatusService academicStatusService;
     private final NotificationService notificationService;
     private final com.ex.learninghub.modules.tuition.service.TuitionService tuitionService;
+    private final com.ex.learninghub.common.email.EmailService emailService;
 
     /** Trần tín chỉ áp dụng cho sinh viên bị probation (warningLevel >= 2). */
     @org.springframework.beans.factory.annotation.Value("${app.registration.max-credits-probation:14}")
@@ -222,6 +223,11 @@ public class RegistrationServiceImpl implements RegistrationService {
             }
         }
 
+        // Gửi email xác nhận đăng ký học phần + hạn đóng học phí về email cá nhân (personalEmail) của SV
+        try {
+            emailService.sendCourseRegistrationEmail(student, clazz, period);
+        } catch (Exception ignored) {}
+
         return RegistrationResponse.from(savedEnrollment);
     }
 
@@ -268,12 +274,8 @@ public class RegistrationServiceImpl implements RegistrationService {
     }
 
     private void deactivateAll() {
-        periodRepository.findAll().forEach(p -> {
-            if (Boolean.TRUE.equals(p.getIsActive())) {
-                p.setIsActive(false);
-                periodRepository.save(p);
-            }
-        });
+        periodRepository.deactivateAllActive();
+        periodRepository.flush();
     }
 
     /**

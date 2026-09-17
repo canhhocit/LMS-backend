@@ -61,11 +61,12 @@ public class AdminUserController {
     }
 
     @GetMapping("/students")
-    @Operation(summary = "Danh sách sinh viên (phân trang)", description = "Trả về danh sách sinh viên có phân trang, hỗ trợ tìm kiếm theo từ khóa.")
+    @Operation(summary = "Danh sách sinh viên (phân trang)", description = "Trả về danh sách sinh viên có phân trang, hỗ trợ tìm kiếm theo từ khóa và lọc theo lớp hành chính.")
     public ApiResponse<Page<UserResponse>> getStudents(
             @RequestParam(required = false) String keyword,
-            @ParameterObject @PageableDefault(size = 20, sort = "fullName") Pageable pageable) {
-        return ApiResponse.success(userService.getStudents(keyword, pageable));
+            @RequestParam(required = false) String adminClassName,
+            @ParameterObject @PageableDefault(size = 500, sort = "fullName") Pageable pageable) {
+        return ApiResponse.success(userService.getStudents(keyword, adminClassName, pageable));
     }
 
     @GetMapping("/lecturers")

@@ -99,6 +99,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
     }
 
+    /** Client disconnected prematurely (e.g. browser refresh / tab close / mobile cancel) */
+    @ExceptionHandler(value = {
+        org.apache.catalina.connector.ClientAbortException.class,
+        org.springframework.web.context.request.async.AsyncRequestNotUsableException.class
+    })
+    void handlingClientAbort(Exception ex) {
+        log.debug("Client closed connection prematurely: {}", ex.getMessage());
+    }
+
     /** Authenticated but not enough role → 403 */
     @ExceptionHandler(value = AccessDeniedException.class)
     ResponseEntity<ApiResponse<Object>> handlingAccessDeniedException(AccessDeniedException ex) {
