@@ -91,6 +91,12 @@ public class UserServiceImpl implements UserService {
         AdministrativeClass adminClass = resolveAdminClass(request.getAdminClassId(), request.getAdminClassName());
         if (adminClass != null) {
             user.setAdminClass(adminClass);
+            if (user.getFaculty() == null || user.getFaculty().isBlank()) {
+                user.setFaculty(adminClass.getFaculty());
+            }
+            if (user.getCurriculum() == null && adminClass.getCurriculum() != null) {
+                user.setCurriculum(adminClass.getCurriculum());
+            }
         }
 
         if (request.getCurriculumId() != null) {
@@ -435,6 +441,12 @@ public class UserServiceImpl implements UserService {
         AdministrativeClass adminClass = resolveAdminClass(request.getAdminClassId(), request.getAdminClassName());
         if (adminClass != null) {
             user.setAdminClass(adminClass);
+            if (user.getFaculty() == null || user.getFaculty().isBlank()) {
+                user.setFaculty(adminClass.getFaculty());
+            }
+            if (user.getCurriculum() == null && adminClass.getCurriculum() != null) {
+                user.setCurriculum(adminClass.getCurriculum());
+            }
         }
 
         if (request.getCurriculumId() != null) {

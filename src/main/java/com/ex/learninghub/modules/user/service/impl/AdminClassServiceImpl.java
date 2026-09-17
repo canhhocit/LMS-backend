@@ -22,6 +22,7 @@ public class AdminClassServiceImpl implements AdminClassService {
 
     private final AdministrativeClassRepository adminClassRepository;
     private final UserRepository userRepository;
+    private final com.ex.learninghub.modules.curriculum.repository.CurriculumRepository curriculumRepository;
 
     @Override
     @Transactional
@@ -34,6 +35,10 @@ public class AdminClassServiceImpl implements AdminClassService {
                 .faculty(request.getFaculty())
                 .academicYear(request.getAcademicYear())
                 .build();
+        if (request.getCurriculumId() != null) {
+            curriculumRepository.findById(request.getCurriculumId())
+                    .ifPresent(ac::setCurriculum);
+        }
         return AdminClassResponse.from(adminClassRepository.save(ac), 0);
     }
 
@@ -45,6 +50,11 @@ public class AdminClassServiceImpl implements AdminClassService {
         ac.setClassName(request.getClassName());
         ac.setFaculty(request.getFaculty());
         ac.setAcademicYear(request.getAcademicYear());
+        if (request.getCurriculumId() != null) {
+            ac.setCurriculum(curriculumRepository.findById(request.getCurriculumId()).orElse(null));
+        } else {
+            ac.setCurriculum(null);
+        }
         int count = (int) userRepository.countByAdminClassId(id);
         return AdminClassResponse.from(adminClassRepository.save(ac), count);
     }

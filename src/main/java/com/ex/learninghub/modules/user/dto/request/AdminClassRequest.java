@@ -14,4 +14,6 @@ public class AdminClassRequest {
     private String faculty;
 
     private String academicYear;
+
+    private Long curriculumId;
 }

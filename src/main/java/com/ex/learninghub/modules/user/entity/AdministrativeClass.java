@@ -30,4 +30,8 @@ public class AdministrativeClass extends BaseEntity {
 
     @Column(name = "academic_year", length = 20)
     private String academicYear;
+
+    @jakarta.persistence.ManyToOne(jakarta.persistence.FetchType.LAZY)
+    @jakarta.persistence.JoinColumn(name = "curriculum_id")
+    private com.ex.learninghub.modules.curriculum.entity.Curriculum curriculum;
 }

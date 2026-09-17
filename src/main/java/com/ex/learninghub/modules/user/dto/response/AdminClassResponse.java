@@ -14,6 +14,8 @@ public class AdminClassResponse {
     private String className;
     private String faculty;
     private String academicYear;
+    private Long curriculumId;
+    private String curriculumName;
     private Integer studentCount;
     private LocalDateTime createdAt;
 
@@ -23,6 +25,8 @@ public class AdminClassResponse {
                 .className(ac.getClassName())
                 .faculty(ac.getFaculty())
                 .academicYear(ac.getAcademicYear())
+                .curriculumId(ac.getCurriculum() != null ? ac.getCurriculum().getId() : null)
+                .curriculumName(ac.getCurriculum() != null ? ac.getCurriculum().getName() : null)
                 .studentCount(studentCount)
                 .createdAt(ac.getCreatedAt())
                 .build();
