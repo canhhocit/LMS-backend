@@ -67,6 +67,10 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
+        String pwd = (request.getPassword() != null && !request.getPassword().isBlank())
+                ? request.getPassword()
+                : defaultPassword;
+
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
@@ -76,7 +80,7 @@ public class UserServiceImpl implements UserService {
                 .dateOfBirth(request.getDateOfBirth())
                 .faculty(request.getFaculty())
                 .major(request.getMajor())
-                .password(passwordEncoder.encode(defaultPassword))
+                .password(passwordEncoder.encode(pwd))
                 .isFirstLogin(true)
                 .build();
 
@@ -84,9 +88,8 @@ public class UserServiceImpl implements UserService {
             user.setAdminPermissions(resolveDefaultAdminPermissions());
         }
 
-        if (request.getAdminClassId() != null) {
-            AdministrativeClass adminClass = adminClassRepository.findById(request.getAdminClassId())
-                    .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
+        AdministrativeClass adminClass = resolveAdminClass(request.getAdminClassId(), request.getAdminClassName());
+        if (adminClass != null) {
             user.setAdminClass(adminClass);
         }
 
@@ -97,6 +100,24 @@ public class UserServiceImpl implements UserService {
         }
 
         return userRepository.save(user);
+    }
+
+    private AdministrativeClass resolveAdminClass(Long adminClassId, String adminClassName) {
+        if (adminClassId != null) {
+            return adminClassRepository.findById(adminClassId)
+                    .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
+        }
+        if (adminClassName != null && !adminClassName.trim().isEmpty()) {
+            String className = adminClassName.trim();
+            return adminClassRepository.findByClassName(className)
+                    .orElseGet(() -> adminClassRepository.save(
+                            AdministrativeClass.builder()
+                                    .className(className)
+                                    .code(className.replaceAll("\\s+", "").toUpperCase())
+                                    .build()
+                    ));
+        }
+        return null;
     }
 
     private java.util.Set<AdminPermissionEntity> resolveDefaultAdminPermissions() {
@@ -388,19 +409,39 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateUser(Long id, UserCreateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        user.setFullName(request.getFullName());
+
+        if (request.getEmail() != null && !request.getEmail().isBlank() && !request.getEmail().equalsIgnoreCase(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
+            }
+            user.setEmail(request.getEmail().trim());
+        }
+
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName().trim());
+        }
         user.setDateOfBirth(request.getDateOfBirth());
         user.setFaculty(request.getFaculty());
         user.setMajor(request.getMajor());
-        user.setAvatarUrl(request.getAvatarUrl());
-        user.setStudentCode(request.getStudentCode());
-        user.setLecturerCode(request.getLecturerCode());
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+        if (request.getStudentCode() != null) {
+            user.setStudentCode(request.getStudentCode());
+        }
+        if (request.getLecturerCode() != null) {
+            user.setLecturerCode(request.getLecturerCode());
+        }
+
+        AdministrativeClass adminClass = resolveAdminClass(request.getAdminClassId(), request.getAdminClassName());
+        if (adminClass != null) {
+            user.setAdminClass(adminClass);
+        }
+
         if (request.getCurriculumId() != null) {
             var curriculum = curriculumRepository.findById(request.getCurriculumId())
                     .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
             user.setCurriculum(curriculum);
-        } else {
-            user.setCurriculum(null);
         }
         return UserResponse.from(userRepository.save(user));
     }

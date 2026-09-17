@@ -29,5 +29,7 @@ public class UserCreateRequest {
     private String major;
     private String avatarUrl;
     private Long adminClassId;
+    private String adminClassName;
+    private String password;
     private Long curriculumId;
 }
