@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -17,6 +18,8 @@ public class GradeResponse {
     private BigDecimal midtermScore;
     private BigDecimal finalScore;
     private BigDecimal totalScore;
+    private Boolean isPublished;
+    private LocalDateTime publishedAt;
 
     public static GradeResponse from(Grade grade) {
         return GradeResponse.builder()
@@ -27,6 +30,8 @@ public class GradeResponse {
                 .midtermScore(grade.getMidtermScore())
                 .finalScore(grade.getFinalScore())
                 .totalScore(grade.getTotalScore())
+                .isPublished(grade.getIsPublished())
+                .publishedAt(grade.getPublishedAt())
                 .build();
     }
 }

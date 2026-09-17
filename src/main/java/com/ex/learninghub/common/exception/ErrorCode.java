@@ -73,6 +73,7 @@ public enum ErrorCode {
     PREREQUISITE_NOT_MET(4005, "Prerequisite course has not been completed", HttpStatus.BAD_REQUEST),
     GRADING_POLICY_WEIGHTS_INVALID(5001, "Grading policy weights must sum to 1.000", HttpStatus.BAD_REQUEST),
     GPA_SCALE_INVALID(5002, "GPA scale rules are invalid", HttpStatus.BAD_REQUEST),
+    VALIDATION_ERROR(5003, "Dữ liệu đầu vào không hợp lệ", HttpStatus.BAD_REQUEST),
     EXCEL_PARSE_ERROR(7001, "Failed to parse Excel file. Please check the file format", HttpStatus.BAD_REQUEST);
 
     private final int code;

@@ -30,12 +30,20 @@ public class GradingController {
     // Grades
 
     @PostMapping("/classes/{classId}/grades")
-    @PreAuthorize("hasRole('LECTURER')")
-    @Operation(summary = "Nhập/Cập nhật điểm cho sinh viên", description = "Giảng viên nhập điểm hoặc cập nhật điểm cho sinh viên trong lớp học phần mà mình phụ trách.")
+    @PreAuthorize("hasAnyRole('LECTURER','ADMIN')")
+    @Operation(summary = "Nhập/Cập nhật điểm cho sinh viên", description = "Giảng viên/Admin nhập điểm hoặc cập nhật điểm cho sinh viên trong lớp học phần.")
     public ApiResponse<GradeResponse> upsertGrade(@PathVariable Long classId,
                                                     @Valid @RequestBody GradeRequest request,
                                                     @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ApiResponse.success(gradingService.upsertGrade(classId, request, userPrincipal));
+    }
+
+    @PostMapping("/classes/{classId}/grades/publish")
+    @PreAuthorize("hasAnyRole('LECTURER','ADMIN')")
+    @Operation(summary = "Công bố điểm cho cả lớp", description = "Giảng viên/Admin khóa và công bố điểm cho toàn bộ sinh viên trong lớp. Sau bước này sinh viên mới thấy điểm.")
+    public ApiResponse<List<GradeResponse>> publishGrades(@PathVariable Long classId,
+                                                           @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(gradingService.publishGrades(classId, userPrincipal));
     }
 
     @GetMapping("/classes/{classId}/grades")

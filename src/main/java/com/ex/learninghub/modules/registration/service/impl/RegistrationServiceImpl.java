@@ -46,6 +46,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
     private final com.ex.learninghub.modules.grading.service.AcademicStatusService academicStatusService;
     private final NotificationService notificationService;
+    private final com.ex.learninghub.modules.tuition.service.TuitionService tuitionService;
 
     /** Trần tín chỉ áp dụng cho sinh viên bị probation (warningLevel >= 2). */
     @org.springframework.beans.factory.annotation.Value("${app.registration.max-credits-probation:14}")
@@ -210,6 +211,15 @@ public class RegistrationServiceImpl implements RegistrationService {
                 student.getFullName() + " vừa đăng ký lớp " + clazz.getClassName(),
                 clazz.getId()
             );
+        }
+
+        // Tự động sinh invoice học phí nếu đã có TuitionRate cho năm học này
+        if (period.getSemester() != null && period.getAcademicYear() != null) {
+            try {
+                tuitionService.generateInvoice(student.getId(), period.getSemester(), period.getAcademicYear());
+            } catch (Exception ignored) {
+                // Nếu chưa có TuitionRate thì bỏ qua, Admin tạo sau
+            }
         }
 
         return RegistrationResponse.from(savedEnrollment);

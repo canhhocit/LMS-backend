@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -128,6 +129,8 @@ public class GradingServiceImpl implements GradingService {
     @Override
     public List<GradeResponse> getMyGrades(UserPrincipal userPrincipal) {
         return gradeRepository.findByStudentId(userPrincipal.getUser().getId()).stream()
+                // Sinh viên chỉ thấy điểm đã được công bố
+                .filter(g -> Boolean.TRUE.equals(g.getIsPublished()))
                 .map(GradeResponse::from)
                 .collect(Collectors.toList());
     }
@@ -189,12 +192,16 @@ public class GradingServiceImpl implements GradingService {
 
         for (var entry : gradesByCourse.entrySet()) {
             List<Grade> courseGrades = entry.getValue();
-            // Chính sách học lại (retake): lấy điểm cao nhất trong các lần học.
-            // Trước đây lấy courseGrades.get(size-1) = bản ghi cuối; đổi sang max.
-            Grade bestGrade = courseGrades.stream()
+            // Chỉ xét điểm đã được công bố
+            List<Grade> published = courseGrades.stream()
+                    .filter(g -> Boolean.TRUE.equals(g.getIsPublished()))
+                    .collect(Collectors.toList());
+            if (published.isEmpty()) continue;
+            // Chính sách học lại (retake): lấy điểm cao nhất
+            Grade bestGrade = published.stream()
                     .filter(g -> g.getTotalScore() != null)
                     .max(java.util.Comparator.comparing(Grade::getTotalScore))
-                    .orElse(courseGrades.get(courseGrades.size() - 1));
+                    .orElse(published.get(published.size() - 1));
             var course = bestGrade.getClazz().getCourse();
             int credit = course.getCredit() != null ? course.getCredit() : 0;
             BigDecimal totalScore = bestGrade.getTotalScore();
@@ -254,5 +261,36 @@ public class GradingServiceImpl implements GradingService {
             }
         }
         return new BigDecimal[]{new BigDecimal("0.000"), new BigDecimal("0.400"), new BigDecimal("0.600")};
+    }
+
+    @Override
+    @Transactional
+    public List<GradeResponse> publishGrades(Long classId, UserPrincipal userPrincipal) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
+
+        List<Grade> grades = gradeRepository.findByClazzId(classId);
+        LocalDateTime now = LocalDateTime.now();
+        for (Grade g : grades) {
+            if (!Boolean.TRUE.equals(g.getIsPublished())) {
+                g.setIsPublished(true);
+                g.setPublishedAt(now);
+            }
+        }
+        List<Grade> saved = gradeRepository.saveAll(grades);
+
+        // Notify all enrolled students about grade publication
+        for (Grade g : saved) {
+            if (g.getStudent() != null) {
+                notificationService.notifyUser(
+                        g.getStudent().getId(),
+                        com.ex.learninghub.common.enums.NotificationType.NEW_GRADE,
+                        "Điểm đã được công bố",
+                        "Giảng viên đã công bố điểm môn " + clazz.getClassName() + ". Hãy kiểm tra kết quả học tập của bạn.",
+                        clazz.getId());
+            }
+        }
+        return saved.stream().map(GradeResponse::from).collect(Collectors.toList());
     }
 }

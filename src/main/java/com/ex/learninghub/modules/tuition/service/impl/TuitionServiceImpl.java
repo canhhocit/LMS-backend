@@ -92,6 +92,9 @@ public class TuitionServiceImpl implements TuitionService {
     @Override
     @Transactional
     public TuitionInvoiceResponse generateInvoice(Long studentId, String semester, String academicYear) {
+        if (semester == null || semester.isBlank() || academicYear == null || academicYear.isBlank()) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         if (student.getRole() != Role.STUDENT) {

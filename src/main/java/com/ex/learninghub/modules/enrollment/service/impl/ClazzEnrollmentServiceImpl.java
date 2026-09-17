@@ -81,6 +81,9 @@ public class ClazzEnrollmentServiceImpl implements ClazzEnrollmentService {
     public void removeStudent(Long clazzId, Long studentId) {
         Enrollment enrollment = enrollmentRepository.findByStudentIdAndClazzId(studentId, clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
+        // Xóa LessonProgress liên quan
+        lessonProgressRepository.findByEnrollmentId(enrollment.getId())
+                .forEach(lessonProgressRepository::delete);
         enrollmentRepository.delete(enrollment);
     }
 

@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
 @Getter
@@ -41,4 +42,12 @@ public class Grade extends BaseEntity {
 
     @Column(name = "total_score", precision = 5, scale = 2)
     private BigDecimal totalScore;
+
+    /** Giảng viên đã công bố điểm – sinh viên chỉ thấy khi isPublished = true */
+    @Column(name = "is_published", nullable = false)
+    @Builder.Default
+    private Boolean isPublished = false;
+
+    @Column(name = "published_at")
+    private LocalDateTime publishedAt;
 }

@@ -24,4 +24,7 @@ public interface GradingService {
     List<AttendanceResponse> getMyAttendance(Long classId, UserPrincipal userPrincipal);
 
     List<com.ex.learninghub.modules.grading.dto.response.TranscriptResponse> getMyTranscript(UserPrincipal userPrincipal);
+
+    /** Giảng viên/Admin công bố điểm cho toàn bộ sinh viên trong lớp */
+    List<GradeResponse> publishGrades(Long classId, UserPrincipal userPrincipal);
 }
