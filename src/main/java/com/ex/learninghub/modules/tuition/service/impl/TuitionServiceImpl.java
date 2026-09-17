@@ -127,7 +127,24 @@ public class TuitionServiceImpl implements TuitionService {
                 .pricePerCredit(rate.getPricePerCredit())
                 .amount(amount)
                 .status("UNPAID")
+                .dueDate(LocalDateTime.now().plusDays(30))
                 .build();
+        return TuitionInvoiceResponse.from(invoiceRepository.save(inv));
+    }
+
+    @Override
+    @Transactional
+    public TuitionInvoiceResponse payMyInvoice(Long invoiceId, UserPrincipal principal) {
+        TuitionInvoice inv = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
+        if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        if ("PAID".equals(inv.getStatus())) {
+            return TuitionInvoiceResponse.from(inv);
+        }
+        inv.setStatus("PAID");
+        inv.setPaidAt(LocalDateTime.now());
         return TuitionInvoiceResponse.from(invoiceRepository.save(inv));
     }
 

@@ -45,4 +45,7 @@ public class TuitionInvoice extends BaseEntity {
 
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
+
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
 }

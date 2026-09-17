@@ -38,6 +38,18 @@ public class TuitionController {
         return ResponseEntity.ok(ApiResponse.success(tuitionService.getMyInvoices(principal)));
     }
 
+    @PostMapping("/me/tuition/{invoiceId}/pay")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(
+            summary = "Sinh viên thanh toán hóa đơn học phí",
+            description = "Thanh toán hóa đơn học phí trực tuyến mô phỏng."
+    )
+    public ResponseEntity<ApiResponse<TuitionInvoiceResponse>> payMyInvoice(
+            @PathVariable Long invoiceId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(tuitionService.payMyInvoice(invoiceId, principal)));
+    }
+
     // ---- Admin: quản lý tuition_rates ----
     @PostMapping("/admin/tuition/rates")
     @PreAuthorize("hasPermission(null, 'MANAGE_TUITION')")

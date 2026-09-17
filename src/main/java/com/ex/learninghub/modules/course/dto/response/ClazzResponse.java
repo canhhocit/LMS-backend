@@ -19,9 +19,14 @@ public class ClazzResponse {
     private Long lecturerId;
     private String lecturerName;
     private Integer maxStudents;
+    private Integer currentStudents;
     private LocalDateTime createdAt;
 
     public static ClazzResponse from(Clazz clazz) {
+        return from(clazz, null);
+    }
+
+    public static ClazzResponse from(Clazz clazz, Long currentCount) {
         return ClazzResponse.builder()
                 .id(clazz.getId())
                 .classCode(clazz.getClassCode())
@@ -33,6 +38,7 @@ public class ClazzResponse {
                 .lecturerId(clazz.getLecturer() != null ? clazz.getLecturer().getId() : null)
                 .lecturerName(clazz.getLecturer() != null ? clazz.getLecturer().getFullName() : null)
                 .maxStudents(clazz.getMaxStudents())
+                .currentStudents(currentCount != null ? currentCount.intValue() : 0)
                 .createdAt(clazz.getCreatedAt())
                 .build();
     }

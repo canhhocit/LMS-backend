@@ -15,8 +15,9 @@ public interface TuitionService {
     List<TuitionRateResponse> listRates();
     TuitionRateResponse getRate(Long id);
 
-    // ---- Student: xem hóa đơn của mình ----
+    // ---- Student: xem hóa đơn của mình & thanh toán ----
     List<TuitionInvoiceResponse> getMyInvoices(UserPrincipal principal);
+    TuitionInvoiceResponse payMyInvoice(Long invoiceId, UserPrincipal principal);
 
     // ---- Admin: generate / mark paid ----
     TuitionInvoiceResponse generateInvoice(Long studentId, String semester, String academicYear);

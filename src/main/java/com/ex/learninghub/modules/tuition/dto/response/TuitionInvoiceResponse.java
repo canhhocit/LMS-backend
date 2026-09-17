@@ -22,6 +22,7 @@ public class TuitionInvoiceResponse {
     private BigDecimal amount;
     private String status;
     private LocalDateTime paidAt;
+    private LocalDateTime dueDate;
 
     public static TuitionInvoiceResponse from(TuitionInvoice i) {
         return TuitionInvoiceResponse.builder()
@@ -35,6 +36,7 @@ public class TuitionInvoiceResponse {
                 .amount(i.getAmount())
                 .status(i.getStatus())
                 .paidAt(i.getPaidAt())
+                .dueDate(i.getDueDate())
                 .build();
     }
 }
