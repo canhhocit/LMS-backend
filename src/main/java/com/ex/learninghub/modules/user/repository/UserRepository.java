@@ -27,6 +27,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:email) OR (u.personalEmail IS NOT NULL AND LOWER(u.personalEmail) = LOWER(:email))")
     Optional<User> findByEmailOrPersonalEmail(@Param("email") String email);
 
+    @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:identifier) OR (u.studentCode IS NOT NULL AND LOWER(u.studentCode) = LOWER(:identifier)) OR (u.lecturerCode IS NOT NULL AND LOWER(u.lecturerCode) = LOWER(:identifier))")
+    Optional<User> findByIdentifier(@Param("identifier") String identifier);
+
     @EntityGraph(attributePaths = {"adminClass", "curriculum"})
     Page<User> findByRoleAndAdminClass_ClassName(Role role, String adminClassName, Pageable pageable);
 

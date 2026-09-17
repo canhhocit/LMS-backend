@@ -66,11 +66,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        // Handle login with email, student code or lecturer code
-        User user = userRepository.findByEmail(request.getIdentifier())
-                .orElseGet(() -> userRepository.findByStudentCode(request.getIdentifier())
-                        .orElseGet(() -> userRepository.findByLecturerCode(request.getIdentifier())
-                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND))));
+        String identifier = request.getIdentifier() != null ? request.getIdentifier().trim() : "";
+        // Handle login with email, student code or lecturer code (case-insensitive & trimmed)
+        User user = userRepository.findByIdentifier(identifier)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(user.getEmail(), request.getPassword())
