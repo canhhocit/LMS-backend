@@ -1,16 +1,10 @@
 package com.ex.learninghub.modules.user.entity;
 
 import com.ex.learninghub.common.model.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import com.ex.learninghub.modules.curriculum.entity.Curriculum;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Getter
 @Setter
@@ -31,7 +25,7 @@ public class AdministrativeClass extends BaseEntity {
     @Column(name = "academic_year", length = 20)
     private String academicYear;
 
-    @jakarta.persistence.ManyToOne(jakarta.persistence.FetchType.LAZY)
-    @jakarta.persistence.JoinColumn(name = "curriculum_id")
-    private com.ex.learninghub.modules.curriculum.entity.Curriculum curriculum;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "curriculum_id")
+    private Curriculum curriculum;
 }
