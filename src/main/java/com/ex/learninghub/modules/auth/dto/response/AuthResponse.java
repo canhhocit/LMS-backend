@@ -24,6 +24,13 @@ public class AuthResponse {
     private String email;
     private String fullName;
     private Role role;
+    private String studentCode;
+    private String lecturerCode;
+    private String faculty;
+    private String major;
+    private String adminClassName;
+    private String curriculumName;
+    private String avatarUrl;
     private boolean isFirstLogin;
     private Set<String> permissions;
 

@@ -29,6 +29,7 @@ public class UserResponse {
     private Long curriculumId;
     private Long adminClassId;
     private String adminClassName;
+    private String curriculumName;
     private java.util.List<String> permissions;
 
     /** Factory method to create UserResponse from User entity */
@@ -52,6 +53,7 @@ public class UserResponse {
                 .curriculumId(user.getCurriculum() != null ? user.getCurriculum().getId() : null)
                 .adminClassId(user.getAdminClass() != null ? user.getAdminClass().getId() : null)
                 .adminClassName(user.getAdminClass() != null ? user.getAdminClass().getClassName() : null)
+                .curriculumName(user.getCurriculum() != null ? user.getCurriculum().getName() : user.getMajor())
                 .permissions(perms)
                 .build();
     }
