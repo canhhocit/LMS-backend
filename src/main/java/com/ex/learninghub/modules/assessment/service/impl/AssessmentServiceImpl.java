@@ -1,7 +1,5 @@
 package com.ex.learninghub.modules.assessment.service.impl;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.ex.learninghub.common.enums.SubmissionType;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
@@ -28,11 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,7 +40,7 @@ public class AssessmentServiceImpl implements AssessmentService {
     private final SubmissionRepository submissionRepository;
     private final ClazzRepository clazzRepository;
     private final NotificationService notificationService;
-    private final Cloudinary cloudinary;
+    private final com.ex.learninghub.modules.storage.service.FileStorageRouterService fileStorageRouterService;
 
     @Value("${app.upload.max-assignment-file-size:50MB}")
     private DataSize maxAssignmentFileSize;
@@ -222,15 +218,12 @@ public class AssessmentServiceImpl implements AssessmentService {
             if (file.getSize() > maxAssignmentFileSize.toBytes()) {
                 throw new AppException(ErrorCode.SUBMISSION_FILE_TOO_LARGE);
             }
-            String contentType = file.getContentType();
             if (!isAllowedSubmissionType(file)) {
                 throw new AppException(ErrorCode.SUBMISSION_INVALID_FORMAT);
             }
             try {
-                String resolvedType = contentType != null && contentType.startsWith("image/") ? "image" : "raw";
-                Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resolvedType));
-                return (String) result.get("secure_url");
-            } catch (IOException ex) {
+                return fileStorageRouterService.uploadFile(file);
+            } catch (Exception ex) {
                 throw new AppException(ErrorCode.SUBMISSION_UPLOAD_FAILED);
             }
         }).collect(Collectors.toList());

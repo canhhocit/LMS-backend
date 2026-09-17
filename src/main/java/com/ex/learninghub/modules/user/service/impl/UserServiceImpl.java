@@ -1,7 +1,5 @@
 package com.ex.learninghub.modules.user.service.impl;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.ex.learninghub.common.enums.AdminPermission;
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
@@ -56,7 +54,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AdministrativeClassRepository adminClassRepository;
     private final AdminPermissionRepository adminPermissionRepository;
-    private final Cloudinary cloudinary;
+    private final com.ex.learninghub.modules.storage.service.FileStorageRouterService fileStorageRouterService;
     private final com.ex.learninghub.modules.curriculum.repository.CurriculumRepository curriculumRepository;
 
     @Value("${app.upload.max-avatar-size:5MB}")
@@ -365,11 +363,10 @@ public class UserServiceImpl implements UserService {
         }
 
         try {
-            java.util.Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", "image"));
-            String secureUrl = (String) result.get("secure_url");
+            String secureUrl = fileStorageRouterService.uploadFile(file);
             user.setAvatarUrl(secureUrl);
             return UserResponse.from(userRepository.save(user));
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new AppException(ErrorCode.SUBMISSION_UPLOAD_FAILED);
         }
     }

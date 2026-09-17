@@ -5,7 +5,9 @@ import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.course.entity.Course;
 import com.ex.learninghub.modules.grading.dto.response.AcademicStatusResponse;
+import com.ex.learninghub.modules.grading.entity.GpaScaleRule;
 import com.ex.learninghub.modules.grading.entity.Grade;
+import com.ex.learninghub.modules.grading.repository.GpaScaleRuleRepository;
 import com.ex.learninghub.modules.grading.repository.GradeRepository;
 import com.ex.learninghub.modules.grading.service.AcademicStatusService;
 import com.ex.learninghub.modules.notification.service.NotificationService;
@@ -28,7 +30,7 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
     private final GradeRepository gradeRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-    private final com.ex.learninghub.modules.grading.repository.GpaScaleRuleRepository gpaScaleRuleRepository;
+    private final GpaScaleRuleRepository gpaScaleRuleRepository;
 
     @Value("${app.academic.pass-score:5.0}")
     private BigDecimal passScore;
@@ -78,7 +80,7 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
     private AcademicStatusResponse computeForStudent(Long studentId) {
         User student = userRepository.findById(studentId).orElse(null);
         List<Grade> grades = gradeRepository.findByStudentId(studentId);
-        List<com.ex.learninghub.modules.grading.entity.GpaScaleRule> rules = List.of();
+        List<GpaScaleRule> rules = List.of();
         if (student != null && student.getCurriculum() != null) {
             rules = gpaScaleRuleRepository.findByCurriculumIdOrderBySortOrderAsc(student.getCurriculum().getId());
         }
@@ -144,7 +146,7 @@ public class AcademicStatusServiceImpl implements AcademicStatusService {
                 .build();
     }
 
-    private BigDecimal resolveGpa4(BigDecimal score10, List<com.ex.learninghub.modules.grading.entity.GpaScaleRule> rules) {
+    private BigDecimal resolveGpa4(BigDecimal score10, List<GpaScaleRule> rules) {
         if (rules != null && !rules.isEmpty()) {
             for (var rule : rules) {
                 if (score10.compareTo(rule.getMinScore10()) >= 0) {

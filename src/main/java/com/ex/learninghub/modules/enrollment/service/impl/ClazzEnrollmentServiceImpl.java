@@ -32,6 +32,8 @@ public class ClazzEnrollmentServiceImpl implements ClazzEnrollmentService {
     private final UserRepository userRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final LessonRepository lessonRepository;
+    private final com.ex.learninghub.modules.grading.repository.GradeRepository gradeRepository;
+    private final com.ex.learninghub.modules.grading.repository.AttendanceRepository attendanceRepository;
 
     @Override
     @Transactional
@@ -84,6 +86,12 @@ public class ClazzEnrollmentServiceImpl implements ClazzEnrollmentService {
         // Xóa LessonProgress liên quan
         lessonProgressRepository.findByEnrollmentId(enrollment.getId())
                 .forEach(lessonProgressRepository::delete);
+        // Xóa Grade & Attendance liên quan
+        gradeRepository.findByClazzIdAndStudentId(clazzId, studentId)
+                .ifPresent(gradeRepository::delete);
+        attendanceRepository.findByClazzIdAndStudentId(clazzId, studentId)
+                .forEach(attendanceRepository::delete);
+
         enrollmentRepository.delete(enrollment);
     }
 

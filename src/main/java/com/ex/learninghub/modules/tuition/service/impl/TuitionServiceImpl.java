@@ -116,8 +116,7 @@ public class TuitionServiceImpl implements TuitionService {
 
         // Tính tổng tín chỉ của sinh viên trong kỳ này (lọc theo semester và academicYear)
         int totalCredits = enrollmentRepository.findByStudentId(studentId).stream()
-                .filter(e -> (semester == null || e.getSemester() == null || semester.equals(e.getSemester()))
-                          && (academicYear == null || e.getAcademicYear() == null || academicYear.equals(e.getAcademicYear())))
+                .filter(e -> semester.equals(e.getSemester()) && academicYear.equals(e.getAcademicYear()))
                 .filter(e -> e.getClazz() != null && e.getClazz().getCourse() != null
                         && e.getClazz().getCourse().getCredit() != null)
                 .mapToInt(e -> e.getClazz().getCourse().getCredit())

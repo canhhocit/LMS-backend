@@ -3,8 +3,6 @@ package com.ex.learninghub.modules.content.service;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.ex.learninghub.modules.course.entity.Lesson;
 import com.ex.learninghub.modules.course.repository.LessonRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,16 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class VideoUploadService {
 
-    private final Cloudinary cloudinary;
     private final LessonRepository lessonRepository;
     private final com.ex.learninghub.modules.course.repository.ClazzRepository clazzRepository;
+    private final com.ex.learninghub.modules.storage.service.FileStorageRouterService fileStorageRouterService;
 
     @Value("${app.upload.max-video-size:200MB}")
     private org.springframework.util.unit.DataSize maxVideoSize;
@@ -68,13 +63,11 @@ public class VideoUploadService {
         }
 
         try {
-            Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(),
-                    ObjectUtils.asMap("resource_type", "video"));
-            String secureUrl = (String) result.get("secure_url");
+            String secureUrl = fileStorageRouterService.uploadFile(file);
             lesson.setVideoUrl(secureUrl);
             lessonRepository.save(lesson);
             return secureUrl;
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             throw new AppException(ErrorCode.VIDEO_UPLOAD_FAILED);
         }
     }
@@ -103,14 +96,12 @@ public class VideoUploadService {
         }
 
         try {
-            Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(),
-                    ObjectUtils.asMap("resource_type", "auto"));
-            String secureUrl = (String) result.get("secure_url");
+            String secureUrl = fileStorageRouterService.uploadFile(file);
             lesson.setAttachmentUrl(secureUrl);
             lesson.setAttachmentName(file.getOriginalFilename());
             lessonRepository.save(lesson);
             return secureUrl;
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             throw new AppException(ErrorCode.VIDEO_UPLOAD_FAILED);
         }
     }

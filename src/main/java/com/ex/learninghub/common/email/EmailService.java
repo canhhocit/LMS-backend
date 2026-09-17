@@ -107,7 +107,12 @@ public class EmailService {
                         <tr>
                           <td style="background:linear-gradient(135deg,#4f46e5 0%%,#2563eb 100%%);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
                             <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:16px;">
-                              <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:0.5px;">🎓 LearningHub</span>
+                              <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:0.5px;vertical-align:middle;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;">
+                                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                                </svg>
+                                LearningHub
+                              </span>
                             </div>
                             <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">Xác nhận thanh toán học phí</h1>
                             <p style="color:#c7d2fe;margin:8px 0 0;font-size:14px;">Giao dịch đã được ghi nhận thành công</p>
@@ -117,9 +122,11 @@ public class EmailService {
                         <!-- SUCCESS BADGE -->
                         <tr>
                           <td style="background:#ffffff;padding:28px 40px 20px;text-align:center;">
-                            <div style="display:inline-flex;align-items:center;gap:10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:999px;padding:10px 22px;">
-                              <span style="font-size:20px;">✅</span>
-                              <span style="color:#065f46;font-weight:700;font-size:15px;">Thanh toán thành công</span>
+                            <div style="display:inline-table;align-items:center;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:999px;padding:10px 22px;">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                              <span style="color:#065f46;font-weight:700;font-size:15px;vertical-align:middle;">Thanh toán thành công</span>
                             </div>
                           </td>
                         </tr>
@@ -163,7 +170,10 @@ public class EmailService {
                           <td style="background:#ffffff;padding:0 40px 28px;">
                             <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;">
                               <p style="margin:0;color:#78350f;font-size:13px;line-height:1.6;">
-                                📌 <strong>Lưu ý:</strong> Email này được gửi tự động từ hệ thống LearningHub. Vui lòng không trả lời email này.
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;">
+                                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <strong>Lưu ý:</strong> Email này được gửi tự động từ hệ thống LearningHub. Vui lòng không trả lời email này.
                                 Nếu bạn có thắc mắc về hóa đơn, hãy liên hệ Phòng Tài chính – Kế toán của trường hoặc đăng nhập vào
                                 cổng thông tin sinh viên để kiểm tra.
                               </p>

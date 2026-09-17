@@ -1,6 +1,6 @@
 package com.ex.learninghub.modules.storage.controller;
 
-import com.ex.learninghub.modules.storage.service.CloudinaryService;
+import com.ex.learninghub.modules.storage.service.FileStorageRouterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,11 +13,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class StorageController {
 
-    private final CloudinaryService cloudinaryService;
+    private final FileStorageRouterService fileStorageRouterService;
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        String fileUrl = cloudinaryService.uploadFile(file);
+        String fileUrl = fileStorageRouterService.uploadFile(file);
         return ResponseEntity.ok(Map.of("url", fileUrl));
     }
 }
