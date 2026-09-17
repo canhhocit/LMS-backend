@@ -113,7 +113,6 @@ public class UserServiceImpl implements UserService {
                     .orElseGet(() -> adminClassRepository.save(
                             AdministrativeClass.builder()
                                     .className(className)
-                                    .code(className.replaceAll("\\s+", "").toUpperCase())
                                     .build()
                     ));
         }
