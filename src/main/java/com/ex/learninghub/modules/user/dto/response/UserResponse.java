@@ -39,6 +39,20 @@ public class UserResponse {
                         .map(p -> p.getCode().name())
                         .collect(java.util.stream.Collectors.toList()) : java.util.List.of();
 
+        String faculty = (user.getFaculty() != null && !user.getFaculty().isBlank())
+                ? user.getFaculty()
+                : (user.getAdminClass() != null ? user.getAdminClass().getFaculty() : null);
+
+        String curriculumName = user.getCurriculum() != null
+                ? user.getCurriculum().getName()
+                : (user.getAdminClass() != null && user.getAdminClass().getCurriculum() != null
+                        ? user.getAdminClass().getCurriculum().getName()
+                        : user.getMajor());
+
+        String major = (user.getMajor() != null && !user.getMajor().isBlank())
+                ? user.getMajor()
+                : curriculumName;
+
         return UserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
@@ -47,13 +61,13 @@ public class UserResponse {
                 .role(user.getRole())
                 .studentCode(user.getStudentCode())
                 .lecturerCode(user.getLecturerCode())
-                .faculty(user.getFaculty())
-                .major(user.getMajor())
+                .faculty(faculty)
+                .major(major)
                 .avatarUrl(user.getAvatarUrl())
-                .curriculumId(user.getCurriculum() != null ? user.getCurriculum().getId() : null)
+                .curriculumId(user.getCurriculum() != null ? user.getCurriculum().getId() : (user.getAdminClass() != null && user.getAdminClass().getCurriculum() != null ? user.getAdminClass().getCurriculum().getId() : null))
                 .adminClassId(user.getAdminClass() != null ? user.getAdminClass().getId() : null)
                 .adminClassName(user.getAdminClass() != null ? user.getAdminClass().getClassName() : null)
-                .curriculumName(user.getCurriculum() != null ? user.getCurriculum().getName() : user.getMajor())
+                .curriculumName(curriculumName)
                 .permissions(perms)
                 .build();
     }

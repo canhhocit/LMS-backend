@@ -361,8 +361,11 @@ public class UserServiceImpl implements UserService {
     // ---- Profile ----
 
     @Override
+    @Transactional(readOnly = true)
     public UserResponse getProfile(UserPrincipal userPrincipal) {
-        return UserResponse.from(userPrincipal.getUser());
+        User user = userRepository.findById(userPrincipal.getUser().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return UserResponse.from(user);
     }
 
     @Override
