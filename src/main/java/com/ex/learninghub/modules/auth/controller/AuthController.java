@@ -40,6 +40,15 @@ public class AuthController {
         return ApiResponse.success(authService.login(request));
     }
 
+    @PostMapping("/google")
+    @Operation(
+            summary = "Đăng nhập bằng Google",
+            description = "Đăng nhập hệ thống nhanh bằng tài khoản Google liên kết với personalEmail hoặc email."
+    )
+    public ApiResponse<AuthResponse> googleLogin(@Valid @RequestBody com.ex.learninghub.modules.auth.dto.request.GoogleLoginRequest request) {
+        return ApiResponse.success(authService.googleLogin(request));
+    }
+
     @PostMapping("/change-password")
     @PreAuthorize("isAuthenticated()")
     @Operation(

@@ -79,7 +79,42 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(user.getEmail());
 
-        // Generate refresh token (7 days) — store hash, return raw to client
+        String rawRefreshToken = UUID.randomUUID().toString();
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(user)
+                .token(hashToken(rawRefreshToken))
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .build());
+
+        java.util.Set<String> permissions = user.getAdminPermissions() == null ? java.util.Set.of() : user.getAdminPermissions().stream()
+                .map(p -> p.getCode().name())
+                .collect(java.util.stream.Collectors.toSet());
+
+        return AuthResponse.builder()
+                .token(jwt)
+                .type("Bearer")
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .isFirstLogin(user.getIsFirstLogin() != null && user.getIsFirstLogin())
+                .permissions(permissions)
+                .refreshToken(rawRefreshToken)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse googleLogin(com.ex.learninghub.modules.auth.dto.request.GoogleLoginRequest request) {
+        String email = request.getGoogleEmail();
+        User user = userRepository.findByEmailOrPersonalEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getStatus() == com.ex.learninghub.common.enums.UserStatus.INACTIVE) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        String jwt = tokenProvider.generateToken(user.getEmail());
         String rawRefreshToken = UUID.randomUUID().toString();
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)
