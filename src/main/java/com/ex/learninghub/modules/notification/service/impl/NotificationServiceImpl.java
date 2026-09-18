@@ -97,4 +97,10 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setIsRead(true);
         notificationRepository.save(notification);
     }
+
+    @Override
+    @Transactional
+    public void markAllAsRead(Long userId) {
+        notificationRepository.markAllAsReadByRecipientId(userId);
+    }
 }

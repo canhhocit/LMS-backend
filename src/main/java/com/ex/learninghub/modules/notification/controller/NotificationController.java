@@ -61,4 +61,15 @@ public class NotificationController {
         notificationService.markAsRead(id, userPrincipal.getUser().getId());
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/me/notifications/read-all")
+    @Operation(
+            summary = "Đánh dấu tất cả thông báo là đã đọc",
+            description = "Đánh dấu tất cả thông báo chưa đọc của người dùng hiện tại là đã đọc."
+    )
+    public ResponseEntity<Void> markAllAsRead(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        notificationService.markAllAsRead(userPrincipal.getUser().getId());
+        return ResponseEntity.noContent().build();
+    }
 }
