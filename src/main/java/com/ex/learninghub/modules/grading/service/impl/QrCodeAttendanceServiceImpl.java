@@ -17,6 +17,7 @@ import com.ex.learninghub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ public class QrCodeAttendanceServiceImpl implements QrCodeAttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
     private final StringRedisTemplate redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private static final String QR_PREFIX = "qr_attendance:";
 
@@ -113,6 +115,14 @@ public class QrCodeAttendanceServiceImpl implements QrCodeAttendanceService {
         attendance.setStatus(AttendanceStatus.PRESENT);
         Attendance saved = attendanceRepository.save(attendance);
 
-        return AttendanceResponse.from(saved);
+        AttendanceResponse response = AttendanceResponse.from(saved);
+        try {
+            messagingTemplate.convertAndSend("/topic/attendance/" + classId, response);
+            log.info("WebSocket: Đã phát thông báo điểm danh thành công tới /topic/attendance/{}", classId);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket thông báo điểm danh: {}", e.getMessage());
+        }
+
+        return response;
     }
 }

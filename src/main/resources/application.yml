@@ -38,17 +38,20 @@ spring:
       max-file-size: 200MB
       max-request-size: 200MB
   mail:
-    host: smtp-relay.brevo.com
-    port: 587
+    host: ${SMTP_HOST:smtp-relay.brevo.com}
+    port: ${SMTP_PORT:587}
     username: ${MAIL_USERNAME:${SMTP_USERNAME:}}
     password: ${MAIL_PASSWORD:${SMTP_PASSWORD:}}
-    from: ${MAIL_FROM:no-reply@learninghub.edu.vn}
+    from: ${MAIL_FROM:${SMTP_USERNAME:canhhuu205@gmail.com}}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
+          ssl:
+            trust: "*"
 
 server:
   servlet:
