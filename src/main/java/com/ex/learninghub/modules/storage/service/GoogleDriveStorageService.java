@@ -85,6 +85,7 @@ public class GoogleDriveStorageService {
             body.add("file", fileEntity);
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.exchange(uploadUrl, HttpMethod.POST, requestEntity, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -121,6 +122,7 @@ public class GoogleDriveStorageService {
             map.add("grant_type", "refresh_token");
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.postForEntity(tokenEndpoint, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

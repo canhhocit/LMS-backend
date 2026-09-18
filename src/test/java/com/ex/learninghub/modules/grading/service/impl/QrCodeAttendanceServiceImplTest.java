@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
@@ -36,6 +37,9 @@ class QrCodeAttendanceServiceImplTest {
     private StringRedisTemplate redisTemplate;
 
     @Mock
+    private SimpMessagingTemplate messagingTemplate;
+
+    @Mock
     private ValueOperations<String, String> valueOperations;
 
     private QrCodeAttendanceServiceImpl qrCodeAttendanceService;
@@ -47,7 +51,7 @@ class QrCodeAttendanceServiceImplTest {
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         qrCodeAttendanceService = new QrCodeAttendanceServiceImpl(
-                clazzRepository, attendanceRepository, userRepository, redisTemplate
+                clazzRepository, attendanceRepository, userRepository, redisTemplate, messagingTemplate
         );
 
         lecturer = User.builder().email("lecturer@test.com").role(Role.LECTURER).build();
