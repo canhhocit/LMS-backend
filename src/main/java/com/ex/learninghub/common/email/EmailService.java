@@ -33,6 +33,23 @@ public class EmailService {
     private static final NumberFormat VND =
             NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
 
+    @Async("taskExecutor")
+    public void sendSimpleEmail(String to, String subject, String bodyText) {
+        if (to == null || to.isBlank()) return;
+        try {
+            MimeMessage msg = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
+            helper.setFrom(fromAddress, "LearningHub – Thông báo [no-reply]");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(bodyText, false);
+            mailSender.send(msg);
+            log.info("[Email] Đã gửi mail thông báo tới {}", to);
+        } catch (Exception e) {
+            log.warn("[Email] Gửi mail thông báo thất bại: {}", e.getMessage());
+        }
+    }
+
     // ===================================================================
     //  Course Registration: gửi email xác nhận đăng ký học phần
     // ===================================================================

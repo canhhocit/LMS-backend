@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface PermissionRequestRepository extends JpaRepository<PermissionRequest, Long> {
 
     List<PermissionRequest> findByLecturerIdOrderByCreatedAtDesc(Long lecturerId);
