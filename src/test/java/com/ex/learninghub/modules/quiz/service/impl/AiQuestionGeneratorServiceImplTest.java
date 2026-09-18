@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.quiz.service.impl;
 
+import com.ex.learninghub.common.ai.AiClientService;
 import com.ex.learninghub.modules.quiz.dto.request.AiGenerateQuestionRequest;
 import com.ex.learninghub.modules.quiz.dto.request.QuestionRequest;
 import com.ex.learninghub.modules.quiz.service.QuizService;
@@ -19,11 +20,14 @@ class AiQuestionGeneratorServiceImplTest {
     @Mock
     private QuizService quizService;
 
+    @Mock
+    private AiClientService aiClientService;
+
     private AiQuestionGeneratorServiceImpl aiQuestionGeneratorService;
 
     @BeforeEach
     void setUp() {
-        aiQuestionGeneratorService = new AiQuestionGeneratorServiceImpl(quizService);
+        aiQuestionGeneratorService = new AiQuestionGeneratorServiceImpl(quizService, aiClientService);
     }
 
     @Test

@@ -77,6 +77,10 @@ app:
     max-credits-probation: ${REG_MAX_CREDITS_PROBATION:14}
   curriculum:
     pass-score: 5.0
+  ai:
+    api-key: ${AI_API_KEY:${AI_APIKEY:${GEMINI_API_KEY:}}}
+    base-url: ${AI_BASE_URL:${AI_BASEURL:${AI_URL:https://generativelanguage.googleapis.com/v1beta/models}}}
+    model: ${AI_MODEL:gemini-1.5-flash}
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}

@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.quiz.service.impl;
 
+import com.ex.learninghub.common.ai.AiClientService;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
@@ -11,21 +12,13 @@ import com.ex.learninghub.modules.quiz.dto.response.AiAdvisorResponse.StudyPlanS
 import com.ex.learninghub.modules.quiz.service.AiAdvisorService;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -34,14 +27,8 @@ public class AiAdvisorServiceImpl implements AiAdvisorService {
 
     private final UserRepository userRepository;
     private final GradeRepository gradeRepository;
+    private final AiClientService aiClientService;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
-
-    @Value("${app.ai.gemini-api-key:}")
-    private String geminiApiKey;
-
-    @Value("${app.ai.gemini-url:https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent}")
-    private String geminiUrl;
 
     @Override
     public AiAdvisorResponse analyzeCurrentStudent(UserPrincipal principal) {
@@ -87,25 +74,24 @@ public class AiAdvisorServiceImpl implements AiAdvisorService {
                 double score = g.getTotalScore().doubleValue();
                 totalGradeSum += score;
                 gradeCount++;
-
             }
         }
 
         double avgGpa = gradeCount > 0 ? (totalGradeSum / gradeCount) : 7.5;
         double gpa4Scale = (avgGpa / 10.0) * 4.0;
 
-        if (geminiApiKey != null && !geminiApiKey.isBlank()) {
+        if (aiClientService.isAiConfigured()) {
             try {
-                return callGeminiAdvisorApi(student, avgGpa, gpa4Scale, grades, customQuery);
+                return callAiAdvisorApi(student, avgGpa, gpa4Scale, grades, customQuery);
             } catch (Exception e) {
-                log.warn("Gọi Gemini AI Advisor API thất bại, chuyển sang chế độ phân tích quy tắc thông minh: {}", e.getMessage());
+                log.warn("Gọi AI Advisor API thất bại, chuyển sang chế độ phân tích quy tắc thông minh: {}", e.getMessage());
             }
         }
 
         return generateRuleBasedAdvisorResponse(student, avgGpa, gpa4Scale, grades, customQuery);
     }
 
-    private AiAdvisorResponse callGeminiAdvisorApi(User student, double avg10, double avg4, List<Grade> grades, String customQuery) throws Exception {
+    private AiAdvisorResponse callAiAdvisorApi(User student, double avg10, double avg4, List<Grade> grades, String customQuery) throws Exception {
         String displayName = student.getFullName() != null ? student.getFullName() : student.getEmail();
         String prompt = String.format("""
             Bạn là Cố vấn Học tập AI chuyên nghiệp dành cho sinh viên %s (GPA: %.2f/10, %.2f/4).
@@ -141,33 +127,10 @@ public class AiAdvisorServiceImpl implements AiAdvisorService {
             avg10
         );
 
-        Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                        Map.of("parts", List.of(Map.of("text", prompt)))
-                )
-        );
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        String fullUrl = geminiUrl + "?key=" + geminiApiKey;
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-        ResponseEntity<String> responseEntity = restTemplate.postForEntity(fullUrl, entity, String.class);
-        if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
-            Map<String, Object> respMap = objectMapper.readValue(responseEntity.getBody(), new TypeReference<>() {});
-            List<?> candidates = (List<?>) respMap.get("candidates");
-            if (candidates != null && !candidates.isEmpty()) {
-                Map<?, ?> candidate = (Map<?, ?>) candidates.get(0);
-                Map<?, ?> contentMap = (Map<?, ?>) candidate.get("content");
-                List<?> parts = (List<?>) contentMap.get("parts");
-                if (parts != null && !parts.isEmpty()) {
-                    Map<?, ?> part = (Map<?, ?>) parts.get(0);
-                    String text = (String) part.get("text");
-                    text = text.replace("```json", "").replace("```", "").trim();
-                    return objectMapper.readValue(text, AiAdvisorResponse.class);
-                }
-            }
+        String rawText = aiClientService.generateContent(prompt);
+        if (rawText != null) {
+            String text = rawText.replace("```json", "").replace("```", "").trim();
+            return objectMapper.readValue(text, AiAdvisorResponse.class);
         }
         return generateRuleBasedAdvisorResponse(student, avg10, avg4, grades, customQuery);
     }

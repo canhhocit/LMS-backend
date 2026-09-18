@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.quiz.service.impl;
 
+import com.ex.learninghub.common.ai.AiClientService;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.quiz.dto.request.AiGenerateQuestionRequest;
 import com.ex.learninghub.modules.quiz.dto.request.QuestionRequest;
@@ -10,12 +11,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -23,22 +22,16 @@ import java.util.*;
 public class AiQuestionGeneratorServiceImpl implements AiQuestionGeneratorService {
 
     private final QuizService quizService;
+    private final AiClientService aiClientService;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
-
-    @Value("${app.ai.gemini-api-key:}")
-    private String geminiApiKey;
-
-    @Value("${app.ai.gemini-url:https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent}")
-    private String geminiUrl;
 
     @Override
     public List<QuestionRequest> generateQuestionsFromText(AiGenerateQuestionRequest request) {
-        if (geminiApiKey != null && !geminiApiKey.isBlank()) {
+        if (aiClientService.isAiConfigured()) {
             try {
-                return generateUsingGeminiApi(request);
+                return generateUsingAiApi(request);
             } catch (Exception e) {
-                log.warn("Gọi Gemini API thất bại, chuyển sang phương thức phân tích quy tắc: {}", e.getMessage());
+                log.warn("Gọi AI API thất bại, chuyển sang phương thức phân tích quy tắc: {}", e.getMessage());
             }
         }
         return generateFallbackQuestions(request);
@@ -57,7 +50,7 @@ public class AiQuestionGeneratorServiceImpl implements AiQuestionGeneratorServic
         return responses;
     }
 
-    private List<QuestionRequest> generateUsingGeminiApi(AiGenerateQuestionRequest request) throws Exception {
+    private List<QuestionRequest> generateUsingAiApi(AiGenerateQuestionRequest request) throws Exception {
         String prompt = String.format("""
             Hãy đọc nội dung văn bản/bài giảng dưới đây và tạo đúng %d câu hỏi trắc nghiệm tiếng Việt ở độ khó %s.
             Yêu cầu trả về DUY NHẤT một chuỗi JSON Array nguyên bản (không kèm markdown format ```json), trong đó mỗi phần tử có cấu trúc:
@@ -76,33 +69,10 @@ public class AiQuestionGeneratorServiceImpl implements AiQuestionGeneratorServic
             %s
             """, request.getNumberOfQuestions(), request.getDifficulty(), request.getContent());
 
-        Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                        Map.of("parts", List.of(Map.of("text", prompt)))
-                )
-        );
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        String fullUrl = geminiUrl + "?key=" + geminiApiKey;
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-        ResponseEntity<String> responseEntity = restTemplate.postForEntity(fullUrl, entity, String.class);
-        if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
-            Map<String, Object> respMap = objectMapper.readValue(responseEntity.getBody(), new TypeReference<>() {});
-            List<?> candidates = (List<?>) respMap.get("candidates");
-            if (candidates != null && !candidates.isEmpty()) {
-                Map<?, ?> candidate = (Map<?, ?>) candidates.get(0);
-                Map<?, ?> contentMap = (Map<?, ?>) candidate.get("content");
-                List<?> parts = (List<?>) contentMap.get("parts");
-                if (parts != null && !parts.isEmpty()) {
-                    Map<?, ?> part = (Map<?, ?>) parts.get(0);
-                    String text = (String) part.get("text");
-                    text = text.replace("```json", "").replace("```", "").trim();
-                    return objectMapper.readValue(text, new TypeReference<List<QuestionRequest>>() {});
-                }
-            }
+        String rawText = aiClientService.generateContent(prompt);
+        if (rawText != null) {
+            String text = rawText.replace("```json", "").replace("```", "").trim();
+            return objectMapper.readValue(text, new TypeReference<List<QuestionRequest>>() {});
         }
         return generateFallbackQuestions(request);
     }
