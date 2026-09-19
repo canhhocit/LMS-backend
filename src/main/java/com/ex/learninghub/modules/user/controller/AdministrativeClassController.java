@@ -25,13 +25,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/administrative-classes")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Quản trị - Lớp hành chính", description = "Các API CRUD cho lớp hành chính, quản lý danh sách sinh viên của lớp")
 public class AdministrativeClassController {
 
     private final AdminClassService adminClassService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Tạo lớp hành chính",
             description = "Tạo mới một lớp hành chính trong hệ thống."
@@ -41,6 +41,7 @@ public class AdministrativeClassController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Cập nhật lớp hành chính",
             description = "Cập nhật thông tin (tên, khoa, cố vấn học tập, ...) của một lớp hành chính."
@@ -53,6 +54,7 @@ public class AdministrativeClassController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Xóa lớp hành chính",
             description = "Xóa một lớp hành chính khỏi hệ thống."
@@ -65,6 +67,7 @@ public class AdministrativeClassController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'LECTURER')")
     @Operation(
             summary = "Lấy tất cả lớp hành chính",
             description = "Trả về danh sách tất cả lớp hành chính trong hệ thống."
@@ -74,6 +77,7 @@ public class AdministrativeClassController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LECTURER')")
     @Operation(
             summary = "Lấy chi tiết lớp hành chính",
             description = "Trả về thông tin chi tiết của một lớp hành chính theo ID."
@@ -85,6 +89,7 @@ public class AdministrativeClassController {
     }
 
     @GetMapping("/{id}/students")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LECTURER')")
     @Operation(
             summary = "Lấy danh sách sinh viên của lớp hành chính",
             description = "Trả về danh sách UserResponse của các sinh viên thuộc lớp hành chính."
