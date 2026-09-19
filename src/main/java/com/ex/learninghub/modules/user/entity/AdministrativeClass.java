@@ -28,4 +28,8 @@ public class AdministrativeClass extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curriculum_id")
     private Curriculum curriculum;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "homeroom_teacher_id")
+    private User homeroomTeacher;
 }

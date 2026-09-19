@@ -39,6 +39,10 @@ public class AdminClassServiceImpl implements AdminClassService {
             curriculumRepository.findById(request.getCurriculumId())
                     .ifPresent(ac::setCurriculum);
         }
+        if (request.getHomeroomTeacherId() != null) {
+            userRepository.findById(request.getHomeroomTeacherId())
+                    .ifPresent(ac::setHomeroomTeacher);
+        }
         return AdminClassResponse.from(adminClassRepository.save(ac), 0);
     }
 
@@ -54,6 +58,11 @@ public class AdminClassServiceImpl implements AdminClassService {
             ac.setCurriculum(curriculumRepository.findById(request.getCurriculumId()).orElse(null));
         } else {
             ac.setCurriculum(null);
+        }
+        if (request.getHomeroomTeacherId() != null) {
+            ac.setHomeroomTeacher(userRepository.findById(request.getHomeroomTeacherId()).orElse(null));
+        } else {
+            ac.setHomeroomTeacher(null);
         }
         int count = (int) userRepository.countByAdminClassId(id);
         return AdminClassResponse.from(adminClassRepository.save(ac), count);
