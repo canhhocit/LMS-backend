@@ -6,6 +6,7 @@ import com.ex.learninghub.common.exception.GlobalExceptionHandler;
 import com.ex.learninghub.modules.auth.controller.AuthController;
 import com.ex.learninghub.modules.auth.dto.request.LoginRequest;
 import com.ex.learninghub.modules.auth.service.AuthService;
+import com.ex.learninghub.modules.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,13 +38,16 @@ public class RateLimitingFilterTest {
     @Mock
     private TokenBlacklistService tokenBlacklistService;
 
+    @Mock
+    private UserRepository userRepository;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private LoginRequest loginRequest;
 
     @BeforeEach
     void setUp() {
         RateLimitingFilter rateLimitingFilter = new RateLimitingFilter(redisTemplate);
-        AuthController authController = new AuthController(authService, tokenBlacklistService);
+        AuthController authController = new AuthController(authService, tokenBlacklistService, userRepository);
 
         mockMvc = MockMvcBuilders.standaloneSetup(authController)
                 .setControllerAdvice(new GlobalExceptionHandler())

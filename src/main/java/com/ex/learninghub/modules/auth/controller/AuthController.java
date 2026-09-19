@@ -9,12 +9,14 @@ import com.ex.learninghub.modules.auth.dto.request.RefreshTokenRequest;
 import com.ex.learninghub.modules.auth.dto.request.ResetPasswordRequest;
 import com.ex.learninghub.modules.auth.dto.response.AuthResponse;
 import com.ex.learninghub.modules.auth.service.AuthService;
+import com.ex.learninghub.modules.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +32,17 @@ public class AuthController {
 
     private final AuthService authService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final UserRepository userRepository;
+
+    @GetMapping("/ping")
+    @Operation(
+            summary = "Keep-alive ping endpoint",
+            description = "Endpoint công khai để duy trì Render backend và Neon Database luôn hoạt động (không bị ngủ đông)"
+    )
+    public ApiResponse<String> ping() {
+        long count = userRepository.count();
+        return ApiResponse.success("Backend & Neon DB active. Total users: " + count);
+    }
 
     @PostMapping("/login")
     @Operation(
