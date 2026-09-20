@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/grading/risk-warning")
+@RequestMapping("/grading/risk-warning/class/{classId}")
 @RequiredArgsConstructor
 @Tag(name = "Dự báo Nguy cơ Cấm thi & Trượt môn", description = "Các API phân tích và dự báo sớm nguy cơ rủi ro học tập cho sinh viên")
 public class AcademicRiskController {
 
     private final AcademicRiskWarningService academicRiskWarningService;
 
-    @GetMapping("/class/{classId}/student/{studentId}")
+    @GetMapping("/student/{studentId}")
     @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN', 'STUDENT')")
     @Operation(
             summary = "Tính toán nguy cơ rủi ro học tập cá nhân của sinh viên",
@@ -31,7 +31,7 @@ public class AcademicRiskController {
         return ApiResponse.success(academicRiskWarningService.calculateStudentRisk(classId, studentId));
     }
 
-    @GetMapping("/class/{classId}")
+    @GetMapping
     @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')")
     @Operation(
             summary = "Lấy báo cáo tổng hợp danh sách sinh viên có nguy cơ rủi ro trong lớp",
