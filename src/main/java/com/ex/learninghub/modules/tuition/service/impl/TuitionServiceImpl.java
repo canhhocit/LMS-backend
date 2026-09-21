@@ -9,10 +9,12 @@ import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.notification.service.NotificationService;
 import com.ex.learninghub.modules.tuition.dto.request.TuitionRateRequest;
+import com.ex.learninghub.modules.tuition.dto.response.PayOSPaymentResponse;
 import com.ex.learninghub.modules.tuition.dto.response.TuitionInvoiceResponse;
 import com.ex.learninghub.modules.tuition.dto.response.TuitionRateResponse;
 import com.ex.learninghub.modules.tuition.entity.TuitionInvoice;
 import com.ex.learninghub.modules.tuition.entity.TuitionRate;
+import com.ex.learninghub.modules.tuition.payos.PayOSService;
 import com.ex.learninghub.modules.tuition.repository.TuitionInvoiceRepository;
 import com.ex.learninghub.modules.tuition.repository.TuitionRateRepository;
 import com.ex.learninghub.modules.tuition.service.TuitionService;
@@ -26,6 +28,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +41,7 @@ public class TuitionServiceImpl implements TuitionService {
     private final EnrollmentRepository enrollmentRepository;
     private final EmailService emailService;
     private final NotificationService notificationService;
+    private final PayOSService payOSService;
 
     // ============== Rates ==============
     @Override
@@ -105,7 +109,6 @@ public class TuitionServiceImpl implements TuitionService {
         if (student.getRole() != Role.STUDENT) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
-        // Đã có invoice cho (student, semester, year) → không tạo lại
         var existing = invoiceRepository.findByStudentIdAndSemesterAndAcademicYear(studentId, semester, academicYear);
         if (existing.isPresent()) {
             return TuitionInvoiceResponse.from(existing.get());
@@ -114,7 +117,6 @@ public class TuitionServiceImpl implements TuitionService {
         TuitionRate rate = rateRepository.findByAcademicYear(academicYear)
                 .orElseThrow(() -> new AppException(ErrorCode.TUITION_RATE_NOT_FOUND));
 
-        // Tính tổng tín chỉ của sinh viên trong kỳ này (lọc theo semester và academicYear)
         int totalCredits = enrollmentRepository.findByStudentId(studentId).stream()
                 .filter(e -> semester.equals(e.getSemester()) && academicYear.equals(e.getAcademicYear()))
                 .filter(e -> e.getClazz() != null && e.getClazz().getCourse() != null
@@ -154,17 +156,116 @@ public class TuitionServiceImpl implements TuitionService {
         inv.setPaidAt(java.time.LocalDateTime.now());
         TuitionInvoice saved = invoiceRepository.save(inv);
 
-        // Gửi email xác nhận (async, no-reply)
         emailService.sendTuitionPaymentConfirmation(saved);
 
-        // Thông báo trong ứng dụng
         notificationService.notifyUser(
                 saved.getStudent().getId(),
                 NotificationType.COURSE_REGISTERED,
                 "Đã thanh toán học phí thành công",
                 "Hóa đơn học phí kỳ " + saved.getSemester() + " năm " + saved.getAcademicYear()
-                        + " đã được ghi nhận. Kiểm tra email cá nhân của bạn để xem hóa đơn.",
+                        + " đã được ghi nhận. Kiểm tra email cá nhân để xem hóa đơn.",
                 saved.getId());
+
+        return TuitionInvoiceResponse.from(saved);
+    }
+
+    // ============== PayOS Payment Integration ==============
+    @Override
+    @Transactional(readOnly = true)
+    public PayOSPaymentResponse createPayOSPayment(Long invoiceId, UserPrincipal principal) {
+        TuitionInvoice inv = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
+        if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        String description = "Hoc phi K" + inv.getSemester() + " " + inv.getAcademicYear();
+        return payOSService.createPaymentLink(invoiceId, inv.getAmount(), description, inv.getStudent().getFullName());
+    }
+
+    @Override
+    @Transactional
+    public TuitionInvoiceResponse verifyPayOSPayment(Long invoiceId, UserPrincipal principal) {
+        TuitionInvoice inv = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
+        if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        if ("PAID".equals(inv.getStatus())) {
+            return TuitionInvoiceResponse.from(inv);
+        }
+
+        inv.setStatus("PAID");
+        inv.setPaidAt(LocalDateTime.now());
+        TuitionInvoice saved = invoiceRepository.save(inv);
+
+        emailService.sendTuitionPaymentConfirmation(saved);
+        notificationService.notifyUser(
+                saved.getStudent().getId(),
+                NotificationType.COURSE_REGISTERED,
+                "Thanh toán PayOS thành công",
+                "Hóa đơn học phí kỳ " + saved.getSemester() + " năm " + saved.getAcademicYear()
+                        + " đã được thanh toán thành công qua cổng PayOS VietQR.",
+                saved.getId());
+
+        return TuitionInvoiceResponse.from(saved);
+    }
+
+    @Override
+    @Transactional
+    public TuitionInvoiceResponse processPayOSWebhook(Map<String, Object> payload) {
+        if (payload == null || !payload.containsKey("data")) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
+        Map<String, Object> data = (Map<String, Object>) payload.get("data");
+        Object orderCodeObj = data.get("orderCode");
+        Object descObj = data.get("description");
+
+        Long invoiceId = null;
+        if (descObj != null) {
+            String desc = descObj.toString();
+            String[] parts = desc.split(" ");
+            for (String part : parts) {
+                try {
+                    invoiceId = Long.parseLong(part);
+                    break;
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        if (invoiceId == null) {
+            List<TuitionInvoice> unpaid = invoiceRepository.findAll().stream()
+                    .filter(i -> "UNPAID".equals(i.getStatus()))
+                    .collect(Collectors.toList());
+            if (!unpaid.isEmpty()) {
+                invoiceId = unpaid.get(0).getId();
+            }
+        }
+
+        if (invoiceId == null) {
+            throw new AppException(ErrorCode.SUBMISSION_NOT_FOUND);
+        }
+
+        TuitionInvoice inv = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
+
+        if ("PAID".equals(inv.getStatus())) {
+            return TuitionInvoiceResponse.from(inv);
+        }
+
+        inv.setStatus("PAID");
+        inv.setPaidAt(LocalDateTime.now());
+        TuitionInvoice saved = invoiceRepository.save(inv);
+
+        emailService.sendTuitionPaymentConfirmation(saved);
+        if (saved.getStudent() != null) {
+            notificationService.notifyUser(
+                    saved.getStudent().getId(),
+                    NotificationType.COURSE_REGISTERED,
+                    "Xác nhận thanh toán PayOS VietQR",
+                    "Hệ thống đã nhận thanh toán thành công qua PayOS cho hóa đơn học phí kỳ "
+                            + saved.getSemester() + " năm " + saved.getAcademicYear(),
+                    saved.getId());
+        }
 
         return TuitionInvoiceResponse.from(saved);
     }
@@ -175,23 +276,21 @@ public class TuitionServiceImpl implements TuitionService {
         TuitionInvoice inv = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         if ("PAID".equals(inv.getStatus())) {
-            return TuitionInvoiceResponse.from(inv); // idempotent
+            return TuitionInvoiceResponse.from(inv);
         }
         inv.setStatus("PAID");
         inv.setPaidAt(java.time.LocalDateTime.now());
         TuitionInvoice saved = invoiceRepository.save(inv);
 
-        // Gửi email xác nhận khi Admin đánh dấu đã thanh toán
         emailService.sendTuitionPaymentConfirmation(saved);
 
-        // Thông báo trong ứng dụng
         if (saved.getStudent() != null) {
             notificationService.notifyUser(
                     saved.getStudent().getId(),
                     NotificationType.COURSE_REGISTERED,
                     "Học phí đã được xác nhận",
                     "Hóa đơn học phí kỳ " + saved.getSemester() + " năm " + saved.getAcademicYear()
-                            + " đã được phong Tài chính xác nhận. Kiểm tra email để xem hóa đơn.",
+                            + " đã được phòng Tài chính xác nhận. Kiểm tra email để xem hóa đơn.",
                     saved.getId());
         }
 
