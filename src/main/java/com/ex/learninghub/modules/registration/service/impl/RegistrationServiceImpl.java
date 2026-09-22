@@ -119,8 +119,13 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Transactional(readOnly = true)
     public RegistrationPeriodResponse getActivePeriod() {
         return periodRepository.findByIsActiveTrue()
+                .filter(p -> {
+                    LocalDateTime now = LocalDateTime.now();
+                    return (p.getOpenAt() == null || !now.isBefore(p.getOpenAt()))
+                            && (p.getCloseAt() == null || !now.isAfter(p.getCloseAt()));
+                })
                 .map(RegistrationPeriodResponse::from)
-                .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_CLOSED));
+                .orElse(null);
     }
 
     // =================== STUDENT OPERATIONS ===================
