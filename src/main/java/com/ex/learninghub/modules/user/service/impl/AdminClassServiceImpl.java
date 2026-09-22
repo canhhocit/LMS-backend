@@ -1,5 +1,6 @@
 package com.ex.learninghub.modules.user.service.impl;
 
+import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.modules.user.dto.request.AdminClassRequest;
@@ -64,7 +65,7 @@ public class AdminClassServiceImpl implements AdminClassService {
         } else {
             ac.setHomeroomTeacher(null);
         }
-        int count = (int) userRepository.countByAdminClassId(id);
+        int count = (int) userRepository.countByRoleAndAdminClassId(Role.STUDENT, id);
         return AdminClassResponse.from(adminClassRepository.save(ac), count);
     }
 
@@ -79,7 +80,7 @@ public class AdminClassServiceImpl implements AdminClassService {
     @Override
     public List<AdminClassResponse> getAllAdminClasses() {
         return adminClassRepository.findAll().stream()
-                .map(ac -> AdminClassResponse.from(ac, (int) userRepository.countByAdminClassId(ac.getId())))
+                .map(ac -> AdminClassResponse.from(ac, (int) userRepository.countByRoleAndAdminClassId(Role.STUDENT, ac.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -87,14 +88,14 @@ public class AdminClassServiceImpl implements AdminClassService {
     public AdminClassResponse getAdminClassById(Long id) {
         AdministrativeClass ac = adminClassRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
-        return AdminClassResponse.from(ac, (int) userRepository.countByAdminClassId(id));
+        return AdminClassResponse.from(ac, (int) userRepository.countByRoleAndAdminClassId(Role.STUDENT, id));
     }
 
     @Override
     public List<UserResponse> getStudentsByAdminClass(Long id) {
         adminClassRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ADMIN_CLASS_NOT_FOUND));
-        return userRepository.findByAdminClassId(id).stream()
+        return userRepository.findByRoleAndAdminClassId(Role.STUDENT, id).stream()
                 .map(UserResponse::from)
                 .collect(Collectors.toList());
     }

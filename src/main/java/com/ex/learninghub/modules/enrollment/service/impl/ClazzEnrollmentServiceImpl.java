@@ -105,7 +105,7 @@ public class ClazzEnrollmentServiceImpl implements ClazzEnrollmentService {
     @Override
     public List<ClazzResponse> getClazzesOfStudent(Long studentId) {
         return enrollmentRepository.findByStudentId(studentId).stream()
-                .map(e -> ClazzResponse.from(e.getClazz()))
+                .map(e -> ClazzResponse.from(e.getClazz(), enrollmentRepository.countByClazzId(e.getClazz().getId())))
                 .collect(Collectors.toList());
     }
 }

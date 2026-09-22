@@ -23,6 +23,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRole(Role role);
     List<User> findByAdminClassId(Long adminClassId);
     long countByAdminClassId(Long adminClassId);
+    List<User> findByRoleAndAdminClassId(Role role, Long adminClassId);
+    long countByRoleAndAdminClassId(Role role, Long adminClassId);
 
     @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:email) OR (u.personalEmail IS NOT NULL AND LOWER(u.personalEmail) = LOWER(:email))")
     Optional<User> findByEmailOrPersonalEmail(@Param("email") String email);
