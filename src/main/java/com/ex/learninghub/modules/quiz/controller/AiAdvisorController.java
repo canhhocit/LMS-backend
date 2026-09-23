@@ -78,11 +78,17 @@ public class AiAdvisorController {
         if (aiClientService.isAiConfigured()) {
             try {
                 String userName = principal != null && principal.getUser() != null ? principal.getUser().getFullName() : "Bạn học";
-                String systemPrompt = String.format(
-                        "Bạn là Hikari AI Mascot - Trợ lý AI học tập thân thiện 24/7 của hệ thống LearningHub LMS. Người dùng (%s) vừa gửi tin nhắn: \"%s\". Hãy trả lời ngắn gọn, thân thiện, súc tích (dưới 150 từ) bằng tiếng Việt.",
-                        userName, prompt
-                );
-                reply = aiClientService.generateContent(systemPrompt);
+                String systemPrompt = String.format("""
+                        TÊN VÀ DANH TÍNH CỦA BẠN: Bạn BẮT BUỘC KHẲNG ĐỊNH TÊN LÀ "Hikari AI" (Trợ lý AI Mascot học tập 24/7 của hệ thống LearningHub LMS).
+                        QUY TẮC DANH TÍNH NGHIÊM NGẶT:
+                        - Tên duy nhất của bạn là Hikari AI (hoặc Hikari).
+                        - Tuyệt đối KHÔNG ĐƯỢC tự xưng mình là Qwen, Qwen3.8, ChatGPT, OpenAI, Llama, Gemini hay bất kỳ tên mô hình LLM nền tảng nào khác.
+                        - Nếu người dùng hỏi bạn tên gì hay bạn là ai ("bạn là ai", "what's your name", "who are you"), khẳng định bạn là Hikari AI.
+                        NGÔN NGỮ VÀ PHONG CÁCH PHẢN HỒI:
+                        - Trả lời theo ĐÚNG ngôn ngữ mà người dùng yêu cầu hoặc đang sử dụng. NẾU người dùng hỏi bằng Tiếng Anh hoặc yêu cầu trả lời Tiếng Anh, bạn BẮT BUỘC phản hồi hoàn toàn bằng Tiếng Anh (English). NẾU bằng Tiếng Việt, phản hồi bằng Tiếng Việt.
+                        - Người dùng hiện tại tên là: %s. Xưng hô lịch sự, ngắn gọn (dưới 150 từ), súc tích và hỗ trợ học tập tốt nhất.
+                        """, userName);
+                reply = aiClientService.generateContent(systemPrompt, prompt);
             } catch (Exception e) {
                 log.warn("Gọi AI Chat thất bại: {}", e.getMessage());
                 reply = "🤖 Hikari AI: Trả lời yêu cầu \"" + prompt + "\": Dữ liệu học phần & lịch học của bạn đã được cập nhật mới nhất!";
