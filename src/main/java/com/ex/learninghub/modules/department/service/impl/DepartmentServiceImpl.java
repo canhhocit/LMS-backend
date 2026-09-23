@@ -24,6 +24,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse create(DepartmentRequest request) {
         if (departmentRepository.existsByCode(request.getCode())) {
             throw new AppException(ErrorCode.DEPARTMENT_ALREADY_EXISTS);
@@ -44,6 +45,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse update(Long id, DepartmentRequest request) {
         Department d = departmentRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
@@ -60,12 +62,14 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "departments", allEntries = true)
     public void delete(Long id) {
         departmentRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(value = "departments", key = "'all'")
     public List<DepartmentResponse> list() {
         return departmentRepository.findAll().stream()
                 .map(DepartmentResponse::from)
@@ -74,6 +78,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(value = "departments", key = "#id")
     public DepartmentResponse get(Long id) {
         return departmentRepository.findById(id)
                 .map(DepartmentResponse::from)

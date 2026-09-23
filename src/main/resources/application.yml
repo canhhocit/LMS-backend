@@ -9,7 +9,6 @@ spring:
       fail-on-empty-beans: false
   data:
     redis:
-      url: ${REDIS_URL:}
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
@@ -52,6 +51,14 @@ spring:
             required: true
           ssl:
             trust: "*"
+
+  ai:
+    openai:
+      api-key: ${AI_API_KEY:${AI_APIKEY:${GEMINI_API_KEY:mock-key-for-spring-ai}}}
+      base-url: ${AI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/models}
+      chat:
+        options:
+          model: ${AI_MODEL:gemini-1.5-flash}
 
 server:
   servlet:
@@ -98,6 +105,16 @@ google:
     client-id: ${GOOGLE_DRIVE_CLIENT_ID:}
     client-secret: ${GOOGLE_DRIVE_CLIENT_SECRET:}
     refresh-token: ${GOOGLE_DRIVE_REFRESH_TOKEN:}
+
+resilience4j:
+  retry:
+    instances:
+      aiClient:
+        max-attempts: 3
+        wait-duration: 1000ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+
 
 
 

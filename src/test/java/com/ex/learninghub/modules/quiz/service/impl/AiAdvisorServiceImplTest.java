@@ -34,6 +34,9 @@ class AiAdvisorServiceImplTest {
     @Mock
     private GradeRepository gradeRepository;
 
+    @Mock
+    private com.ex.learninghub.common.ai.AiClientService aiClientService;
+
     @InjectMocks
     private AiAdvisorServiceImpl aiAdvisorService;
 
@@ -42,6 +45,8 @@ class AiAdvisorServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(aiClientService.isAiConfigured()).thenReturn(false);
+
         testStudent = new User();
         testStudent.setId(100L);
         testStudent.setEmail("student@test.com");

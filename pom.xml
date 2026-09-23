@@ -152,12 +152,28 @@
 			<version>1.39.0</version>
 		</dependency>
 
-		        <!-- Rate Limiting -->
+		        <!-- Rate Limiting & Retry -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-ratelimiter</artifactId>
             <version>2.2.0</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-retry</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+
+		<!-- Spring AI -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+		</dependency>
 
 		<!-- Devtools -->
 		<dependency>
@@ -239,5 +255,28 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>1.0.0-M6</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<repositories>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 
 </project>

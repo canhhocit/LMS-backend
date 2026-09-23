@@ -62,7 +62,7 @@ class AuthServiceImplTest {
         request.setIdentifier("student@test.edu.vn");
         request.setPassword("Password@123");
 
-        when(userRepository.findByEmail("student@test.edu.vn")).thenReturn(Optional.of(user));
+        when(userRepository.findByIdentifier("student@test.edu.vn")).thenReturn(Optional.of(user));
         when(tokenProvider.generateToken(anyString())).thenReturn("jwt-token");
         when(refreshTokenRepository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -79,9 +79,7 @@ class AuthServiceImplTest {
         request.setIdentifier("unknown@test.edu.vn");
         request.setPassword("Password@123");
 
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-        when(userRepository.findByStudentCode(anyString())).thenReturn(Optional.empty());
-        when(userRepository.findByLecturerCode(anyString())).thenReturn(Optional.empty());
+        when(userRepository.findByIdentifier(anyString())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(AppException.class);

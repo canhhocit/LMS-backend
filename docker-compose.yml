@@ -1,53 +1,71 @@
 version: '3.8'
 
 services:
+  # =========================================================
+  # 1. PostgreSQL + PGVector Database
+  # =========================================================
   db:
-    image: postgres:16-alpine
-    container_name: learninghub-db
+    image: pgvector/pgvector:pg16
+    container_name: learninghub_db
+    restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-learninghub}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: learninghub
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-learninghub}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d learninghub"]
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
 
+  # =========================================================
+  # 2. Redis Caching Service
+  # =========================================================
   redis:
     image: redis:7-alpine
-    container_name: learninghub-redis
+    container_name: learninghub_redis
+    restart: always
     ports:
       - "6379:6379"
-    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # =========================================================
+  # 3. LearningHub Backend Spring Boot App
+  # =========================================================
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: learninghub-app
-    env_file:
-      - .env
-    environment:
-      SPRING_PROFILE: prod
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB:-learninghub}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    container_name: learninghub_backend
+    restart: always
     ports:
-      - "${PORT:-8080}:8080"
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/learninghub
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration/postgresql
+      AI_API_KEY: ${AI_API_KEY:-mock-key}
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
-    restart: unless-stopped
+        condition: service_healthy
 
 volumes:
   pgdata:
+  redisdata:

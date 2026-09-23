@@ -144,6 +144,7 @@ class ProgressServiceImplTest {
                 .enrollment(enrollment).lesson(l3).isCompleted(false).build();
 
         when(enrollmentRepository.findById(50L)).thenReturn(Optional.of(enrollment));
+        when(lessonRepository.findByClazzId(10L)).thenReturn(List.of(lesson, l2, l3));
         when(lessonProgressRepository.findByEnrollmentId(50L)).thenReturn(List.of(p1, p2, p3));
 
         ProgressResponse response = progressService.getProgressByEnrollment(50L, principalFor(student));
@@ -168,6 +169,7 @@ class ProgressServiceImplTest {
         admin.setId(999L);
 
         when(enrollmentRepository.findById(50L)).thenReturn(Optional.of(enrollment));
+        when(lessonRepository.findByClazzId(10L)).thenReturn(List.of(lesson));
         when(lessonProgressRepository.findByEnrollmentId(50L)).thenReturn(List.of(progress));
 
         ProgressResponse response = progressService.getProgressByEnrollment(50L, principalFor(admin));
