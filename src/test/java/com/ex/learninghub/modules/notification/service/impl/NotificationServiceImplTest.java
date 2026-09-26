@@ -43,6 +43,9 @@ class NotificationServiceImplTest {
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private NotificationServiceImpl notificationService;
 

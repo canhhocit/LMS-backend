@@ -18,6 +18,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import com.ex.learninghub.modules.notification.event.NotificationEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,10 @@ public class NotificationServiceImpl implements NotificationService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
     @Override
     @Transactional
@@ -70,6 +77,33 @@ public class NotificationServiceImpl implements NotificationService {
                     recipient.getEmail(), "/queue/notifications", payload);
         } catch (Exception ex) {
             log.warn("Failed to push WebSocket notification to {}: {}", recipient.getEmail(), ex.getMessage());
+        }
+
+        // Publish async Email notification event
+        try {
+            String recipientEmail = (recipient.getPersonalEmail() != null && !recipient.getPersonalEmail().isBlank())
+                    ? recipient.getPersonalEmail()
+                    : recipient.getEmail();
+
+            if (recipientEmail != null && !recipientEmail.isBlank()) {
+                String mailContent = content;
+                if (type == NotificationType.NEW_QUIZ) {
+                    mailContent = content + "\n\nTruy cập hệ thống để làm bài kiểm tra tại:\n" + frontendUrl + "/student/quizzes";
+                } else if (type == NotificationType.NEW_ASSIGNMENT) {
+                    mailContent = content + "\n\nTruy cập hệ thống để làm bài tập tại:\n" + frontendUrl + "/student/classes";
+                } else {
+                    mailContent = content + "\n\nTruy cập hệ thống LearningHub tại:\n" + frontendUrl;
+                }
+
+                eventPublisher.publishEvent(NotificationEvent.builder()
+                        .recipientEmail(recipientEmail)
+                        .subject("[" + title + "] Thông báo từ hệ thống LearningHub")
+                        .content(mailContent)
+                        .notificationType(type.name())
+                        .build());
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to publish email notification event for {}: {}", recipient.getEmail(), ex.getMessage());
         }
     }
 
