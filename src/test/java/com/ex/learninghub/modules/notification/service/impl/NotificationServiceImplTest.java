@@ -53,7 +53,7 @@ class NotificationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        recipient = User.builder().email("sv@test.edu.vn").role(Role.STUDENT).build();
+        recipient = User.builder().email("sv@test.edu.vn").personalEmail("sv_personal@test.edu.vn").role(Role.STUDENT).build();
         recipient.setId(1L);
     }
 

@@ -60,13 +60,13 @@ public class EmailService {
                                             com.ex.learninghub.modules.registration.entity.RegistrationPeriod period) {
         if (student == null) return;
         
-        // Ưu tiên gửi về email cá nhân (personalEmail) do email mặc định có thể là giả
+        // Gửi duy nhất về email cá nhân (personalEmail), nếu không có thì bỏ qua không gửi
         String to = (student.getPersonalEmail() != null && !student.getPersonalEmail().isBlank())
-                ? student.getPersonalEmail()
-                : student.getEmail();
+                ? student.getPersonalEmail().trim()
+                : null;
 
         if (to == null || to.isBlank()) {
-            log.warn("[Email] Sinh viên {} không có email cá nhân hay email tổ chức – bỏ qua gửi xác nhận đăng ký",
+            log.info("[Email] Sinh viên {} không có email cá nhân (personalEmail) – bỏ qua gửi xác nhận đăng ký học phần",
                     student.getFullName());
             return;
         }
@@ -118,15 +118,12 @@ public class EmailService {
     //  Private helpers
     // ===================================================================
 
-    /** Ưu tiên email cá nhân (personalEmail) của sinh viên, fallback về email tổ chức. */
+    /** Chỉ dùng email cá nhân (personalEmail) của sinh viên. Nếu không có thì trả về null để bỏ qua. */
     private String resolveEmail(TuitionInvoice invoice) {
         if (invoice.getStudent() == null) return null;
         var student = invoice.getStudent();
         if (student.getPersonalEmail() != null && !student.getPersonalEmail().isBlank()) {
-            return student.getPersonalEmail();
-        }
-        if (student.getEmail() != null && !student.getEmail().isBlank()) {
-            return student.getEmail();
+            return student.getPersonalEmail().trim();
         }
         return null;
     }

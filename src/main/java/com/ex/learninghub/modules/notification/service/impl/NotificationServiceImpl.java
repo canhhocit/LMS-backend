@@ -79,13 +79,10 @@ public class NotificationServiceImpl implements NotificationService {
             log.warn("Failed to push WebSocket notification to {}: {}", recipient.getEmail(), ex.getMessage());
         }
 
-        // Publish async Email notification event
+        // Publish async Email notification event ONLY to personal email (personalEmail)
         try {
-            String recipientEmail = (recipient.getPersonalEmail() != null && !recipient.getPersonalEmail().isBlank())
-                    ? recipient.getPersonalEmail()
-                    : recipient.getEmail();
-
-            if (recipientEmail != null && !recipientEmail.isBlank()) {
+            String personalEmail = recipient.getPersonalEmail();
+            if (personalEmail != null && !personalEmail.isBlank()) {
                 String mailContent = content;
                 if (type == NotificationType.NEW_QUIZ) {
                     mailContent = content + "\n\nTruy cập hệ thống để làm bài kiểm tra tại:\n" + frontendUrl + "/student/quizzes";
@@ -96,11 +93,13 @@ public class NotificationServiceImpl implements NotificationService {
                 }
 
                 eventPublisher.publishEvent(NotificationEvent.builder()
-                        .recipientEmail(recipientEmail)
+                        .recipientEmail(personalEmail.trim())
                         .subject("[" + title + "] Thông báo từ hệ thống LearningHub")
                         .content(mailContent)
                         .notificationType(type.name())
                         .build());
+            } else {
+                log.info("[Notification] Bỏ qua gửi email cho user ID {} ({}) vì không có email cá nhân (personalEmail)", recipient.getId(), recipient.getEmail());
             }
         } catch (Exception ex) {
             log.warn("Failed to publish email notification event for {}: {}", recipient.getEmail(), ex.getMessage());

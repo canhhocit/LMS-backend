@@ -35,8 +35,11 @@ import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -184,8 +187,13 @@ public class AuthServiceImpl implements AuthService {
 
         String resetLink = frontendUrl + "/reset-password?token=" + token;
         String recipientEmail = (user.getPersonalEmail() != null && !user.getPersonalEmail().isBlank())
-                ? user.getPersonalEmail()
-                : user.getEmail();
+                ? user.getPersonalEmail().trim()
+                : null;
+
+        if (recipientEmail == null || recipientEmail.isBlank()) {
+            log.info("[Auth] Người dùng ID {} ({}) không có email cá nhân (personalEmail) – bỏ qua gửi email đặt lại mật khẩu", user.getId(), user.getEmail());
+            return;
+        }
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(recipientEmail);
