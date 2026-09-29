@@ -27,4 +27,7 @@ public interface GradingService {
 
     /** Giảng viên/Admin công bố điểm cho toàn bộ sinh viên trong lớp */
     List<GradeResponse> publishGrades(Long classId, UserPrincipal userPrincipal);
+
+    /** Khóa hoặc mở khóa sổ điểm cho lớp học phần */
+    com.ex.learninghub.modules.course.dto.response.ClazzResponse toggleLockGrades(Long classId, boolean locked, UserPrincipal userPrincipal);
 }

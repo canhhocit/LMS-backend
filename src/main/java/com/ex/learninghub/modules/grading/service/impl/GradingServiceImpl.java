@@ -62,6 +62,11 @@ public class GradingServiceImpl implements GradingService {
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
         verifyLecturerOwnsClazz(clazz, userPrincipal);
+
+        if (Boolean.TRUE.equals(clazz.getIsGradeLocked())) {
+            throw new AppException(ErrorCode.GRADE_LOCKED);
+        }
+
         User student = userRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -292,5 +297,17 @@ public class GradingServiceImpl implements GradingService {
             }
         }
         return saved.stream().map(GradeResponse::from).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public com.ex.learninghub.modules.course.dto.response.ClazzResponse toggleLockGrades(Long classId, boolean locked, UserPrincipal userPrincipal) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        verifyLecturerOwnsClazz(clazz, userPrincipal);
+
+        clazz.setIsGradeLocked(locked);
+        Clazz saved = clazzRepository.save(clazz);
+        return com.ex.learninghub.modules.course.dto.response.ClazzResponse.from(saved);
     }
 }

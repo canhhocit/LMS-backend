@@ -20,6 +20,7 @@ public class ClazzResponse {
     private String lecturerName;
     private Integer maxStudents;
     private Integer currentStudents;
+    private Boolean isGradeLocked;
     private LocalDateTime createdAt;
 
     public static ClazzResponse from(Clazz clazz) {
@@ -39,6 +40,7 @@ public class ClazzResponse {
                 .lecturerName(clazz.getLecturer() != null ? clazz.getLecturer().getFullName() : null)
                 .maxStudents(clazz.getMaxStudents())
                 .currentStudents(currentCount != null ? currentCount.intValue() : 0)
+                .isGradeLocked(Boolean.TRUE.equals(clazz.getIsGradeLocked()))
                 .createdAt(clazz.getCreatedAt())
                 .build();
     }

@@ -46,6 +46,16 @@ public class GradingController {
         return ApiResponse.success(gradingService.publishGrades(classId, userPrincipal));
     }
 
+    @PostMapping("/classes/{classId}/grades/lock")
+    @PreAuthorize("hasAnyRole('LECTURER','ADMIN')")
+    @Operation(summary = "Khóa hoặc Mở khóa sổ điểm lớp học phần", description = "Giảng viên/Admin thực hiện khóa sổ điểm để ngăn chỉnh sửa hoặc mở lại sổ điểm.")
+    public ApiResponse<com.ex.learninghub.modules.course.dto.response.ClazzResponse> toggleLockGrades(
+            @PathVariable Long classId,
+            @RequestParam(defaultValue = "true") boolean locked,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(gradingService.toggleLockGrades(classId, locked, userPrincipal));
+    }
+
     @GetMapping("/classes/{classId}/grades")
     @PreAuthorize("hasAnyRole('LECTURER','ADMIN')")
     @Operation(summary = "Lấy bảng điểm của lớp học phần", description = "Giảng viên/Admin xem toàn bộ điểm của các sinh viên trong một lớp học phần.")

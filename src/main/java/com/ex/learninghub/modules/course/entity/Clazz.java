@@ -43,4 +43,8 @@ public class Clazz extends BaseEntity {
 
     @Column(name = "max_students")
     private Integer maxStudents;
+
+    @Column(name = "is_grade_locked")
+    @Builder.Default
+    private Boolean isGradeLocked = false;
 }
