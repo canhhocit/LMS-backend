@@ -24,6 +24,22 @@ import java.util.List;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final com.ex.learninghub.modules.schedule.service.AiScheduleService aiScheduleService;
+
+    @PostMapping("/schedules/ai-recommend")
+    @Operation(
+            summary = "AI Gợi ý thời khóa biểu tối ưu",
+            description = "AI phân tích các lớp học phần đang mở và gợi ý top các thời khóa biểu tối ưu không trùng lịch theo nguyện vọng của sinh viên."
+    )
+    public ResponseEntity<ApiResponse<com.ex.learninghub.modules.schedule.dto.response.AiScheduleRecommendResponse>> recommendSchedule(
+            @RequestBody(required = false) com.ex.learninghub.modules.schedule.dto.request.AiScheduleRecommendRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        if (request == null) {
+            request = new com.ex.learninghub.modules.schedule.dto.request.AiScheduleRecommendRequest();
+        }
+        return ResponseEntity.ok(ApiResponse.success(
+                aiScheduleService.recommendSchedule(request, principal)));
+    }
 
     @PostMapping("/clazzes/{clazzId}/schedules")
     @PreAuthorize("hasAnyRole('LECTURER','ADMIN')")
