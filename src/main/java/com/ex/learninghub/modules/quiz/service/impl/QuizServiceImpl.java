@@ -80,10 +80,20 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public List<QuizResponse> getQuizzesByClassId(Long classId) {
-        return quizRepository.findByClazzId(classId).stream()
+    public List<QuizResponse> getQuizzesByClassId(Long classId, UserPrincipal userPrincipal) {
+        List<QuizResponse> responses = quizRepository.findByClazzId(classId).stream()
                 .map(QuizResponse::from)
                 .collect(Collectors.toList());
+
+        if (userPrincipal != null && "STUDENT".equals(userPrincipal.getUser().getRole().name())) {
+            for (QuizResponse res : responses) {
+                quizAttemptRepository.findByQuizIdAndStudentId(res.getId(), userPrincipal.getUser().getId())
+                        .ifPresent(attempt -> {
+                            res.setMyAttempt(QuizAttemptResponse.from(attempt, 0, 0, res.getTotalScore()));
+                        });
+            }
+        }
+        return responses;
     }
 
     @Override

@@ -16,7 +16,7 @@ public interface QuizService {
     // Quiz CRUD
     QuizResponse createQuiz(Long classId, QuizRequest request, UserPrincipal userPrincipal);
     QuizResponse getQuizById(Long quizId);
-    List<QuizResponse> getQuizzesByClassId(Long classId);
+    List<QuizResponse> getQuizzesByClassId(Long classId, UserPrincipal userPrincipal);
     QuizResponse updateQuiz(Long quizId, QuizRequest request, UserPrincipal userPrincipal);
     void deleteQuiz(Long quizId, UserPrincipal userPrincipal);
 

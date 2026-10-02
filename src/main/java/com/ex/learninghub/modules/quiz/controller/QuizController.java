@@ -47,8 +47,10 @@ public class QuizController {
 
     @GetMapping("/class/{classId}")
     @Operation(summary = "Lấy danh sách Quiz của lớp", description = "Trả về danh sách các Quiz thuộc về một lớp học phần.")
-    public ApiResponse<List<QuizResponse>> getQuizzesByClass(@PathVariable Long classId) {
-        return ApiResponse.success(quizService.getQuizzesByClassId(classId));
+    public ApiResponse<List<QuizResponse>> getQuizzesByClass(
+            @PathVariable Long classId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.getQuizzesByClassId(classId, userPrincipal));
     }
 
     @PutMapping("/{quizId}")
