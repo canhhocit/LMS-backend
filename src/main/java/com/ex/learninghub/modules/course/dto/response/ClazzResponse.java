@@ -1,6 +1,7 @@
 package com.ex.learninghub.modules.course.dto.response;
 
 import com.ex.learninghub.modules.course.entity.Clazz;
+import com.ex.learninghub.modules.semester.dto.AcademicSemesterResponse;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,8 +13,11 @@ public class ClazzResponse {
     private Long id;
     private String classCode;
     private String className;
+    // Legacy string fields (backward compat)
     private String semester;
     private String academicYear;
+    // New: rich semester object
+    private AcademicSemesterResponse academicSemester;
     private Long courseId;
     private String courseTitle;
     private Long lecturerId;
@@ -32,8 +36,10 @@ public class ClazzResponse {
                 .id(clazz.getId())
                 .classCode(clazz.getClassCode())
                 .className(clazz.getClassName())
-                .semester(clazz.getSemester())
-                .academicYear(clazz.getAcademicYear())
+                .semester(clazz.getEffectiveSemester())
+                .academicYear(clazz.getEffectiveAcademicYear())
+                .academicSemester(clazz.getAcademicSemester() != null
+                        ? AcademicSemesterResponse.from(clazz.getAcademicSemester()) : null)
                 .courseId(clazz.getCourse() != null ? clazz.getCourse().getId() : null)
                 .courseTitle(clazz.getCourse() != null ? clazz.getCourse().getTitle() : null)
                 .lecturerId(clazz.getLecturer() != null ? clazz.getLecturer().getId() : null)
@@ -44,4 +50,4 @@ public class ClazzResponse {
                 .createdAt(clazz.getCreatedAt())
                 .build();
     }
-}
+}

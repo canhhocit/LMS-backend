@@ -66,6 +66,10 @@ public class User extends BaseEntity {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    /** Khóa tuyển sinh của sinh viên (ví dụ: 2024 tương đương K65) - Dùng để tính toán học kỳ hiện tại */
+    @Column(name = "cohort_year")
+    private Integer cohortYear;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_class_id")
     private AdministrativeClass adminClass;

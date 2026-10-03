@@ -23,6 +23,8 @@ import com.ex.learninghub.modules.registration.dto.response.RegistrationResponse
 import com.ex.learninghub.modules.registration.entity.RegistrationPeriod;
 import com.ex.learninghub.modules.registration.repository.RegistrationPeriodRepository;
 import com.ex.learninghub.modules.registration.service.RegistrationService;
+import com.ex.learninghub.modules.semester.entity.AcademicSemester;
+import com.ex.learninghub.modules.semester.repository.AcademicSemesterRepository;
 import com.ex.learninghub.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final NotificationService notificationService;
     private final com.ex.learninghub.modules.tuition.service.TuitionService tuitionService;
     private final com.ex.learninghub.common.email.EmailService emailService;
+    private final AcademicSemesterRepository semesterRepository;
 
     /** Trần tín chỉ áp dụng cho sinh viên bị probation (warningLevel >= 2). */
     @org.springframework.beans.factory.annotation.Value("${app.registration.max-credits-probation:14}")
@@ -64,10 +67,17 @@ public class RegistrationServiceImpl implements RegistrationService {
             deactivateAll();
         }
 
+        AcademicSemester sem = null;
+        if (request.getSemesterId() != null) {
+            sem = semesterRepository.findById(request.getSemesterId())
+                    .orElseThrow(() -> new RuntimeException("Semester not found"));
+        }
+
         RegistrationPeriod p = RegistrationPeriod.builder()
                 .name(request.getName())
                 .semester(request.getSemester())
                 .academicYear(request.getAcademicYear())
+                .academicSemester(sem)
                 .openAt(request.getOpenAt())
                 .closeAt(request.getCloseAt())
                 .maxCredits(request.getMaxCredits())
@@ -83,9 +93,15 @@ public class RegistrationServiceImpl implements RegistrationService {
                 .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_CLOSED));
         validateWindow(request.getOpenAt(), request.getCloseAt());
 
+        if (request.getSemesterId() != null) {
+            AcademicSemester sem = semesterRepository.findById(request.getSemesterId())
+                    .orElseThrow(() -> new RuntimeException("Semester not found"));
+            p.setAcademicSemester(sem);
+        }
+
         p.setName(request.getName());
-        p.setSemester(request.getSemester());
-        p.setAcademicYear(request.getAcademicYear());
+        if (request.getSemester() != null) p.setSemester(request.getSemester());
+        if (request.getAcademicYear() != null) p.setAcademicYear(request.getAcademicYear());
         p.setOpenAt(request.getOpenAt());
         p.setCloseAt(request.getCloseAt());
         p.setMaxCredits(request.getMaxCredits());
@@ -97,6 +113,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
         return RegistrationPeriodResponse.from(periodRepository.save(p));
     }
+
 
     @Override
     @Transactional
@@ -143,6 +160,12 @@ public class RegistrationServiceImpl implements RegistrationService {
         Clazz clazz = clazzRepository.findById(clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
+        if (period.getAcademicSemester() != null && clazz.getAcademicSemester() != null) {
+            if (!period.getAcademicSemester().getId().equals(clazz.getAcademicSemester().getId())) {
+                throw new AppException(ErrorCode.SEMESTER_MISMATCH);
+            }
+        }
+
         if (clazz.getMaxStudents() != null) {
             long current = enrollmentRepository.countByClazzId(clazzId);
             if (current + 1 > clazz.getMaxStudents()) {
@@ -180,8 +203,8 @@ public class RegistrationServiceImpl implements RegistrationService {
         Enrollment e = Enrollment.builder()
                 .student(student)
                 .clazz(clazz)
-                .semester(period.getSemester())
-                .academicYear(period.getAcademicYear())
+                .semester(period.getEffectiveSemester())
+                .academicYear(period.getEffectiveAcademicYear())
                 .enrolledAt(LocalDateTime.now())
                 .status("ACTIVE")
                 .build();
@@ -220,9 +243,9 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         // Tự động sinh invoice học phí nếu đã có TuitionRate cho năm học này
-        if (period.getSemester() != null && period.getAcademicYear() != null) {
+        if (period.getEffectiveSemester() != null && period.getEffectiveAcademicYear() != null) {
             try {
-                tuitionService.generateInvoice(student.getId(), period.getSemester(), period.getAcademicYear());
+                tuitionService.generateInvoice(student.getId(), period.getEffectiveSemester(), period.getEffectiveAcademicYear());
             } catch (Exception ignored) {
                 // Nếu chưa có TuitionRate thì bỏ qua, Admin tạo sau
             }

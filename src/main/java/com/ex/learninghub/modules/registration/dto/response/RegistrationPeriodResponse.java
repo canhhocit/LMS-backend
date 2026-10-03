@@ -1,6 +1,7 @@
 package com.ex.learninghub.modules.registration.dto.response;
 
 import com.ex.learninghub.modules.registration.entity.RegistrationPeriod;
+import com.ex.learninghub.modules.semester.dto.AcademicSemesterResponse;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,8 +14,11 @@ import java.time.LocalDateTime;
 public class RegistrationPeriodResponse {
     private Long id;
     private String name;
+    // Legacy fields
     private String semester;
     private String academicYear;
+    // New field
+    private AcademicSemesterResponse academicSemester;
     private LocalDateTime openAt;
     private LocalDateTime closeAt;
     private Integer maxCredits;
@@ -24,8 +28,10 @@ public class RegistrationPeriodResponse {
         return RegistrationPeriodResponse.builder()
                 .id(p.getId())
                 .name(p.getName())
-                .semester(p.getSemester())
-                .academicYear(p.getAcademicYear())
+                .semester(p.getEffectiveSemester())
+                .academicYear(p.getEffectiveAcademicYear())
+                .academicSemester(p.getAcademicSemester() != null
+                        ? AcademicSemesterResponse.from(p.getAcademicSemester()) : null)
                 .openAt(p.getOpenAt())
                 .closeAt(p.getCloseAt())
                 .maxCredits(p.getMaxCredits())
@@ -33,3 +39,4 @@ public class RegistrationPeriodResponse {
                 .build();
     }
 }
+

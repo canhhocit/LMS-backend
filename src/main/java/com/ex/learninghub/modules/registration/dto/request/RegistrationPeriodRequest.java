@@ -16,13 +16,15 @@ public class RegistrationPeriodRequest {
     @Size(max = 100)
     private String name;
 
-    @NotBlank(message = "Semester is required")
+    // Optional legacy fields for backward compatibility during migration
     @Size(max = 20)
     private String semester;
 
-    @NotBlank(message = "Academic year is required")
     @Size(max = 20)
     private String academicYear;
+
+    // New field for the true academic semester reference
+    private Long semesterId;
 
     @NotNull(message = "Open time is required")
     private LocalDateTime openAt;
@@ -35,3 +37,4 @@ public class RegistrationPeriodRequest {
 
     private Boolean isActive;
 }
+

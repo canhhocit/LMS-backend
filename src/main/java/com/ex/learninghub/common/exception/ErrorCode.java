@@ -64,6 +64,7 @@ public enum ErrorCode {
     ATTENDANCE_NOT_QUALIFIED(4030, "Student does not meet attendance requirement", HttpStatus.BAD_REQUEST),
     CLAZZ_FULL(4031, "Class has reached maximum student capacity", HttpStatus.BAD_REQUEST),
     INVALID_RESET_TOKEN(4032, "Invalid or expired password reset token", HttpStatus.BAD_REQUEST),
+    SEMESTER_MISMATCH(4034, "Lớp học phần không thuộc học kỳ của đợt đăng ký này", HttpStatus.BAD_REQUEST),
 
     SCHEDULE_NOT_FOUND(4001, "Schedule not found", HttpStatus.NOT_FOUND),
     SCHEDULE_CONFLICT(4002, "Schedule conflicts with existing entry", HttpStatus.BAD_REQUEST),
