@@ -10,7 +10,8 @@ RUN mvn dependency:go-offline -B
 
 # Copy source code and build package
 COPY src ./src
-RUN mvn clean package -DskipTests
+ENV MAVEN_OPTS="-Xmx300m"
+RUN mvn clean package -Dmaven.test.skip=true
 
 # =========================================================
 # Stage 2: Minimal Runtime Image
