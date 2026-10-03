@@ -89,7 +89,12 @@ public class QuizServiceImpl implements QuizService {
             for (QuizResponse res : responses) {
                 quizAttemptRepository.findByQuizIdAndStudentId(res.getId(), userPrincipal.getUser().getId())
                         .ifPresent(attempt -> {
-                            res.setMyAttempt(QuizAttemptResponse.from(attempt, 0, 0, res.getTotalScore()));
+                            int totalQs = questionRepository.findByQuizId(res.getId()).size();
+                            int correctAns = 0;
+                            if (res.getTotalScore() != null && res.getTotalScore().compareTo(BigDecimal.ZERO) > 0 && totalQs > 0 && attempt.getScore() != null) {
+                                correctAns = (int) Math.round((attempt.getScore().doubleValue() * totalQs) / res.getTotalScore().doubleValue());
+                            }
+                            res.setMyAttempt(QuizAttemptResponse.from(attempt, totalQs, correctAns, res.getTotalScore()));
                         });
             }
         }
