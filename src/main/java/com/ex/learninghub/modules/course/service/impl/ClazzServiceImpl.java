@@ -29,6 +29,7 @@ public class ClazzServiceImpl implements ClazzService {
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository enrollmentRepository;
+    private final com.ex.learninghub.modules.course.repository.LessonRepository lessonRepository;
 
     @Override
     @Transactional
@@ -52,7 +53,7 @@ public class ClazzServiceImpl implements ClazzService {
                 .lecturer(lecturer)
                 .maxStudents(request.getMaxStudents())
                 .build();
-        return ClazzResponse.from(clazzRepository.save(clazz), 0L);
+        return ClazzResponse.from(clazzRepository.save(clazz), 0L, 0L);
     }
 
     @Override
@@ -74,7 +75,7 @@ public class ClazzServiceImpl implements ClazzService {
         clazz.setCourse(course);
         clazz.setLecturer(lecturer);
         clazz.setMaxStudents(request.getMaxStudents());
-        return ClazzResponse.from(clazzRepository.save(clazz), enrollmentRepository.countByClazzId(id));
+        return ClazzResponse.from(clazzRepository.save(clazz), enrollmentRepository.countByClazzId(id), lessonRepository.countByChapterClazzId(id));
     }
 
     @Override
@@ -88,26 +89,26 @@ public class ClazzServiceImpl implements ClazzService {
     @Override
     public List<ClazzResponse> getAllClazzes() {
         return clazzRepository.findAll().stream()
-                .map(c -> ClazzResponse.from(c, enrollmentRepository.countByClazzId(c.getId())))
+                .map(c -> ClazzResponse.from(c, enrollmentRepository.countByClazzId(c.getId()), lessonRepository.countByChapterClazzId(c.getId())))
                 .collect(Collectors.toList());
     }
 
     @Override
     public Page<ClazzResponse> getAllClazzes(Pageable pageable) {
-        return clazzRepository.findAll(pageable).map(c -> ClazzResponse.from(c, enrollmentRepository.countByClazzId(c.getId())));
+        return clazzRepository.findAll(pageable).map(c -> ClazzResponse.from(c, enrollmentRepository.countByClazzId(c.getId()), lessonRepository.countByChapterClazzId(c.getId())));
     }
 
     @Override
     public ClazzResponse getClazzById(Long id) {
         Clazz clazz = clazzRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
-        return ClazzResponse.from(clazz, enrollmentRepository.countByClazzId(id));
+        return ClazzResponse.from(clazz, enrollmentRepository.countByClazzId(id), lessonRepository.countByChapterClazzId(id));
     }
 
     @Override
     public List<ClazzResponse> getClazzesByLecturer(Long lecturerId) {
         return clazzRepository.findByLecturerId(lecturerId).stream()
-                .map(c -> ClazzResponse.from(c, enrollmentRepository.countByClazzId(c.getId())))
+                .map(c -> ClazzResponse.from(c, enrollmentRepository.countByClazzId(c.getId()), lessonRepository.countByChapterClazzId(c.getId())))
                 .collect(Collectors.toList());
     }
 }

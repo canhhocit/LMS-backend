@@ -28,6 +28,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
            "(SELECT c.id FROM Chapter c WHERE c.clazzId = :clazzId)")
     List<Lesson> findByChapterClazzId(@Param("clazzId") Long clazzId);
 
+    long countByChapterClazzId(Long clazzId);
+
     Optional<Lesson> findByChapterIdAndSortOrder(Long chapterId, Integer sortOrder);
 
     void deleteByChapterId(Long chapterId);

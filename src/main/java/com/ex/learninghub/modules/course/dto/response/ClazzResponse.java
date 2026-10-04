@@ -24,14 +24,19 @@ public class ClazzResponse {
     private String lecturerName;
     private Integer maxStudents;
     private Integer currentStudents;
+    private Integer lessonCount;
     private Boolean isGradeLocked;
     private LocalDateTime createdAt;
 
     public static ClazzResponse from(Clazz clazz) {
-        return from(clazz, null);
+        return from(clazz, null, null);
     }
 
     public static ClazzResponse from(Clazz clazz, Long currentCount) {
+        return from(clazz, currentCount, null);
+    }
+
+    public static ClazzResponse from(Clazz clazz, Long currentCount, Long lessonCount) {
         return ClazzResponse.builder()
                 .id(clazz.getId())
                 .classCode(clazz.getClassCode())
@@ -46,6 +51,7 @@ public class ClazzResponse {
                 .lecturerName(clazz.getLecturer() != null ? clazz.getLecturer().getFullName() : null)
                 .maxStudents(clazz.getMaxStudents())
                 .currentStudents(currentCount != null ? currentCount.intValue() : 0)
+                .lessonCount(lessonCount != null ? lessonCount.intValue() : 0)
                 .isGradeLocked(Boolean.TRUE.equals(clazz.getIsGradeLocked()))
                 .createdAt(clazz.getCreatedAt())
                 .build();
