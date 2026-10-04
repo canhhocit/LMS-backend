@@ -59,26 +59,6 @@ public class ProgressServiceImpl implements ProgressService {
         progress.setIsCompleted(true);
         progress.setCompletedAt(LocalDateTime.now());
         lessonProgressRepository.save(progress);
-        
-        // Notify student about lesson completion
-        notificationService.notifyUser(
-            enrollment.getStudent().getId(),
-            NotificationType.LESSON_COMPLETED,
-            "Bài học đã hoàn thành: " + lesson.getTitle(),
-            "Bạn đã hoàn thành bài học " + lesson.getTitle(),
-            lesson.getId()
-        );
-        
-        // Notify lecturer about student's progress
-        if (enrollment.getClazz().getLecturer() != null) {
-            notificationService.notifyUser(
-                enrollment.getClazz().getLecturer().getId(),
-                NotificationType.LESSON_COMPLETED,
-                "Sinh viên hoàn thành bài học",
-                enrollment.getStudent().getFullName() + " đã hoàn thành: " + lesson.getTitle(),
-                lesson.getId()
-            );
-        }
     }
 
     @Override
