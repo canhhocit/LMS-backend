@@ -42,20 +42,7 @@ VALUES
     ('IT303-02-2026A', 'Công nghệ phần mềm - Nhóm 02', (SELECT id FROM academic_semesters WHERE code = '2026-2027-1'), (SELECT id FROM courses WHERE code = 'IT303'), (SELECT id FROM users WHERE lecturer_code = 'GV002'), 35)
 ON CONFLICT (class_code) DO NOTHING;
 
--- ──────────────────────────────────────────────
--- 3. ADD GRADING POLICIES
--- ──────────────────────────────────────────────
-INSERT INTO grading_policies (class_id, midterm_weight, final_weight)
-SELECT id, 0.4, 0.6 FROM classes
-WHERE class_code IN ('IT101-01-2026A', 'IT202-01-2026A', 'IT303-01-2026A', 'IT101-02-2025B', 'IT202-02-2026A', 'IT303-02-2026A')
-ON CONFLICT (class_id) DO NOTHING;
 
-INSERT INTO grading_policies (class_id, midterm_weight, final_weight)
-SELECT id, 0.5, 0.5 FROM classes
-WHERE class_code IN ('BUS101-01-2026A', 'GEN101-01-2026A', 'GEN101-02-2025B')
-ON CONFLICT (class_id) DO NOTHING;
-
--- ──────────────────────────────────────────────
 -- 4. ADD ENROLLMENTS
 -- ──────────────────────────────────────────────
 INSERT INTO enrollments (student_id, class_id, status, is_retake)
