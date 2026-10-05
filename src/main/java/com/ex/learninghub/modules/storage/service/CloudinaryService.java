@@ -18,7 +18,13 @@ public class CloudinaryService {
 
     public String uploadFile(MultipartFile file) {
         try {
-            String resourceType = isVideo(file.getOriginalFilename()) ? "video" : "auto";
+            String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "";
+            String resourceType = "auto";
+            if (isVideo(originalFilename)) {
+                resourceType = "video";
+            } else if (isRawDocument(originalFilename)) {
+                resourceType = "raw";
+            }
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resourceType));
             String url = (String) uploadResult.get("secure_url");
             log.info("Upload file lên Cloudinary thành công: {}", url);
@@ -33,5 +39,14 @@ public class CloudinaryService {
         if (filename == null) return false;
         String lower = filename.toLowerCase();
         return lower.endsWith(".mp4") || lower.endsWith(".mkv") || lower.endsWith(".avi") || lower.endsWith(".mov");
+    }
+
+    private boolean isRawDocument(String filename) {
+        if (filename == null) return false;
+        String lower = filename.toLowerCase();
+        return lower.endsWith(".pdf") || lower.endsWith(".doc") || lower.endsWith(".docx") 
+            || lower.endsWith(".xls") || lower.endsWith(".xlsx") || lower.endsWith(".ppt") 
+            || lower.endsWith(".pptx") || lower.endsWith(".txt") || lower.endsWith(".zip") 
+            || lower.endsWith(".rar") || lower.endsWith(".csv");
     }
 }
