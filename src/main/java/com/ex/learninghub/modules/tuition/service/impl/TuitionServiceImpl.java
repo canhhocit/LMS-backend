@@ -22,6 +22,7 @@ import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -42,6 +43,9 @@ public class TuitionServiceImpl implements TuitionService {
     private final EmailService emailService;
     private final NotificationService notificationService;
     private final PayOSService payOSService;
+
+    @Value("${app.payment.simulation-enabled:false}")
+    private boolean simulationEnabled;
 
     // ============== Rates ==============
     @Override
@@ -143,7 +147,8 @@ public class TuitionServiceImpl implements TuitionService {
 
     @Override
     @Transactional
-    public TuitionInvoiceResponse payMyInvoice(Long invoiceId, UserPrincipal principal) {
+    public TuitionInvoiceResponse simulatePayment(Long invoiceId, UserPrincipal principal) {
+        if (!simulationEnabled) throw new AppException(ErrorCode.FORBIDDEN);
         TuitionInvoice inv = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
@@ -152,121 +157,79 @@ public class TuitionServiceImpl implements TuitionService {
         if ("PAID".equals(inv.getStatus())) {
             return TuitionInvoiceResponse.from(inv);
         }
+        if (inv.getPayosOrderCode() != null) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
         inv.setStatus("PAID");
+        inv.setPaymentMethod("SIMULATED");
         inv.setPaidAt(java.time.LocalDateTime.now());
         TuitionInvoice saved = invoiceRepository.save(inv);
 
-        emailService.sendTuitionPaymentConfirmation(saved);
-
-        notificationService.notifyUser(
-                saved.getStudent().getId(),
-                NotificationType.COURSE_REGISTERED,
-                "Đã thanh toán học phí thành công",
-                "Hóa đơn học phí kỳ " + saved.getSemester() + " năm " + saved.getAcademicYear()
-                        + " đã được ghi nhận. Kiểm tra email cá nhân để xem hóa đơn.",
-                saved.getId());
+        notificationService.notifyUser(saved.getStudent().getId(), NotificationType.COURSE_REGISTERED,
+                "Simulated payment recorded", "Invoice " + saved.getId() + " was marked paid in simulation mode only.", saved.getId());
 
         return TuitionInvoiceResponse.from(saved);
     }
 
     // ============== PayOS Payment Integration ==============
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PayOSPaymentResponse createPayOSPayment(Long invoiceId, UserPrincipal principal) {
         TuitionInvoice inv = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
+        if ("PAID".equals(inv.getStatus())) throw new AppException(ErrorCode.VALIDATION_ERROR);
+        if (inv.getPayosOrderCode() != null) throw new AppException(ErrorCode.VALIDATION_ERROR);
         String description = "Hoc phi K" + inv.getSemester() + " " + inv.getAcademicYear();
-        return payOSService.createPaymentLink(invoiceId, inv.getAmount(), description, inv.getStudent().getFullName());
+        PayOSPaymentResponse response = payOSService.createPaymentLink(invoiceId, inv.getAmount(), description, inv.getStudent().getFullName());
+        inv.setPayosOrderCode(response.getOrderCode());
+        invoiceRepository.save(inv);
+        return response;
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public TuitionInvoiceResponse verifyPayOSPayment(Long invoiceId, UserPrincipal principal) {
         TuitionInvoice inv = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
-        if ("PAID".equals(inv.getStatus())) {
-            return TuitionInvoiceResponse.from(inv);
-        }
-
-        inv.setStatus("PAID");
-        inv.setPaidAt(LocalDateTime.now());
-        TuitionInvoice saved = invoiceRepository.save(inv);
-
-        emailService.sendTuitionPaymentConfirmation(saved);
-        notificationService.notifyUser(
-                saved.getStudent().getId(),
-                NotificationType.COURSE_REGISTERED,
-                "Thanh toán PayOS thành công",
-                "Hóa đơn học phí kỳ " + saved.getSemester() + " năm " + saved.getAcademicYear()
-                        + " đã được thanh toán thành công qua cổng PayOS VietQR.",
-                saved.getId());
-
-        return TuitionInvoiceResponse.from(saved);
+        return TuitionInvoiceResponse.from(inv);
     }
 
     @Override
     @Transactional
+    @SuppressWarnings("unchecked")
     public TuitionInvoiceResponse processPayOSWebhook(Map<String, Object> payload) {
-        if (payload == null || !payload.containsKey("data")) {
+        if (payload == null || !(payload.get("data") instanceof Map<?, ?> rawData)
+                || !payOSService.verifyWebhookData((Map<String, Object>) rawData, String.valueOf(payload.get("signature")))) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        Map<String, Object> data = (Map<String, Object>) rawData;
+        if (!Boolean.TRUE.equals(payload.get("success")) || !"00".equals(String.valueOf(payload.get("code")))
+                || data.get("orderCode") == null || data.get("amount") == null) {
             throw new AppException(ErrorCode.VALIDATION_ERROR);
         }
-        Map<String, Object> data = (Map<String, Object>) payload.get("data");
-        Object orderCodeObj = data.get("orderCode");
-        Object descObj = data.get("description");
-
-        Long invoiceId = null;
-        if (descObj != null) {
-            String desc = descObj.toString();
-            String[] parts = desc.split(" ");
-            for (String part : parts) {
-                try {
-                    invoiceId = Long.parseLong(part);
-                    break;
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-
-        if (invoiceId == null) {
-            List<TuitionInvoice> unpaid = invoiceRepository.findAll().stream()
-                    .filter(i -> "UNPAID".equals(i.getStatus()))
-                    .collect(Collectors.toList());
-            if (!unpaid.isEmpty()) {
-                invoiceId = unpaid.get(0).getId();
-            }
-        }
-
-        if (invoiceId == null) {
-            throw new AppException(ErrorCode.SUBMISSION_NOT_FOUND);
-        }
-
-        TuitionInvoice inv = invoiceRepository.findById(invoiceId)
+        Long orderCode = Long.valueOf(data.get("orderCode").toString());
+        long amount = Long.parseLong(data.get("amount").toString());
+        TuitionInvoice inv = invoiceRepository.findByPayosOrderCode(orderCode)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
-
-        if ("PAID".equals(inv.getStatus())) {
-            return TuitionInvoiceResponse.from(inv);
+        if (inv.getAmount().compareTo(BigDecimal.valueOf(amount)) != 0) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
         }
+        if ("PAID".equals(inv.getStatus())) return TuitionInvoiceResponse.from(inv);
 
         inv.setStatus("PAID");
+        inv.setPaymentMethod("PAYOS");
         inv.setPaidAt(LocalDateTime.now());
         TuitionInvoice saved = invoiceRepository.save(inv);
-
         emailService.sendTuitionPaymentConfirmation(saved);
-        if (saved.getStudent() != null) {
-            notificationService.notifyUser(
-                    saved.getStudent().getId(),
-                    NotificationType.COURSE_REGISTERED,
-                    "Xác nhận thanh toán PayOS VietQR",
-                    "Hệ thống đã nhận thanh toán thành công qua PayOS cho hóa đơn học phí kỳ "
-                            + saved.getSemester() + " năm " + saved.getAcademicYear(),
-                    saved.getId());
-        }
-
+        notificationService.notifyUser(saved.getStudent().getId(), NotificationType.COURSE_REGISTERED,
+                "Xác nhận thanh toán PayOS", "Đã nhận thanh toán PayOS cho hóa đơn học phí kỳ "
+                        + saved.getSemester() + " năm " + saved.getAcademicYear(), saved.getId());
         return TuitionInvoiceResponse.from(saved);
     }
 
@@ -279,6 +242,7 @@ public class TuitionServiceImpl implements TuitionService {
             return TuitionInvoiceResponse.from(inv);
         }
         inv.setStatus("PAID");
+        inv.setPaymentMethod("MANUAL");
         inv.setPaidAt(java.time.LocalDateTime.now());
         TuitionInvoice saved = invoiceRepository.save(inv);
 

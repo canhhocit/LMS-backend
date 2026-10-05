@@ -63,6 +63,21 @@ public class ProgressServiceImpl implements ProgressService {
 
     @Override
     @Transactional
+    public void setMyLessonCompleted(Long lessonId, boolean completed, UserPrincipal principal) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+        Long classId = lesson.getChapter().getClazzId();
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndClazzId(principal.getUser().getId(), classId)
+                .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
+        LessonProgress progress = lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollment.getId(), lessonId)
+                .orElseGet(() -> LessonProgress.builder().enrollment(enrollment).lesson(lesson).build());
+        progress.setIsCompleted(completed);
+        progress.setCompletedAt(completed ? LocalDateTime.now() : null);
+        lessonProgressRepository.save(progress);
+    }
+
+    @Override
+    @Transactional
     public ProgressResponse getProgressByEnrollment(Long enrollmentId, UserPrincipal principal) {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));

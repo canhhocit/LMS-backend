@@ -16,6 +16,7 @@ import com.ex.learninghub.modules.grading.entity.Grade;
 import com.ex.learninghub.modules.grading.repository.AttendanceRepository;
 import com.ex.learninghub.modules.grading.repository.GradeRepository;
 import com.ex.learninghub.modules.grading.service.GradingService;
+import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import com.ex.learninghub.common.enums.AttendanceStatus;
@@ -42,6 +43,7 @@ public class GradingServiceImpl implements GradingService {
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
     private final com.ex.learninghub.modules.grading.repository.GradingPolicyRepository gradingPolicyRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Value("${app.attendance.max-absent-ratio:0.2}")
     private double maxAbsentRatio;
@@ -69,6 +71,10 @@ public class GradingServiceImpl implements GradingService {
 
         User student = userRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        if (student.getRole() != com.ex.learninghub.common.enums.Role.STUDENT
+                || !enrollmentRepository.existsByStudentIdAndClazzId(student.getId(), classId)) {
+            throw new AppException(ErrorCode.USER_NOT_ENROLLED);
+        }
 
         // Check attendance constraint
         long totalAttendance = attendanceRepository.countByClazzIdAndStudentId(classId, request.getStudentId());
@@ -126,9 +132,26 @@ public class GradingServiceImpl implements GradingService {
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
         verifyLecturerOwnsClazz(clazz, userPrincipal);
-        return gradeRepository.findByClazzId(classId).stream()
+
+        List<GradeResponse> responses = new ArrayList<>(gradeRepository.findByClazzId(classId).stream()
                 .map(GradeResponse::from)
-                .collect(Collectors.toList());
+                .toList());
+        var gradedStudentIds = responses.stream()
+                .map(GradeResponse::getStudentId)
+                .collect(Collectors.toSet());
+
+        enrollmentRepository.findByClazzId(classId).stream()
+                .filter(enrollment -> "ACTIVE".equals(enrollment.getStatus()))
+                .filter(enrollment -> !gradedStudentIds.contains(enrollment.getStudent().getId()))
+                .map(enrollment -> GradeResponse.builder()
+                        .classId(classId)
+                        .studentId(enrollment.getStudent().getId())
+                        .studentName(enrollment.getStudent().getFullName())
+                        .isPublished(false)
+                        .build())
+                .forEach(responses::add);
+
+        return responses;
     }
 
     @Override

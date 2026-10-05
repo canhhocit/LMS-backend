@@ -52,6 +52,10 @@ direnv allow
 | `CORS_ALLOWED_ORIGINS` | Danh sách origin được phép, phân cách bằng dấu phẩy | `http://localhost:3000` |
 | `ATTENDANCE_MAX_ABSENT_RATIO` | Tỷ lệ vắng tối đa (0.0–1.0) | `0.2` (tức 20%) |
 | `SERVER_PORT` | Cổng HTTP (cấu hình qua `server.port`) | `8080` |
+| `PAYOS_CLIENT_ID` | PayOS client ID; enables real PayOS when all credentials are configured | unset/demo |
+| `PAYOS_API_KEY` | PayOS API key | unset/demo |
+| `PAYOS_CHECKSUM_KEY` | PayOS webhook signature key | unset/demo |
+| `PAYMENT_SIMULATION_ENABLED` | Enables clearly labeled simulated payment; keep `false` in production | `false` |
 
 ---
 

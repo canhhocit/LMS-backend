@@ -12,6 +12,7 @@ import com.ex.learninghub.modules.grading.dto.response.QrSessionResponse;
 import com.ex.learninghub.modules.grading.entity.Attendance;
 import com.ex.learninghub.modules.grading.repository.AttendanceRepository;
 import com.ex.learninghub.modules.grading.service.QrCodeAttendanceService;
+import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class QrCodeAttendanceServiceImpl implements QrCodeAttendanceService {
     private final ClazzRepository clazzRepository;
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final StringRedisTemplate redisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -53,7 +55,8 @@ public class QrCodeAttendanceServiceImpl implements QrCodeAttendanceService {
         try {
             redisTemplate.opsForValue().set(redisKey, classId + ":" + otpCode, Duration.ofSeconds(15));
         } catch (Exception e) {
-            log.warn("Lưu Redis thất bại, chuyển sang fallback session: {}", e.getMessage());
+            log.error("Cannot create attendance QR session because Redis is unavailable", e);
+            throw new AppException(ErrorCode.KEY_INVALID);
         }
 
         String qrContent = String.format("LEARNINGHUB_QR|%s|%s|%d", sessionToken, otpCode, classId);
@@ -88,20 +91,16 @@ public class QrCodeAttendanceServiceImpl implements QrCodeAttendanceService {
             if (!validOtp.equals(request.getOtpCode())) {
                 throw new AppException(ErrorCode.KEY_INVALID);
             }
-        } else {
-            // Fallback validation if Redis is absent
-            if (request.getSessionToken() == null || request.getOtpCode() == null) {
-                throw new AppException(ErrorCode.KEY_INVALID);
-            }
-            // Parse token or assume valid for testing
-            classId = 1L;
-        }
+        } else throw new AppException(ErrorCode.KEY_INVALID);
 
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
         User student = userRepository.findById(studentPrincipal.getUser().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        if (!enrollmentRepository.existsByStudentIdAndClazzId(student.getId(), clazz.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
 
         LocalDate today = LocalDate.now();
         Attendance attendance = attendanceRepository

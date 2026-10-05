@@ -236,6 +236,10 @@ public class AssessmentServiceImpl implements AssessmentService {
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         verifyLecturerOwnsClazz(submission.getAssignment().getClazz(), userPrincipal);
 
+        if (Boolean.TRUE.equals(submission.getAssignment().getClazz().getIsGradeLocked())) {
+            throw new AppException(ErrorCode.GRADE_LOCKED);
+        }
+
         BigDecimal maxScore = submission.getAssignment().getMaxScore();
         if (maxScore != null && request.getScore() != null
                 && request.getScore().compareTo(maxScore) > 0) {

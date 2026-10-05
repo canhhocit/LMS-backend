@@ -6,6 +6,7 @@ import com.ex.learninghub.modules.enrollment.dto.response.ProgressResponse;
 public interface ProgressService {
 
     void markLessonCompleted(Long enrollmentId, Long lessonId, UserPrincipal principal);
+    void setMyLessonCompleted(Long lessonId, boolean completed, UserPrincipal principal);
 
     ProgressResponse getProgressByEnrollment(Long enrollmentId, UserPrincipal principal);
 }

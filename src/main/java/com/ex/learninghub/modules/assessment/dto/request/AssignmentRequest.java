@@ -1,6 +1,7 @@
 package com.ex.learninghub.modules.assessment.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,5 +21,6 @@ public class AssignmentRequest {
 
     private LocalDateTime dueDate;
 
+    @Positive(message = "Maximum score must be positive")
     private BigDecimal maxScore;
 }

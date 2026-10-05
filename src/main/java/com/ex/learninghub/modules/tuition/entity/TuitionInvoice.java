@@ -48,4 +48,10 @@ public class TuitionInvoice extends BaseEntity {
 
     @Column(name = "due_date")
     private LocalDateTime dueDate;
+
+    @Column(name = "payment_method", length = 20)
+    private String paymentMethod;
+
+    @Column(name = "payos_order_code", unique = true)
+    private Long payosOrderCode;
 }

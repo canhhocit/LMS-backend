@@ -19,7 +19,7 @@ public interface TuitionService {
 
     // ---- Student: xem hóa đơn của mình & thanh toán ----
     List<TuitionInvoiceResponse> getMyInvoices(UserPrincipal principal);
-    TuitionInvoiceResponse payMyInvoice(Long invoiceId, UserPrincipal principal);
+    TuitionInvoiceResponse simulatePayment(Long invoiceId, UserPrincipal principal);
 
     // ---- PayOS Payment Integration ----
     PayOSPaymentResponse createPayOSPayment(Long invoiceId, UserPrincipal principal);

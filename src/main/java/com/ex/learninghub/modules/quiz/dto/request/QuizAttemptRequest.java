@@ -2,7 +2,6 @@ package com.ex.learninghub.modules.quiz.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
@@ -17,7 +16,7 @@ import java.util.List;
 public class QuizAttemptRequest {
 
     @Valid
-    @NotEmpty(message = "Answers are required")
+    @NotNull(message = "Answers are required")
     private List<Answer> answers;
 
     @Getter

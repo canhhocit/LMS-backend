@@ -41,6 +41,16 @@ public class ProgressController {
         return ApiResponse.success(null);
     }
 
+    @PostMapping("/progress/lessons/{lessonId}/complete/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<Void> setMyLessonProgress(
+            @PathVariable Long lessonId,
+            @RequestParam(defaultValue = "true") boolean completed,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        progressService.setMyLessonCompleted(lessonId, completed, userPrincipal);
+        return ApiResponse.success(null);
+    }
+
     @GetMapping("/enrollments/{enrollmentId}/progress")
     @PreAuthorize("isAuthenticated()")
     @Operation(

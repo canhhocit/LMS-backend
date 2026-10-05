@@ -17,6 +17,7 @@ public class SubmissionResponse {
 
     private Long id;
     private Long assignmentId;
+    private BigDecimal maxScore;
     private Long studentId;
     private String studentName;
     private SubmissionType submissionType;
@@ -32,6 +33,7 @@ public class SubmissionResponse {
         return SubmissionResponse.builder()
                 .id(submission.getId())
                 .assignmentId(submission.getAssignment() != null ? submission.getAssignment().getId() : null)
+                .maxScore(submission.getAssignment() != null ? submission.getAssignment().getMaxScore() : null)
                 .studentId(submission.getStudent() != null ? submission.getStudent().getId() : null)
                 .studentName(submission.getStudent() != null ? submission.getStudent().getFullName() : null)
                 .submissionType(submission.getSubmissionType())

@@ -23,6 +23,7 @@ public class TuitionInvoiceResponse {
     private String status;
     private LocalDateTime paidAt;
     private LocalDateTime dueDate;
+    private String paymentMethod;
 
     public static TuitionInvoiceResponse from(TuitionInvoice i) {
         return TuitionInvoiceResponse.builder()
@@ -37,6 +38,7 @@ public class TuitionInvoiceResponse {
                 .status(i.getStatus())
                 .paidAt(i.getPaidAt())
                 .dueDate(i.getDueDate())
+                .paymentMethod(i.getPaymentMethod())
                 .build();
     }
 }

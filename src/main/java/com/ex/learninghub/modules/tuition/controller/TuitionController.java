@@ -7,6 +7,7 @@ import com.ex.learninghub.modules.tuition.dto.response.PayOSPaymentResponse;
 import com.ex.learninghub.modules.tuition.dto.response.TuitionInvoiceResponse;
 import com.ex.learninghub.modules.tuition.dto.response.TuitionRateResponse;
 import com.ex.learninghub.modules.tuition.service.TuitionService;
+import com.ex.learninghub.modules.tuition.payos.PayOSService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping
@@ -27,6 +29,10 @@ import java.util.Map;
 public class TuitionController {
 
     private final TuitionService tuitionService;
+    private final PayOSService payOSService;
+
+    @Value("${app.payment.simulation-enabled:false}")
+    private boolean simulationEnabled;
 
     // ---- Student: xem hóa đơn của tôi ----
     @GetMapping("/me/tuition")
@@ -40,16 +46,23 @@ public class TuitionController {
         return ResponseEntity.ok(ApiResponse.success(tuitionService.getMyInvoices(principal)));
     }
 
-    @PostMapping("/me/tuition/{invoiceId}/pay")
+    @GetMapping("/public/payment-options")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> paymentOptions() {
+        return ResponseEntity.ok(ApiResponse.success(Map.of(
+                "simulationEnabled", simulationEnabled,
+                "payOsEnabled", payOSService.isConfigured())));
+    }
+
+    @PostMapping("/me/tuition/{invoiceId}/simulate-payment")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(
             summary = "Sinh viên thanh toán hóa đơn học phí",
             description = "Thanh toán hóa đơn học phí trực tuyến."
     )
-    public ResponseEntity<ApiResponse<TuitionInvoiceResponse>> payMyInvoice(
+    public ResponseEntity<ApiResponse<TuitionInvoiceResponse>> simulatePayment(
             @PathVariable Long invoiceId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(ApiResponse.success(tuitionService.payMyInvoice(invoiceId, principal)));
+        return ResponseEntity.ok(ApiResponse.success(tuitionService.simulatePayment(invoiceId, principal)));
     }
 
     // ---- PayOS Payment Integration ----
