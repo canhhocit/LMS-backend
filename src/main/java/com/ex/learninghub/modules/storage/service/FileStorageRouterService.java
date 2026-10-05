@@ -33,8 +33,13 @@ public class FileStorageRouterService {
             throw new IllegalArgumentException("File upload không được để trống");
         }
 
-        log.info("Điều hướng upload tất cả file ({}) tới Cloudinary", file.getOriginalFilename());
-        return cloudinaryService.uploadFile(file);
+        if (isImageOrVideo(file)) {
+            log.info("Phát hiện file Ảnh/Video [{}], điều hướng upload tới Cloudinary", file.getOriginalFilename());
+            return cloudinaryService.uploadFile(file);
+        } else {
+            log.info("Phát hiện file Tài liệu/Tệp tin [{}], điều hướng upload tới Google Drive API", file.getOriginalFilename());
+            return googleDriveStorageService.uploadFile(file);
+        }
     }
 
     private boolean isImageOrVideo(MultipartFile file) {

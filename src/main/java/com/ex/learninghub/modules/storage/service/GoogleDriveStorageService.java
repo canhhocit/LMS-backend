@@ -44,16 +44,16 @@ public class GoogleDriveStorageService {
                 && clientSecret != null && !clientSecret.isBlank();
 
         if (!hasCredentials) {
-            log.warn("Chưa cấu hình GOOGLE_DRIVE_CLIENT_ID / CLIENT_SECRET, trả về URL Google Drive giả lập");
-            return "https://drive.google.com/file/d/1mock_drive_file_" + UUID.randomUUID().toString().replace("-", "") + "/view?usp=sharing";
+            log.error("Chưa cấu hình GOOGLE_DRIVE_CLIENT_ID / CLIENT_SECRET");
+            throw new RuntimeException("Chưa cấu hình Google Drive API (thiếu Client ID hoặc Client Secret). Vui lòng kiểm tra lại thiết lập môi trường.");
         }
 
         try {
             // Bước 1: Lấy Access Token từ OAuth 2.0 Refresh Token
             String accessToken = fetchAccessToken();
             if (accessToken == null || accessToken.isBlank()) {
-                log.warn("Không lấy được Access Token cho Google Drive, dùng fallback URL");
-                return "https://drive.google.com/file/d/1mock_drive_file_" + UUID.randomUUID().toString().replace("-", "") + "/view?usp=sharing";
+                log.error("Không lấy được Access Token cho Google Drive (Refresh token có thể đã hết hạn)");
+                throw new RuntimeException("Không thể kết nối với Google Drive. Refresh Token có thể đã hết hạn hoặc bị thu hồi.");
             }
 
             // Bước 2: Upload file lên Google Drive API v3
@@ -97,12 +97,12 @@ public class GoogleDriveStorageService {
 
                 return "https://drive.google.com/file/d/" + fileId + "/view?usp=sharing";
             } else {
-                log.warn("Google Drive API trả về lỗi: {}", response.getStatusCode());
-                return "https://drive.google.com/file/d/1mock_drive_file_" + UUID.randomUUID().toString().replace("-", "") + "/view?usp=sharing";
+                log.error("Google Drive API trả về lỗi: {}", response.getStatusCode());
+                throw new RuntimeException("Lỗi từ Google Drive API: " + response.getStatusCode());
             }
         } catch (Exception e) {
             log.error("Lỗi khi upload file lên Google Drive API: {}", e.getMessage());
-            return "https://drive.google.com/file/d/1mock_drive_file_" + UUID.randomUUID().toString().replace("-", "") + "/view?usp=sharing";
+            throw new RuntimeException("Lỗi khi upload file lên Google Drive API: " + e.getMessage());
         }
     }
 
