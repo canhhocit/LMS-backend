@@ -18,6 +18,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.ex.learninghub.modules.registration.repository.RegistrationPeriodRepository;
+import com.ex.learninghub.modules.curriculum.repository.CurriculumCourseRepository;
+import com.ex.learninghub.modules.registration.entity.RegistrationPeriod;
+import com.ex.learninghub.modules.course.entity.Clazz;
+import com.ex.learninghub.modules.user.entity.User;
+import java.util.Optional;
 
 import java.util.List;
 import java.util.Set;
@@ -31,6 +37,8 @@ public class MyClassController {
 
     private final ClazzEnrollmentService enrollmentService;
     private final ClazzService clazzService;
+    private final RegistrationPeriodRepository periodRepository;
+    private final CurriculumCourseRepository curriculumCourseRepository;
 
     @GetMapping("")
     @PreAuthorize("isAuthenticated()")

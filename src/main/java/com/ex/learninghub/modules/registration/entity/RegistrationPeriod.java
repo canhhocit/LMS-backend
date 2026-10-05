@@ -1,9 +1,13 @@
 package com.ex.learninghub.modules.registration.entity;
 
 import com.ex.learninghub.common.model.BaseEntity;
+import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.semester.entity.AcademicSemester;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import java.time.LocalDateTime;
 
@@ -59,5 +63,14 @@ public class RegistrationPeriod extends BaseEntity {
         if (academicSemester != null) return academicSemester.getAcademicYear();
         return academicYear;
     }
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "registration_period_classes",
+        joinColumns = @JoinColumn(name = "period_id"),
+        inverseJoinColumns = @JoinColumn(name = "clazz_id")
+    )
+    @Builder.Default
+    private Set<Clazz> allowedClasses = new HashSet<>();
 }
 

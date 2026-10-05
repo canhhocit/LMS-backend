@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.ex.learninghub.modules.course.dto.response.ClazzResponse;
 import java.util.stream.Collectors;
 
 @Service
@@ -143,6 +144,46 @@ public class RegistrationServiceImpl implements RegistrationService {
                 })
                 .map(RegistrationPeriodResponse::from)
                 .orElse(null);
+    }
+
+    // =================== PERIOD CLASSES ===================
+
+    @Override
+    @Transactional
+    public void addClazzToPeriod(Long periodId, Long clazzId) {
+        RegistrationPeriod period = periodRepository.findActiveWithClasses()
+            .filter(p -> p.getId().equals(periodId))
+            .orElseGet(() -> periodRepository.findById(periodId)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION)));
+
+        Clazz clazz = clazzRepository.findById(clazzId)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
+
+        period.getAllowedClasses().add(clazz);
+        periodRepository.save(period);
+    }
+
+    @Override
+    @Transactional
+    public void removeClazzFromPeriod(Long periodId, Long clazzId) {
+        RegistrationPeriod period = periodRepository.findById(periodId)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
+        period.getAllowedClasses().removeIf(c -> c.getId().equals(clazzId));
+        periodRepository.save(period);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClazzResponse> getClazzesInPeriod(Long periodId) {
+        RegistrationPeriod period = periodRepository.findById(periodId)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
+        return period.getAllowedClasses().stream()
+                .map(c -> {
+                    long currentStudents = enrollmentRepository.findByClazzId(c.getId()).stream()
+                            .filter(e -> "ACTIVE".equals(e.getStatus())).count();
+                    return ClazzResponse.from(c, currentStudents);
+                })
+                .collect(Collectors.toList());
     }
 
     // =================== STUDENT OPERATIONS ===================

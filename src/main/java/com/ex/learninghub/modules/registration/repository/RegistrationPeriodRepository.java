@@ -12,5 +12,8 @@ public interface RegistrationPeriodRepository extends JpaRepository<Registration
     @Modifying
     @Query("UPDATE RegistrationPeriod r SET r.isActive = false WHERE r.isActive = true")
     void deactivateAllActive();
+
+    @Query("SELECT p FROM RegistrationPeriod p LEFT JOIN FETCH p.allowedClasses WHERE p.isActive = true")
+    Optional<RegistrationPeriod> findActiveWithClasses();
 }
 

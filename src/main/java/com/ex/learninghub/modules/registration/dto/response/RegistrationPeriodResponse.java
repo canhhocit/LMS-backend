@@ -23,6 +23,7 @@ public class RegistrationPeriodResponse {
     private LocalDateTime closeAt;
     private Integer maxCredits;
     private Boolean isActive;
+    private Integer classCount;
 
     public static RegistrationPeriodResponse from(RegistrationPeriod p) {
         return RegistrationPeriodResponse.builder()
@@ -36,6 +37,7 @@ public class RegistrationPeriodResponse {
                 .closeAt(p.getCloseAt())
                 .maxCredits(p.getMaxCredits())
                 .isActive(p.getIsActive())
+                .classCount(p.getAllowedClasses() != null ? p.getAllowedClasses().size() : 0)
                 .build();
     }
 }
