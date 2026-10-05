@@ -5,6 +5,7 @@ import com.ex.learninghub.modules.semester.dto.AcademicSemesterResponse;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -24,6 +25,13 @@ public class ClazzResponse {
     private String lecturerName;
     private Integer maxStudents;
     private Integer currentStudents;
+    
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private LocalDateTime examDate;
+    private String examRoom;
+    private String examFormat;
+    private Integer examDuration;
     private Integer lessonCount;
     private Boolean isGradeLocked;
     private LocalDateTime createdAt;
@@ -52,6 +60,12 @@ public class ClazzResponse {
                 .maxStudents(clazz.getMaxStudents())
                 .currentStudents(currentCount != null ? currentCount.intValue() : 0)
                 .lessonCount(lessonCount != null ? lessonCount.intValue() : 0)
+                .startDate(clazz.getStartDate())
+                .endDate(clazz.getEndDate())
+                .examDate(clazz.getExamDate())
+                .examRoom(clazz.getExamRoom())
+                .examFormat(clazz.getExamFormat())
+                .examDuration(clazz.getExamDuration())
                 .isGradeLocked(Boolean.TRUE.equals(clazz.getIsGradeLocked()))
                 .createdAt(clazz.getCreatedAt())
                 .build();

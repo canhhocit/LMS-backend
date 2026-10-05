@@ -75,6 +75,12 @@ public class ClazzServiceImpl implements ClazzService {
         clazz.setCourse(course);
         clazz.setLecturer(lecturer);
         clazz.setMaxStudents(request.getMaxStudents());
+        clazz.setStartDate(request.getStartDate());
+        clazz.setEndDate(request.getEndDate());
+        clazz.setExamDate(request.getExamDate());
+        clazz.setExamRoom(request.getExamRoom());
+        clazz.setExamFormat(request.getExamFormat());
+        clazz.setExamDuration(request.getExamDuration());
         return ClazzResponse.from(clazzRepository.save(clazz), enrollmentRepository.countByClazzId(id), lessonRepository.countByChapterClazzId(id));
     }
 

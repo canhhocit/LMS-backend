@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * DTO for creating or updating a class (Clazz).
@@ -24,6 +26,21 @@ public class ClazzRequest {
     private String semester;
 
     private String academicYear;
+
+    private Long semesterId;
+
+    private LocalDate startDate;
+
+    private LocalDate endDate;
+
+    private LocalDateTime examDate;
+
+    private String examRoom;
+
+    private String examFormat;
+
+    private Integer examDuration;
+
 
     @NotNull(message = "Course ID is required")
     private Long courseId;

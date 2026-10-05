@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Entity representing a class (Clazz) where students enroll.
@@ -62,6 +64,25 @@ public class Clazz extends BaseEntity {
     @Column(name = "is_grade_locked")
     @Builder.Default
     private Boolean isGradeLocked = false;
+
+    
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "exam_date")
+    private LocalDateTime examDate;
+
+    @Column(name = "exam_room", length = 50)
+    private String examRoom;
+
+    @Column(name = "exam_format", length = 50)
+    private String examFormat;
+
+    @Column(name = "exam_duration")
+    private Integer examDuration;
 
     /** Tiện ích: lấy semester string từ FK hoặc fallback sang string cũ */
     @Transient
