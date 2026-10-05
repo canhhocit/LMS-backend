@@ -78,6 +78,14 @@ public class TuitionController {
         return ResponseEntity.ok(ApiResponse.success(tuitionService.createPayOSPayment(invoiceId, principal)));
     }
 
+    @GetMapping("/me/tuition/{invoiceId}/payos-payment")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<PayOSPaymentResponse>> getPendingPayOSPayment(
+            @PathVariable Long invoiceId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(tuitionService.getPendingPayOSPayment(invoiceId, principal)));
+    }
+
     @PostMapping("/me/tuition/{invoiceId}/payos-verify")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(

@@ -11,6 +11,7 @@ import com.ex.learninghub.modules.grading.dto.request.GradeRequest;
 import com.ex.learninghub.modules.grading.dto.response.GradeResponse;
 import com.ex.learninghub.modules.grading.repository.AttendanceRepository;
 import com.ex.learninghub.modules.grading.repository.GradeRepository;
+import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,9 @@ class GradingServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private EnrollmentRepository enrollmentRepository;
 
     @Mock
     private com.ex.learninghub.modules.notification.service.NotificationService notificationService;
@@ -83,6 +87,7 @@ class GradingServiceImplTest {
     void upsertGrade_calculatesTotalScore_correctly() {
         when(clazzRepository.findById(10L)).thenReturn(Optional.of(clazz));
         when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 10L)).thenReturn(true);
         when(attendanceRepository.countByClazzIdAndStudentId(anyLong(), anyLong())).thenReturn(0L);
         when(gradeRepository.findByClazzIdAndStudentId(10L, 1L))
                 .thenReturn(Optional.of(com.ex.learninghub.modules.grading.entity.Grade.builder()
@@ -99,6 +104,7 @@ class GradingServiceImplTest {
     void upsertGrade_absentRatioExceeded_throwsAttendanceNotQualified() {
         when(clazzRepository.findById(10L)).thenReturn(Optional.of(clazz));
         when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(enrollmentRepository.existsByStudentIdAndClazzId(1L, 10L)).thenReturn(true);
         when(attendanceRepository.countByClazzIdAndStudentId(anyLong(), anyLong())).thenReturn(10L);
         when(attendanceRepository.countByClazzIdAndStudentIdAndStatus(anyLong(), anyLong(),
                 any(AttendanceStatus.class))).thenReturn(5L); // 50% absent > 20% max

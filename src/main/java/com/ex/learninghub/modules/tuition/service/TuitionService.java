@@ -23,6 +23,7 @@ public interface TuitionService {
 
     // ---- PayOS Payment Integration ----
     PayOSPaymentResponse createPayOSPayment(Long invoiceId, UserPrincipal principal);
+    PayOSPaymentResponse getPendingPayOSPayment(Long invoiceId, UserPrincipal principal);
     TuitionInvoiceResponse verifyPayOSPayment(Long invoiceId, UserPrincipal principal);
     TuitionInvoiceResponse processPayOSWebhook(Map<String, Object> payload);
 

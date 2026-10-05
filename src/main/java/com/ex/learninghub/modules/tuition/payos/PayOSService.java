@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import javax.crypto.Mac;
@@ -115,6 +117,62 @@ public class PayOSService {
     public boolean isConfigured() {
         return !clientId.isBlank() && !apiKey.isBlank() && !checksumKey.isBlank()
                 && !clientId.startsWith("demo-") && !apiKey.startsWith("demo-") && !checksumKey.startsWith("demo-");
+    }
+
+    public boolean isPaymentPaid(Long orderCode, BigDecimal expectedAmount) {
+        if (!isConfigured()) throw new IllegalStateException("PayOS credentials are not configured.");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-client-id", clientId);
+        headers.set("x-api-key", apiKey);
+        ResponseEntity<String> response = restTemplate.exchange(
+                "https://api-merchant.payos.vn/v2/payment-requests/" + orderCode,
+                HttpMethod.GET, new HttpEntity<>(headers), String.class);
+        try {
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode data = root.path("data");
+            return "00".equals(root.path("code").asText())
+                    && "PAID".equalsIgnoreCase(data.path("status").asText())
+                    && data.path("orderCode").asLong(-1) == orderCode
+                    && data.path("amountPaid").asLong(-1) == expectedAmount.longValueExact()
+                    && data.path("amountRemaining").asLong(0) == 0;
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not verify payment status with PayOS.", e);
+        }
+    }
+
+    public PayOSPaymentResponse getPendingPaymentLink(Long invoiceId, Long orderCode, BigDecimal amount) {
+        if (!isConfigured()) throw new IllegalStateException("PayOS credentials are not configured.");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-client-id", clientId);
+        headers.set("x-api-key", apiKey);
+        ResponseEntity<String> response = restTemplate.exchange(
+                "https://api-merchant.payos.vn/v2/payment-requests/" + orderCode,
+                HttpMethod.GET, new HttpEntity<>(headers), String.class);
+        try {
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode data = root.path("data");
+            String paymentLinkId = data.path("id").asText("");
+            if (!"00".equals(root.path("code").asText())
+                    || data.path("orderCode").asLong(-1) != orderCode
+                    || !"PENDING".equalsIgnoreCase(data.path("status").asText())
+                    || paymentLinkId.isBlank()) {
+                throw new IllegalStateException("The existing PayOS payment is no longer pending.");
+            }
+            return PayOSPaymentResponse.builder()
+                    .invoiceId(invoiceId)
+                    .orderCode(orderCode)
+                    .amount(amount)
+                    .checkoutUrl("https://pay.payos.vn/web/" + paymentLinkId)
+                    .qrCode("")
+                    .accountName("")
+                    .accountNumber("")
+                    .bankName("PayOS")
+                    .description("Tuition invoice " + invoiceId)
+                    .status("PENDING")
+                    .build();
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not restore the PayOS payment link.", e);
+        }
     }
     public boolean verifyWebhookData(Map<String, Object> data, String signature) {
         if (signature == null || signature.isBlank() || !isConfigured()) return false;

@@ -181,21 +181,80 @@ public class TuitionServiceImpl implements TuitionService {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
         if ("PAID".equals(inv.getStatus())) throw new AppException(ErrorCode.VALIDATION_ERROR);
-        if (inv.getPayosOrderCode() != null) throw new AppException(ErrorCode.VALIDATION_ERROR);
+        if (inv.getPayosOrderCode() != null) {
+            if (inv.getPayosCheckoutUrl() == null || inv.getPayosCheckoutUrl().isBlank()) {
+                PayOSPaymentResponse restored = payOSService.getPendingPaymentLink(
+                        invoiceId, inv.getPayosOrderCode(), inv.getAmount());
+                inv.setPayosCheckoutUrl(restored.getCheckoutUrl());
+                inv.setPayosQrCode(restored.getQrCode());
+                inv.setPayosAccountName(restored.getAccountName());
+                inv.setPayosAccountNumber(restored.getAccountNumber());
+                inv.setPayosBankName(restored.getBankName());
+                inv.setPayosDescription(restored.getDescription());
+                invoiceRepository.save(inv);
+                return restored;
+            }
+            return getPaymentResponse(inv);
+        }
         String description = "Hoc phi K" + inv.getSemester() + " " + inv.getAcademicYear();
         PayOSPaymentResponse response = payOSService.createPaymentLink(invoiceId, inv.getAmount(), description, inv.getStudent().getFullName());
         inv.setPayosOrderCode(response.getOrderCode());
+        inv.setPayosCheckoutUrl(response.getCheckoutUrl());
+        inv.setPayosQrCode(response.getQrCode());
+        inv.setPayosAccountName(response.getAccountName());
+        inv.setPayosAccountNumber(response.getAccountNumber());
+        inv.setPayosBankName(response.getBankName());
+        inv.setPayosDescription(response.getDescription());
         invoiceRepository.save(inv);
         return response;
     }
 
     @Override
     @Transactional(readOnly = true)
+    public PayOSPaymentResponse getPendingPayOSPayment(Long invoiceId, UserPrincipal principal) {
+        TuitionInvoice inv = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
+        if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        if (inv.getPayosOrderCode() == null || inv.getPayosCheckoutUrl() == null) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
+        return getPaymentResponse(inv);
+    }
+
+    private PayOSPaymentResponse getPaymentResponse(TuitionInvoice inv) {
+        return PayOSPaymentResponse.builder()
+                .invoiceId(inv.getId())
+                .orderCode(inv.getPayosOrderCode())
+                .amount(inv.getAmount())
+                .checkoutUrl(inv.getPayosCheckoutUrl())
+                .qrCode(inv.getPayosQrCode())
+                .accountName(inv.getPayosAccountName())
+                .accountNumber(inv.getPayosAccountNumber())
+                .bankName(inv.getPayosBankName())
+                .description(inv.getPayosDescription())
+                .status(inv.getStatus().equals("PAID") ? "PAID" : "PENDING")
+                .build();
+    }
+
+    @Override
+    @Transactional
     public TuitionInvoiceResponse verifyPayOSPayment(Long invoiceId, UserPrincipal principal) {
         TuitionInvoice inv = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SUBMISSION_NOT_FOUND));
         if (!inv.getStudent().getId().equals(principal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        if (!"PAID".equals(inv.getStatus()) && inv.getPayosOrderCode() != null
+                && payOSService.isPaymentPaid(inv.getPayosOrderCode(), inv.getAmount())) {
+            inv.setStatus("PAID");
+            inv.setPaymentMethod("PAYOS");
+            inv.setPaidAt(LocalDateTime.now());
+            TuitionInvoice saved = invoiceRepository.save(inv);
+            emailService.sendTuitionPaymentConfirmation(saved);
+            notificationService.notifyUser(saved.getStudent().getId(), NotificationType.COURSE_REGISTERED,
+                    "PayOS payment confirmed", "Payment received for tuition invoice " + saved.getId(), saved.getId());
         }
         return TuitionInvoiceResponse.from(inv);
     }

@@ -54,4 +54,22 @@ public class TuitionInvoice extends BaseEntity {
 
     @Column(name = "payos_order_code", unique = true)
     private Long payosOrderCode;
+
+    @Column(name = "payos_checkout_url", length = 2048)
+    private String payosCheckoutUrl;
+
+    @Column(name = "payos_qr_code", columnDefinition = "TEXT")
+    private String payosQrCode;
+
+    @Column(name = "payos_account_name", length = 255)
+    private String payosAccountName;
+
+    @Column(name = "payos_account_number", length = 100)
+    private String payosAccountNumber;
+
+    @Column(name = "payos_bank_name", length = 255)
+    private String payosBankName;
+
+    @Column(name = "payos_description", length = 255)
+    private String payosDescription;
 }

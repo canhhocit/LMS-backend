@@ -6,6 +6,7 @@ import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.grading.dto.response.QrSessionResponse;
 import com.ex.learninghub.modules.grading.repository.AttendanceRepository;
+import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,9 @@ class QrCodeAttendanceServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
+    private EnrollmentRepository enrollmentRepository;
+
+    @Mock
     private StringRedisTemplate redisTemplate;
 
     @Mock
@@ -51,7 +55,7 @@ class QrCodeAttendanceServiceImplTest {
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         qrCodeAttendanceService = new QrCodeAttendanceServiceImpl(
-                clazzRepository, attendanceRepository, userRepository, redisTemplate, messagingTemplate
+                clazzRepository, attendanceRepository, userRepository, enrollmentRepository, redisTemplate, messagingTemplate
         );
 
         lecturer = User.builder().email("lecturer@test.com").role(Role.LECTURER).build();
