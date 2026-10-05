@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/lessons")
+@RequestMapping("/lessons")
 @RequiredArgsConstructor
 @Tag(name = "Lesson Comments", description = "API quản lý bình luận bài giảng")
 public class LessonCommentController {
