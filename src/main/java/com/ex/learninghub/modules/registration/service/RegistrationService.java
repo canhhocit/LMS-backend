@@ -13,6 +13,7 @@ public interface RegistrationService {
     // ADMIN: CRUD registration period
     RegistrationPeriodResponse createPeriod(RegistrationPeriodRequest request);
     RegistrationPeriodResponse updatePeriod(Long id, RegistrationPeriodRequest request);
+    RegistrationPeriodResponse setPeriodActive(Long id, boolean active);
     void deletePeriod(Long id);
     List<RegistrationPeriodResponse> listPeriods();
     RegistrationPeriodResponse getActivePeriod();
@@ -29,4 +30,3 @@ public interface RegistrationService {
     // STUDENT: xem lớp đã đăng ký trong đợt hiện tại
     List<RegistrationResponse> getMyRegistrations(UserPrincipal principal);
 }
-

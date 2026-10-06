@@ -52,6 +52,15 @@ public class RegistrationController {
         return ResponseEntity.ok(ApiResponse.success(registrationService.updatePeriod(id, request)));
     }
 
+    @PatchMapping("/admin/registration-periods/{id}/active")
+    @PreAuthorize("hasPermission(null, 'MANAGE_REGISTRATION')")
+    @Operation(summary = "Mở hoặc khóa đợt đăng ký")
+    public ResponseEntity<ApiResponse<RegistrationPeriodResponse>> setPeriodActive(
+            @PathVariable Long id,
+            @RequestParam boolean active) {
+        return ResponseEntity.ok(ApiResponse.success(registrationService.setPeriodActive(id, active)));
+    }
+
     @DeleteMapping("/admin/registration-periods/{id}")
     @PreAuthorize("hasPermission(null, 'MANAGE_REGISTRATION')")
     @Operation(

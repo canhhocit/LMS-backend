@@ -266,4 +266,13 @@ class RegistrationServiceImplTest {
         assertThatThrownBy(() -> registrationService.unregister(20L, new UserPrincipal(student)))
                 .isInstanceOf(AppException.class);
     }
+
+    @Test
+    void registrationWindow_includesOpeningInstant_butExcludesClosingInstant() {
+        LocalDateTime openAt = LocalDateTime.of(2026, 10, 6, 10, 0);
+        LocalDateTime closeAt = LocalDateTime.of(2026, 10, 6, 12, 0);
+
+        assertThat(RegistrationServiceImpl.isWithinWindow(openAt, openAt, closeAt)).isTrue();
+        assertThat(RegistrationServiceImpl.isWithinWindow(closeAt, openAt, closeAt)).isFalse();
+    }
 }

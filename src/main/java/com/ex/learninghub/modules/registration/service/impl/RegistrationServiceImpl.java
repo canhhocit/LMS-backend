@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import com.ex.learninghub.modules.course.dto.response.ClazzResponse;
 import java.util.stream.Collectors;
@@ -38,6 +39,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class RegistrationServiceImpl implements RegistrationService {
+
+    private static final ZoneId REGISTRATION_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final RegistrationPeriodRepository periodRepository;
     private final ClazzRepository clazzRepository;
@@ -107,12 +110,32 @@ public class RegistrationServiceImpl implements RegistrationService {
         p.setCloseAt(request.getCloseAt());
         p.setMaxCredits(request.getMaxCredits());
         if (Boolean.TRUE.equals(request.getIsActive())) {
+            if (!LocalDateTime.now(REGISTRATION_ZONE).isBefore(p.getCloseAt())) {
+                throw new AppException(ErrorCode.REGISTRATION_CLOSED);
+            }
             deactivateAll();
             p.setIsActive(true);
         } else {
             p.setIsActive(false);
         }
         return RegistrationPeriodResponse.from(periodRepository.save(p));
+    }
+
+    @Override
+    @Transactional
+    public RegistrationPeriodResponse setPeriodActive(Long id, boolean active) {
+        RegistrationPeriod period = periodRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_CLOSED));
+
+        if (active) {
+            LocalDateTime now = LocalDateTime.now(REGISTRATION_ZONE);
+            if (!now.isBefore(period.getCloseAt())) {
+                throw new AppException(ErrorCode.REGISTRATION_CLOSED);
+            }
+            deactivateAll();
+        }
+        period.setIsActive(active);
+        return RegistrationPeriodResponse.from(periodRepository.save(period));
     }
 
 
@@ -137,13 +160,15 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Transactional(readOnly = true)
     public RegistrationPeriodResponse getActivePeriod() {
         return periodRepository.findByIsActiveTrue()
-                .filter(p -> {
-                    LocalDateTime now = LocalDateTime.now();
-                    return (p.getOpenAt() == null || !now.isBefore(p.getOpenAt()))
-                            && (p.getCloseAt() == null || !now.isAfter(p.getCloseAt()));
-                })
+                .filter(p -> isWithinWindow(LocalDateTime.now(REGISTRATION_ZONE), p.getOpenAt(), p.getCloseAt()))
                 .map(RegistrationPeriodResponse::from)
                 .orElse(null);
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 60000)
+    @Transactional
+    public void deactivateExpiredPeriods() {
+        periodRepository.deactivateExpiredActive(LocalDateTime.now(REGISTRATION_ZONE));
     }
 
     // =================== PERIOD CLASSES ===================
@@ -329,11 +354,15 @@ public class RegistrationServiceImpl implements RegistrationService {
     private RegistrationPeriod getOpenPeriod() {
         RegistrationPeriod p = periodRepository.findByIsActiveTrue()
                 .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_CLOSED));
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(p.getOpenAt()) || now.isAfter(p.getCloseAt())) {
+        if (!isWithinWindow(LocalDateTime.now(REGISTRATION_ZONE), p.getOpenAt(), p.getCloseAt())) {
             throw new AppException(ErrorCode.REGISTRATION_CLOSED);
         }
         return p;
+    }
+
+    static boolean isWithinWindow(LocalDateTime now, LocalDateTime openAt, LocalDateTime closeAt) {
+        return (openAt == null || !now.isBefore(openAt))
+                && (closeAt == null || now.isBefore(closeAt));
     }
 
     private static void validateWindow(LocalDateTime open, LocalDateTime close) {
