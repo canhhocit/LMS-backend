@@ -14,10 +14,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import lombok.extern.slf4j.Slf4j;
 import com.ex.learninghub.common.response.ApiResponse;
+import com.ex.learninghub.modules.audit.service.SystemErrorLogService;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    private final SystemErrorLogService systemErrorLogService;
+
+    public GlobalExceptionHandler(SystemErrorLogService systemErrorLogService) {
+        this.systemErrorLogService = systemErrorLogService;
+    }
 
     /** Malformed JSON request body or missing body → 400 */
     @ExceptionHandler(value = HttpMessageNotReadableException.class)
@@ -38,6 +46,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = DataIntegrityViolationException.class)
     ResponseEntity<ApiResponse<Object>> handlingDataIntegrity(DataIntegrityViolationException ex) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        recordSystemError(ex);
         ApiResponse<Object> apiResponse = ApiResponse.builder()
                 .code(HttpStatus.BAD_REQUEST.value())
                 .message("Duplicate or invalid data")
@@ -72,6 +81,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse<Object>> handlingRuntimeException(Exception ex) {
         log.error("Exception caught by handler: ", ex);
+        recordSystemError(ex);
         ApiResponse<Object> apiResponse = ApiResponse.builder()
                 .code(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode())
                 .message(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
@@ -82,11 +92,29 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = AppException.class)
     ResponseEntity<ApiResponse<Object>> handlingAppException(AppException ex) {
         ErrorCode errorCode = ex.getErrorCode();
+        if (errorCode.getStatusCode().is5xxServerError()) {
+            recordSystemError(ex);
+        }
         ApiResponse<Object> apiResponse = ApiResponse.builder()
                 .code(errorCode.getCode())
                 .message(errorCode.getMessage())
                 .build();
         return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
+    }
+
+    private void recordSystemError(Exception ex) {
+        try {
+            var requestAttributes = org.springframework.web.context.request.RequestContextHolder
+                    .getRequestAttributes();
+            if (requestAttributes instanceof org.springframework.web.context.request.ServletRequestAttributes attrs) {
+                HttpServletRequest request = attrs.getRequest();
+                systemErrorLogService.record(ex, request);
+            } else {
+                systemErrorLogService.record(ex, null);
+            }
+        } catch (RuntimeException loggingException) {
+            log.error("Failed to persist system error log for {}", ex.getClass().getName(), loggingException);
+        }
     }
 
     /** Token missing, expired, or invalid → 401 */

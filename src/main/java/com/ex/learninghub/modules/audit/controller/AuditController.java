@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 @RestController
 @RequestMapping("/admin/audit-logs")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasPermission(null, 'SYSTEM_CONFIG')")
 public class AuditController {
 
     private final AuditLogRepository auditLogRepository;
