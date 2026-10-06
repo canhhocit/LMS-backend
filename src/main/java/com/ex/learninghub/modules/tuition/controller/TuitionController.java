@@ -151,21 +151,7 @@ public class TuitionController {
         return ResponseEntity.ok(ApiResponse.success(tuitionService.listRates()));
     }
 
-    // ---- Admin: generate / mark paid ----
-    @PostMapping("/admin/tuition/{studentId}/generate")
-    @PreAuthorize("hasPermission(null, 'MANAGE_TUITION')")
-    @Operation(
-            summary = "Sinh hóa đơn học phí cho sinh viên",
-            description = "Admin tạo hóa đơn học phí cho một sinh viên theo học kỳ và năm học."
-    )
-    public ResponseEntity<ApiResponse<TuitionInvoiceResponse>> generateInvoice(
-            @PathVariable Long studentId,
-            @RequestParam String semester,
-            @RequestParam String academicYear) {
-        return ResponseEntity.ok(ApiResponse.success(
-                tuitionService.generateInvoice(studentId, semester, academicYear)));
-    }
-
+    // ---- Admin: mark paid ----
     @PostMapping("/admin/tuition/{invoiceId}/mark-paid")
     @PreAuthorize("hasPermission(null, 'MANAGE_TUITION')")
     @Operation(
