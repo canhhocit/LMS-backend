@@ -28,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,11 +53,14 @@ public class TuitionServiceImpl implements TuitionService {
     @Override
     @Transactional
     public TuitionRateResponse createRate(TuitionRateRequest request) {
-        if (rateRepository.existsByAcademicYear(request.getAcademicYear())) {
+        String semester = normalizeSemester(request.getSemester());
+        if (rateExists(request.getAcademicYear(), semester, request.getEffectiveFrom(), null)) {
             throw new AppException(ErrorCode.TUITION_RATE_ALREADY_EXISTS);
         }
         TuitionRate r = TuitionRate.builder()
                 .academicYear(request.getAcademicYear())
+                .semester(semester)
+                .effectiveFrom(request.getEffectiveFrom())
                 .pricePerCredit(request.getPricePerCredit())
                 .isActive(request.getIsActive() == null ? Boolean.TRUE : request.getIsActive())
                 .build();
@@ -67,6 +72,15 @@ public class TuitionServiceImpl implements TuitionService {
     public TuitionRateResponse updateRate(Long id, TuitionRateRequest request) {
         TuitionRate r = rateRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TUITION_RATE_NOT_FOUND));
+        String academicYear = request.getAcademicYear();
+        String semester = normalizeSemester(request.getSemester());
+        LocalDate effectiveFrom = request.getEffectiveFrom();
+        if (rateExists(academicYear, semester, effectiveFrom, id)) {
+            throw new AppException(ErrorCode.TUITION_RATE_ALREADY_EXISTS);
+        }
+        r.setAcademicYear(academicYear);
+        r.setSemester(semester);
+        r.setEffectiveFrom(effectiveFrom);
         r.setPricePerCredit(request.getPricePerCredit());
         if (request.getIsActive() != null) r.setIsActive(request.getIsActive());
         return TuitionRateResponse.from(rateRepository.save(r));
@@ -118,7 +132,13 @@ public class TuitionServiceImpl implements TuitionService {
             return TuitionInvoiceResponse.from(existing.get());
         }
 
-        TuitionRate rate = rateRepository.findByAcademicYear(academicYear)
+        LocalDate rateDate = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        TuitionRate rate = rateRepository
+                .findFirstByAcademicYearAndSemesterAndEffectiveFromLessThanEqualAndIsActiveTrueOrderByEffectiveFromDesc(
+                        academicYear, normalizeSemester(semester), rateDate)
+                .or(() -> rateRepository
+                        .findFirstByAcademicYearAndSemesterIsNullAndEffectiveFromLessThanEqualAndIsActiveTrueOrderByEffectiveFromDesc(
+                                academicYear, rateDate))
                 .orElseThrow(() -> new AppException(ErrorCode.TUITION_RATE_NOT_FOUND));
 
         int totalCredits = enrollmentRepository.findByStudentId(studentId).stream()
@@ -143,6 +163,24 @@ public class TuitionServiceImpl implements TuitionService {
                 .dueDate(LocalDateTime.now().plusDays(30))
                 .build();
         return TuitionInvoiceResponse.from(invoiceRepository.save(inv));
+    }
+
+    private boolean rateExists(String academicYear, String semester, LocalDate effectiveFrom, Long excludedId) {
+        if (semester == null) {
+            return excludedId == null
+                    ? rateRepository.existsByAcademicYearAndSemesterIsNullAndEffectiveFrom(academicYear, effectiveFrom)
+                    : rateRepository.existsByAcademicYearAndSemesterIsNullAndEffectiveFromAndIdNot(
+                            academicYear, effectiveFrom, excludedId);
+        }
+        return excludedId == null
+                ? rateRepository.existsByAcademicYearAndSemesterAndEffectiveFrom(academicYear, semester, effectiveFrom)
+                : rateRepository.existsByAcademicYearAndSemesterAndEffectiveFromAndIdNot(
+                        academicYear, semester, effectiveFrom, excludedId);
+    }
+
+    private String normalizeSemester(String semester) {
+        if (semester == null || semester.isBlank()) return null;
+        return semester.trim().toUpperCase();
     }
 
     @Override

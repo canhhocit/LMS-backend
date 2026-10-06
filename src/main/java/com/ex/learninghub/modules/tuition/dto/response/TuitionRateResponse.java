@@ -4,6 +4,7 @@ import com.ex.learninghub.modules.tuition.entity.TuitionRate;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -14,6 +15,8 @@ import java.time.LocalDateTime;
 public class TuitionRateResponse {
     private Long id;
     private String academicYear;
+    private String semester;
+    private LocalDate effectiveFrom;
     private BigDecimal pricePerCredit;
     private Boolean isActive;
     private LocalDateTime createdAt;
@@ -23,6 +26,8 @@ public class TuitionRateResponse {
         return TuitionRateResponse.builder()
                 .id(r.getId())
                 .academicYear(r.getAcademicYear())
+                .semester(r.getSemester())
+                .effectiveFrom(r.getEffectiveFrom())
                 .pricePerCredit(r.getPricePerCredit())
                 .isActive(r.getIsActive())
                 .createdAt(r.getCreatedAt())
