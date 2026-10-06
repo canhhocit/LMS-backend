@@ -42,6 +42,13 @@ public class FileStorageRouterService {
         }
     }
 
+    public CloudinaryUploadResult uploadVideo(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File upload không được để trống");
+        }
+        return cloudinaryService.uploadVideo(file);
+    }
+
     private boolean isImageOrVideo(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType != null) {

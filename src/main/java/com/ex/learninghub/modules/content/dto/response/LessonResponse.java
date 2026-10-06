@@ -15,6 +15,7 @@ public class LessonResponse {
     private String videoUrl;
     private String attachmentUrl;
     private String attachmentName;
+    private Integer duration;
     private Long chapterId;
     private LocalDateTime createdAt;
 
@@ -26,6 +27,7 @@ public class LessonResponse {
                 .videoUrl(lesson.getVideoUrl())
                 .attachmentUrl(lesson.getAttachmentUrl())
                 .attachmentName(lesson.getAttachmentName())
+                .duration(lesson.getDuration())
                 .chapterId(lesson.getChapter() != null ? lesson.getChapter().getId() : (lesson.getChapterId() != null ? lesson.getChapterId() : null))
                 .createdAt(lesson.getCreatedAt())
                 .build();

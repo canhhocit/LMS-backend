@@ -4,24 +4,31 @@ import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
-import com.ex.learninghub.modules.content.entity.VideoProgress;
-import com.ex.learninghub.modules.content.repository.VideoProgressRepository;
-import com.ex.learninghub.modules.course.entity.Clazz;
-import com.ex.learninghub.modules.enrollment.entity.Enrollment;
-import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
-import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
+import com.ex.learninghub.modules.content.dto.request.InVideoQuizRequest;
+import com.ex.learninghub.modules.content.dto.response.ManagedInVideoQuizResponse;
+import com.ex.learninghub.modules.content.dto.response.StudentInVideoQuizResponse;
+import com.ex.learninghub.modules.content.dto.response.VideoProgressResponse;
 import com.ex.learninghub.modules.content.entity.InVideoQuiz;
-import com.ex.learninghub.modules.content.repository.InVideoQuizRepository;
 import com.ex.learninghub.modules.content.entity.StudentVideoNote;
+import com.ex.learninghub.modules.content.entity.VideoProgress;
+import com.ex.learninghub.modules.content.repository.InVideoQuizRepository;
 import com.ex.learninghub.modules.content.repository.StudentVideoNoteRepository;
+import com.ex.learninghub.modules.content.repository.VideoProgressRepository;
+import com.ex.learninghub.modules.course.entity.Chapter;
+import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.entity.Lesson;
+import com.ex.learninghub.modules.course.repository.ChapterRepository;
+import com.ex.learninghub.modules.course.repository.ClazzRepository;
 import com.ex.learninghub.modules.course.repository.LessonRepository;
+import com.ex.learninghub.modules.enrollment.entity.Enrollment;
+import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
+import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
+import com.ex.learninghub.modules.enrollment.repository.LessonProgressRepository;
 import com.ex.learninghub.modules.user.entity.User;
 import com.ex.learninghub.modules.user.repository.UserRepository;
-import com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,82 +39,127 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class VideoLearningService {
 
+    private static final BigDecimal COMPLETION_RATIO = new BigDecimal("0.8");
+
     private final VideoProgressRepository videoProgressRepo;
     private final EnrollmentRepository enrollmentRepo;
     private final LessonRepository lessonRepo;
+    private final ChapterRepository chapterRepo;
+    private final ClazzRepository clazzRepo;
     private final InVideoQuizRepository quizRepo;
     private final StudentVideoNoteRepository noteRepo;
     private final UserRepository userRepo;
     private final LessonProgressRepository lessonProgressRepo;
 
     @Transactional
-    public VideoProgress upsertProgress(Long enrollmentId, Long lessonId, BigDecimal lastWatched, BigDecimal maxWatched, UserPrincipal userPrincipal) {
-        // Verify the enrollment belongs to the authenticated student
+    public VideoProgressResponse upsertProgress(
+            Long enrollmentId,
+            Long lessonId,
+            BigDecimal lastWatched,
+            BigDecimal maxWatched,
+            UserPrincipal userPrincipal) {
         Enrollment enrollment = enrollmentRepo.findById(enrollmentId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
-        
         if (!enrollment.getStudent().getId().equals(userPrincipal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        Optional<VideoProgress> opt = videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId);
-        VideoProgress vp = opt.orElseGet(() -> {
-            VideoProgress newVp = new VideoProgress();
-            Lesson lesson = lessonRepo.getReferenceById(lessonId);
-            newVp.setEnrollment(enrollment);
-            newVp.setLesson(lesson);
-            return newVp;
-        });
-        // update progress values
-        if (lastWatched.compareTo(vp.getLastWatchedSeconds()) > 0) {
-            vp.setLastWatchedSeconds(lastWatched);
+        Lesson lesson = lessonRepo.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+        verifyLessonBelongsToEnrollment(enrollment, lesson);
+        validateProgressTimes(lesson, lastWatched, maxWatched);
+
+        VideoProgress progress = videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
+                .orElseGet(() -> {
+                    VideoProgress newProgress = new VideoProgress();
+                    newProgress.setEnrollment(enrollment);
+                    newProgress.setLesson(lesson);
+                    return newProgress;
+                });
+
+        progress.setLastWatchedSeconds(lastWatched);
+        if (maxWatched.compareTo(progress.getMaxWatchedSeconds()) > 0) {
+            progress.setMaxWatchedSeconds(maxWatched);
         }
-        if (maxWatched.compareTo(vp.getMaxWatchedSeconds()) > 0) {
-            vp.setMaxWatchedSeconds(maxWatched);
+
+        if (hasReachedCompletionThreshold(lesson, progress.getMaxWatchedSeconds())) {
+            progress.setIsCompleted(true);
+            markLessonCompleted(enrollmentId, lessonId);
         }
-        // determine completion (80% of lesson duration in seconds)
-        Lesson lesson = vp.getLesson();
-        if (lesson.getDuration() != null && lesson.getDuration() > 0) {
-            BigDecimal threshold = new BigDecimal(lesson.getDuration()).multiply(new BigDecimal("0.8"));
-            if (vp.getMaxWatchedSeconds().compareTo(threshold) >= 0) {
-                vp.setIsCompleted(true);
-                // Đánh dấu LessonProgress hoàn thành
-                markLessonCompleted(enrollmentId, lessonId);
-            }
-        }
-        return videoProgressRepo.save(vp);
+
+        return VideoProgressResponse.from(videoProgressRepo.save(progress));
     }
 
-    public List<InVideoQuiz> getQuizzesForLesson(Long lessonId) {
-        return quizRepo.findByLessonIdOrderByTriggerAtSecondsAsc(lessonId);
-    }
-
-    public InVideoQuiz createQuiz(InVideoQuiz quiz, UserPrincipal userPrincipal) {
-        // Verify the lecturer owns the class containing the lesson
-        Lesson lesson = quiz.getLesson();
-        if (lesson != null && lesson.getChapter() != null) {
-            Clazz clazz = lesson.getChapter().getClazz();
-            verifyLecturerOwnsClazz(clazz, userPrincipal);
-        }
-        return quizRepo.save(quiz);
-    }
-
-    private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
-        if (userPrincipal.getUser().getRole() == Role.ADMIN) {
-            return; // Admin can access all classes
-        }
-        if (clazz.getLecturer() == null || !clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
+    @Transactional(readOnly = true)
+    public Optional<VideoProgressResponse> getProgress(Long enrollmentId, Long lessonId, UserPrincipal userPrincipal) {
+        Enrollment enrollment = enrollmentRepo.findById(enrollmentId)
+                .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
+        if (!enrollment.getStudent().getId().equals(userPrincipal.getUser().getId())) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
+        Lesson lesson = lessonRepo.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+        verifyLessonBelongsToEnrollment(enrollment, lesson);
+        return videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
+                .map(VideoProgressResponse::from);
     }
 
-    public List<StudentVideoNote> getNotes(Long userId, Long lessonId) {
-        return noteRepo.findByUserIdAndLessonIdOrderByTimestampSecondsAsc(userId, lessonId);
+    @Transactional(readOnly = true)
+    public List<StudentInVideoQuizResponse> getStudentQuizzes(Long lessonId, UserPrincipal principal) {
+        Lesson lesson = requireLesson(lessonId);
+        requireStudentLessonAccess(lesson, principal.getUser().getId());
+        return quizRepo.findByLessonIdOrderByTriggerAtSecondsAsc(lessonId).stream()
+                .map(StudentInVideoQuizResponse::from)
+                .toList();
     }
 
-    public StudentVideoNote addNote(Long userId, Long lessonId, String noteText, BigDecimal timestamp) {
-        User user = userRepo.getReferenceById(userId);
-        Lesson lesson = lessonRepo.getReferenceById(lessonId);
+    @Transactional(readOnly = true)
+    public List<ManagedInVideoQuizResponse> getManagedQuizzes(Long lessonId, UserPrincipal principal) {
+        Lesson lesson = requireLesson(lessonId);
+        verifyQuizManagementAccess(lesson, principal);
+        return quizRepo.findByLessonIdOrderByTriggerAtSecondsAsc(lessonId).stream()
+                .map(ManagedInVideoQuizResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public ManagedInVideoQuizResponse createQuiz(InVideoQuizRequest request, UserPrincipal principal) {
+        Lesson lesson = requireLesson(request.lessonId());
+        verifyQuizManagementAccess(lesson, principal);
+        InVideoQuiz quiz = InVideoQuiz.builder()
+                .lesson(lesson)
+                .triggerAtSeconds(request.triggerAtSeconds())
+                .questionText(request.questionText())
+                .optionA(request.optionA())
+                .optionB(request.optionB())
+                .optionC(request.optionC())
+                .optionD(request.optionD())
+                .correctOption(request.correctOption())
+                .build();
+        return ManagedInVideoQuizResponse.from(quizRepo.save(quiz));
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentVideoNote> getNotes(Long lessonId, UserPrincipal principal) {
+        Lesson lesson = requireLesson(lessonId);
+        requireStudentLessonAccess(lesson, principal.getUser().getId());
+        return noteRepo.findByUserIdAndLessonIdOrderByTimestampSecondsAsc(principal.getUser().getId(), lessonId);
+    }
+
+    @Transactional
+    public StudentVideoNote addNote(
+            Long lessonId,
+            String noteText,
+            BigDecimal timestamp,
+            UserPrincipal principal) {
+        Lesson lesson = requireLesson(lessonId);
+        requireStudentLessonAccess(lesson, principal.getUser().getId());
+        if (timestamp == null || timestamp.signum() < 0
+                || (lesson.getDuration() != null && lesson.getDuration() > 0
+                && timestamp.compareTo(BigDecimal.valueOf(lesson.getDuration())) > 0)) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
+        User user = userRepo.getReferenceById(principal.getUser().getId());
         StudentVideoNote note = StudentVideoNote.builder()
                 .user(user)
                 .lesson(lesson)
@@ -117,31 +169,94 @@ public class VideoLearningService {
         return noteRepo.save(note);
     }
 
-    public Optional<VideoProgress> getProgress(Long enrollmentId, Long lessonId, UserPrincipal userPrincipal) {
-        // Verify the enrollment belongs to the authenticated student
-        Enrollment enrollment = enrollmentRepo.findById(enrollmentId)
-                .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
-        
-        if (!enrollment.getStudent().getId().equals(userPrincipal.getUser().getId())) {
+    public void verifyLessonBelongsToEnrollment(Enrollment enrollment, Lesson lesson) {
+        Chapter chapter = chapterRepo.findById(lesson.getChapterId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        if (!chapter.getClazzId().equals(enrollment.getClazz().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    public void requireCompletionEligible(Long enrollmentId, Lesson lesson) {
+        if (lesson.getVideoUrl() == null || lesson.getVideoUrl().isBlank()) {
+            return;
+        }
+        if (lesson.getDuration() == null || lesson.getDuration() <= 0) {
+            throw new AppException(ErrorCode.VIDEO_DURATION_UNAVAILABLE);
+        }
+        VideoProgress progress = videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lesson.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_COMPLETED));
+        if (!hasReachedCompletionThreshold(lesson, progress.getMaxWatchedSeconds())) {
+            throw new AppException(ErrorCode.LESSON_NOT_COMPLETED);
+        }
+    }
+
+    private Lesson requireLesson(Long lessonId) {
+        return lessonRepo.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+    }
+
+    private void requireStudentLessonAccess(Lesson lesson, Long studentId) {
+        Chapter chapter = chapterRepo.findById(lesson.getChapterId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        if (!enrollmentRepo.existsByStudentIdAndClazzId(studentId, chapter.getClazzId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    private void verifyQuizManagementAccess(Lesson lesson, UserPrincipal principal) {
+        Role role = principal.getUser().getRole();
+        if (role == Role.ADMIN) {
+            return;
+        }
+        if (role != Role.LECTURER) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        return videoProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId);
+        Chapter chapter = chapterRepo.findById(lesson.getChapterId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        Clazz clazz = clazzRepo.findById(chapter.getClazzId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        if (clazz.getLecturer() == null
+                || !clazz.getLecturer().getId().equals(principal.getUser().getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
     }
 
-    /**
-     * Đánh dấu LessonProgress là đã hoàn thành và ghi thời gian.
-     */
+    private void validateProgressTimes(Lesson lesson, BigDecimal lastWatched, BigDecimal maxWatched) {
+        if (lastWatched == null || maxWatched == null
+                || lastWatched.signum() < 0 || maxWatched.signum() < 0
+                || lastWatched.compareTo(maxWatched) > 0) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
+        if (lesson.getVideoUrl() == null || lesson.getVideoUrl().isBlank()
+                || lesson.getDuration() == null || lesson.getDuration() <= 0) {
+            throw new AppException(ErrorCode.VIDEO_DURATION_UNAVAILABLE);
+        }
+        BigDecimal duration = BigDecimal.valueOf(lesson.getDuration());
+        if (lastWatched.compareTo(duration) > 0 || maxWatched.compareTo(duration) > 0) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR);
+        }
+    }
+
+    private boolean hasReachedCompletionThreshold(Lesson lesson, BigDecimal maxWatched) {
+        if (lesson.getDuration() == null || lesson.getDuration() <= 0) {
+            return false;
+        }
+        BigDecimal threshold = BigDecimal.valueOf(lesson.getDuration()).multiply(COMPLETION_RATIO);
+        return maxWatched.compareTo(threshold) >= 0;
+    }
+
     private void markLessonCompleted(Long enrollmentId, Long lessonId) {
-        LessonProgress lp = lessonProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
+        LessonProgress progress = lessonProgressRepo.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
                 .orElseGet(() -> {
-                    LessonProgress newLp = new LessonProgress();
-                    newLp.setEnrollment(enrollmentRepo.getReferenceById(enrollmentId));
-                    newLp.setLesson(lessonRepo.getReferenceById(lessonId));
-                    return newLp;
+                    LessonProgress newProgress = new LessonProgress();
+                    newProgress.setEnrollment(enrollmentRepo.getReferenceById(enrollmentId));
+                    newProgress.setLesson(lessonRepo.getReferenceById(lessonId));
+                    return newProgress;
                 });
-        lp.setIsCompleted(true);
-        lp.setCompletedAt(LocalDateTime.now());
-        lessonProgressRepo.save(lp);
+        progress.setIsCompleted(true);
+        progress.setCompletedAt(LocalDateTime.now());
+        lessonProgressRepo.save(progress);
     }
 }

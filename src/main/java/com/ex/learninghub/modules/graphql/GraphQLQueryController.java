@@ -2,28 +2,47 @@ package com.ex.learninghub.modules.graphql;
 
 import com.ex.learninghub.modules.course.entity.Course;
 import com.ex.learninghub.modules.course.repository.CourseRepository;
-import lombok.Builder;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/graphql")
-@RequiredArgsConstructor
 public class GraphQLQueryController {
+
+    private static final Logger log = LoggerFactory.getLogger(GraphQLQueryController.class);
 
     private final CourseRepository courseRepository;
 
-    @Data
-    @Builder
+    public GraphQLQueryController(CourseRepository courseRepository) {
+        this.courseRepository = courseRepository;
+    }
+
     public static class GraphQLRequest {
         private String query;
         private Map<String, Object> variables;
+
+        public GraphQLRequest() {
+        }
+
+        public String getQuery() {
+            return query;
+        }
+
+        public void setQuery(String query) {
+            this.query = query;
+        }
+
+        public Map<String, Object> getVariables() {
+            return variables;
+        }
+
+        public void setVariables(Map<String, Object> variables) {
+            this.variables = variables;
+        }
     }
 
     @PostMapping

@@ -167,7 +167,10 @@ public class ContentServiceImpl implements ContentService {
         verifyLecturerOwnsClazz(clazz, userPrincipal);
         lesson.setTitle(request.getTitle());
         lesson.setContent(request.getContent());
-        lesson.setVideoUrl(request.getVideoUrl());
+        if (request.getVideoUrl() != null && !request.getVideoUrl().equals(lesson.getVideoUrl())) {
+            lesson.setVideoUrl(request.getVideoUrl());
+            lesson.setDuration(0);
+        }
         if (request.getAttachmentUrl() != null) {
             lesson.setAttachmentUrl(request.getAttachmentUrl());
         }
@@ -175,6 +178,14 @@ public class ContentServiceImpl implements ContentService {
             lesson.setAttachmentName(request.getAttachmentName());
         }
         return LessonResponse.from(lessonRepository.save(lesson));
+    }
+
+    @Override
+    public LessonResponse getLessonById(Long lessonId, UserPrincipal userPrincipal) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+        verifyAccessToChapter(lesson.getChapterId(), userPrincipal);
+        return LessonResponse.from(lesson);
     }
 
     @Override

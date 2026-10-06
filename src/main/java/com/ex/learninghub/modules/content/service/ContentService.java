@@ -31,6 +31,8 @@ public interface ContentService {
 
     LessonResponse updateLesson(Long lessonId, LessonRequest request, UserPrincipal userPrincipal);
 
+    LessonResponse getLessonById(Long lessonId, UserPrincipal userPrincipal);
+
     void deleteLesson(Long lessonId, UserPrincipal userPrincipal);
 
     List<LessonResponse> getLessonsByChapter(Long chapterId);

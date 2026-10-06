@@ -1,42 +1,70 @@
 package com.ex.learninghub.modules.storage;
 
 import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
+import com.cloudinary.Uploader;
 import com.ex.learninghub.modules.storage.service.CloudinaryService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 class StorageServiceTest {
+
+    @Mock
+    private Cloudinary cloudinary;
+
+    @Mock
+    private Uploader uploader;
 
     private CloudinaryService cloudinaryService;
 
     @BeforeEach
     void setUp() {
-        Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", "demo",
-                "api_key", "123456",
-                "api_secret", "secret"
-        ));
+        when(cloudinary.uploader()).thenReturn(uploader);
         cloudinaryService = new CloudinaryService(cloudinary);
     }
 
     @Test
-    @DisplayName("Nên upload file và trả về URL Cloudinary thành công")
-    void uploadFile_Success() {
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "test-avatar.png",
-                "image/png",
-                "dummy image content".getBytes()
-        );
+    void uploadVideo_returnsSecureUrlAndDurationInSeconds() throws Exception {
+        when(uploader.upload(any(byte[].class), anyMap()))
+                .thenReturn(Map.of("secure_url", "https://cdn.example/video.mp4", "duration", 12.4d));
 
-        String url = cloudinaryService.uploadFile(file);
+        var result = cloudinaryService.uploadVideo(new MockMultipartFile(
+                "file", "lesson.mp4", "video/mp4", new byte[]{1, 2, 3}));
 
-        assertThat(url).isNotNull();
-        assertThat(url).startsWith("http");
+        assertThat(result.secureUrl()).isEqualTo("https://cdn.example/video.mp4");
+        assertThat(result.durationSeconds()).isEqualTo(13);
+    }
+
+    @Test
+    void uploadFile_propagatesCloudinaryFailureInsteadOfReturningMockUrl() throws Exception {
+        when(uploader.upload(any(byte[].class), anyMap())).thenThrow(new RuntimeException("Cloudinary unavailable"));
+
+        assertThatThrownBy(() -> cloudinaryService.uploadFile(new MockMultipartFile(
+                "file", "lesson.mp4", "video/mp4", new byte[]{1, 2, 3})))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Cloudinary upload failed");
+    }
+
+    @Test
+    void uploadVideo_rejectsMissingDurationMetadata() throws Exception {
+        when(uploader.upload(any(byte[].class), anyMap()))
+                .thenReturn(Map.of("secure_url", "https://cdn.example/video.mp4"));
+
+        assertThatThrownBy(() -> cloudinaryService.uploadVideo(new MockMultipartFile(
+                "file", "lesson.mp4", "video/mp4", new byte[]{1, 2, 3})))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Cloudinary did not return a valid video duration");
     }
 }

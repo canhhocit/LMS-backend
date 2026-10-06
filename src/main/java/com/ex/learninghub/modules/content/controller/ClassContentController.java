@@ -108,6 +108,14 @@ public class ClassContentController {
         return ApiResponse.success(contentService.updateLesson(id, request, userPrincipal));
     }
 
+    @GetMapping("/lessons/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<LessonResponse> getLessonById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(contentService.getLessonById(id, userPrincipal));
+    }
+
     @DeleteMapping("/lessons/{id}")
     @PreAuthorize("hasRole('LECTURER')")
     @Operation(

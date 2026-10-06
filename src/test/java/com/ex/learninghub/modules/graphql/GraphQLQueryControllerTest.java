@@ -32,9 +32,8 @@ class GraphQLQueryControllerTest {
         c.setId(10L);
         when(courseRepository.findAll()).thenReturn(List.of(c));
 
-        GraphQLQueryController.GraphQLRequest req = GraphQLQueryController.GraphQLRequest.builder()
-                .query("{ courses { id code title credit } }")
-                .build();
+        GraphQLQueryController.GraphQLRequest req = new GraphQLQueryController.GraphQLRequest();
+        req.setQuery("{ courses { id code title credit } }");
 
         ResponseEntity<Map<String, Object>> response = graphQLQueryController.executeGraphQLQuery(req);
 

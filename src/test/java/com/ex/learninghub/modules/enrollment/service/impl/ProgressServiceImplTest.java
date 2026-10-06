@@ -2,11 +2,14 @@ package com.ex.learninghub.modules.enrollment.service.impl;
 
 import com.ex.learninghub.common.enums.Role;
 import com.ex.learninghub.common.exception.AppException;
+import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.course.entity.Clazz;
 import com.ex.learninghub.modules.course.entity.Course;
 import com.ex.learninghub.modules.course.entity.Lesson;
 import com.ex.learninghub.modules.course.repository.LessonRepository;
+import com.ex.learninghub.modules.course.repository.ChapterRepository;
+import com.ex.learninghub.modules.content.service.VideoLearningService;
 import com.ex.learninghub.modules.enrollment.dto.response.ProgressResponse;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
 import com.ex.learninghub.modules.enrollment.entity.LessonProgress;
@@ -29,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +46,12 @@ class ProgressServiceImplTest {
 
     @Mock
     private LessonRepository lessonRepository;
+
+    @Mock
+    private ChapterRepository chapterRepository;
+
+    @Mock
+    private VideoLearningService videoLearningService;
 
     @Mock
     private NotificationService notificationService;
@@ -124,6 +134,35 @@ class ProgressServiceImplTest {
         when(lessonRepository.findByClazzId(10L)).thenReturn(List.of(lesson)); // doesn't contain 99
 
         assertThatThrownBy(() -> progressService.markLessonCompleted(50L, 99L, principalFor(student)))
+                .isInstanceOf(AppException.class);
+    }
+
+    @Test
+    void markLessonCompleted_rejectsVideoWithoutServerProgressThreshold() {
+        when(enrollmentRepository.findById(50L)).thenReturn(Optional.of(enrollment));
+        when(lessonRepository.findById(20L)).thenReturn(Optional.of(lesson));
+        when(lessonRepository.findByClazzId(10L)).thenReturn(List.of(lesson));
+        doThrow(new AppException(ErrorCode.LESSON_NOT_COMPLETED))
+                .when(videoLearningService).requireCompletionEligible(50L, lesson);
+
+        assertThatThrownBy(() -> progressService.markLessonCompleted(50L, 20L, principalFor(student)))
+                .isInstanceOf(AppException.class);
+    }
+
+    @Test
+    void setMyLessonCompleted_rejectsVideoWithoutServerProgressThreshold() {
+        Lesson videoLesson = Lesson.builder().title("Video").chapterId(30L).videoUrl("https://cdn.example/video.mp4").build();
+        videoLesson.setId(20L);
+        com.ex.learninghub.modules.course.entity.Chapter chapter =
+                com.ex.learninghub.modules.course.entity.Chapter.builder().clazzId(10L).build();
+        chapter.setId(30L);
+        when(lessonRepository.findById(20L)).thenReturn(Optional.of(videoLesson));
+        when(chapterRepository.findById(30L)).thenReturn(Optional.of(chapter));
+        when(enrollmentRepository.findByStudentIdAndClazzId(1L, 10L)).thenReturn(Optional.of(enrollment));
+        doThrow(new AppException(ErrorCode.LESSON_NOT_COMPLETED))
+                .when(videoLearningService).requireCompletionEligible(50L, videoLesson);
+
+        assertThatThrownBy(() -> progressService.setMyLessonCompleted(20L, true, principalFor(student)))
                 .isInstanceOf(AppException.class);
     }
 

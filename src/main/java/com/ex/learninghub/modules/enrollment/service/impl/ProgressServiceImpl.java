@@ -6,7 +6,10 @@ import com.ex.learninghub.common.exception.AppException;
 import com.ex.learninghub.common.exception.ErrorCode;
 import com.ex.learninghub.common.security.UserPrincipal;
 import com.ex.learninghub.modules.course.entity.Lesson;
+import com.ex.learninghub.modules.course.entity.Chapter;
+import com.ex.learninghub.modules.course.repository.ChapterRepository;
 import com.ex.learninghub.modules.course.repository.LessonRepository;
+import com.ex.learninghub.modules.content.service.VideoLearningService;
 import com.ex.learninghub.modules.enrollment.dto.response.LessonProgressItem;
 import com.ex.learninghub.modules.enrollment.dto.response.ProgressResponse;
 import com.ex.learninghub.modules.enrollment.entity.Enrollment;
@@ -29,7 +32,9 @@ public class ProgressServiceImpl implements ProgressService {
     private final LessonProgressRepository lessonProgressRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonRepository lessonRepository;
+    private final ChapterRepository chapterRepository;
     private final NotificationService notificationService;
+    private final VideoLearningService videoLearningService;
 
     @Override
     @Transactional
@@ -47,10 +52,11 @@ public class ProgressServiceImpl implements ProgressService {
 
         Long enrollmentClazzId = enrollment.getClazz().getId();
         boolean lessonInClazz = lessonRepository.findByClazzId(enrollmentClazzId).stream()
-                .anyMatch(l -> l.getId().equals(lessonId));
+                .anyMatch(clazzLesson -> clazzLesson.getId().equals(lessonId));
         if (!lessonInClazz) {
             throw new AppException(ErrorCode.LESSON_NOT_IN_ENROLLMENT);
         }
+        videoLearningService.requireCompletionEligible(enrollmentId, lesson);
 
         LessonProgress progress = lessonProgressRepository
                 .findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
@@ -66,9 +72,13 @@ public class ProgressServiceImpl implements ProgressService {
     public void setMyLessonCompleted(Long lessonId, boolean completed, UserPrincipal principal) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
-        Long classId = lesson.getChapter().getClazzId();
-        Enrollment enrollment = enrollmentRepository.findByStudentIdAndClazzId(principal.getUser().getId(), classId)
+        Chapter chapter = chapterRepository.findById(lesson.getChapterId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_FOUND));
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndClazzId(principal.getUser().getId(), chapter.getClazzId())
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
+        if (completed) {
+            videoLearningService.requireCompletionEligible(enrollment.getId(), lesson);
+        }
         LessonProgress progress = lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollment.getId(), lessonId)
                 .orElseGet(() -> LessonProgress.builder().enrollment(enrollment).lesson(lesson).build());
         progress.setIsCompleted(completed);

@@ -2,15 +2,21 @@ package com.ex.learninghub.modules.content.controller;
 
 import com.ex.learninghub.common.response.ApiResponse;
 import com.ex.learninghub.common.security.UserPrincipal;
-import com.ex.learninghub.modules.content.entity.InVideoQuiz;
+import com.ex.learninghub.modules.content.dto.request.InVideoQuizRequest;
+import com.ex.learninghub.modules.content.dto.response.ManagedInVideoQuizResponse;
+import com.ex.learninghub.modules.content.dto.response.StudentInVideoQuizResponse;
+import com.ex.learninghub.modules.content.dto.response.VideoProgressResponse;
 import com.ex.learninghub.modules.content.entity.StudentVideoNote;
-import com.ex.learninghub.modules.content.entity.VideoProgress;
 import com.ex.learninghub.modules.content.service.VideoLearningService;
+import com.ex.learninghub.common.enums.Role;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,22 +34,22 @@ public class VideoLearningController {
      */
     @PostMapping("/progress")
     @PreAuthorize("hasRole('STUDENT')")
-    public ApiResponse<VideoProgress> upsertProgress(
-            @RequestBody VideoProgressDto dto,
+    public ApiResponse<VideoProgressResponse> upsertProgress(
+            @Valid @RequestBody VideoProgressDto dto,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        VideoProgress vp = videoLearningService.upsertProgress(
+        VideoProgressResponse progress = videoLearningService.upsertProgress(
                 dto.getEnrollmentId(),
                 dto.getLessonId(),
                 dto.getLastWatchedSeconds(),
                 dto.getMaxWatchedSeconds(),
                 userPrincipal
         );
-        return ApiResponse.success(vp);
+        return ApiResponse.success(progress);
     }
 
     @GetMapping("/progress/lesson/{lessonId}/enrollment/{enrollmentId}")
     @PreAuthorize("hasRole('STUDENT')")
-    public ApiResponse<VideoProgress> getProgress(
+    public ApiResponse<VideoProgressResponse> getProgress(
             @PathVariable Long lessonId,
             @PathVariable Long enrollmentId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
@@ -54,17 +60,23 @@ public class VideoLearningController {
 
     @GetMapping("/quizzes/lesson/{lessonId}")
     @PreAuthorize("hasAnyRole('STUDENT','LECTURER','ADMIN')")
-    public ApiResponse<List<InVideoQuiz>> getQuizzes(@PathVariable Long lessonId) {
-        List<InVideoQuiz> quizzes = videoLearningService.getQuizzesForLesson(lessonId);
+    public ApiResponse<?> getQuizzes(
+            @PathVariable Long lessonId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        if (userPrincipal.getUser().getRole() == Role.STUDENT) {
+            List<StudentInVideoQuizResponse> quizzes = videoLearningService.getStudentQuizzes(lessonId, userPrincipal);
+            return ApiResponse.success(quizzes);
+        }
+        List<ManagedInVideoQuizResponse> quizzes = videoLearningService.getManagedQuizzes(lessonId, userPrincipal);
         return ApiResponse.success(quizzes);
     }
 
     @PostMapping("/quizzes")
     @PreAuthorize("hasAnyRole('LECTURER','ADMIN')")
-    public ApiResponse<InVideoQuiz> createQuiz(
-            @RequestBody InVideoQuiz quiz,
+    public ApiResponse<ManagedInVideoQuizResponse> createQuiz(
+            @Valid @RequestBody InVideoQuizRequest quiz,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        InVideoQuiz saved = videoLearningService.createQuiz(quiz, userPrincipal);
+        ManagedInVideoQuizResponse saved = videoLearningService.createQuiz(quiz, userPrincipal);
         return ApiResponse.success(saved);
     }
 
@@ -73,20 +85,20 @@ public class VideoLearningController {
     public ApiResponse<List<StudentVideoNote>> getNotes(
             @PathVariable Long lessonId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        List<StudentVideoNote> notes = videoLearningService.getNotes(userPrincipal.getUser().getId(), lessonId);
+        List<StudentVideoNote> notes = videoLearningService.getNotes(lessonId, userPrincipal);
         return ApiResponse.success(notes);
     }
 
     @PostMapping("/notes")
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<StudentVideoNote> addNote(
-            @RequestBody StudentVideoNoteDto dto,
+            @Valid @RequestBody StudentVideoNoteDto dto,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         StudentVideoNote note = videoLearningService.addNote(
-                userPrincipal.getUser().getId(),
                 dto.getLessonId(),
                 dto.getNoteText(),
-                dto.getTimestampSeconds()
+                dto.getTimestampSeconds(),
+                userPrincipal
         );
         return ApiResponse.success(note);
     }
@@ -94,16 +106,26 @@ public class VideoLearningController {
     // DTO classes for request payloads
     @Data
     public static class VideoProgressDto {
+        @NotNull
         private Long enrollmentId;
+        @NotNull
         private Long lessonId;
+        @NotNull
+        @DecimalMin("0.0")
         private BigDecimal lastWatchedSeconds;
+        @NotNull
+        @DecimalMin("0.0")
         private BigDecimal maxWatchedSeconds;
     }
 
     @Data
     public static class StudentVideoNoteDto {
+        @NotNull
         private Long lessonId;
+        @jakarta.validation.constraints.NotBlank
         private String noteText;
+        @NotNull
+        @DecimalMin("0.0")
         private BigDecimal timestampSeconds;
     }
 }

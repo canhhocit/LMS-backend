@@ -17,21 +17,45 @@ public class CloudinaryService {
     private final Cloudinary cloudinary;
 
     public String uploadFile(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "";
+        String resourceType = isVideo(originalFilename) ? "video" : isRawDocument(originalFilename) ? "raw" : "auto";
+        return secureUrl(upload(file, resourceType));
+    }
+
+    public CloudinaryUploadResult uploadVideo(MultipartFile file) {
+        Map<?, ?> uploadResult = upload(file, "video");
+        String secureUrl = secureUrl(uploadResult);
+        Object durationValue = uploadResult.get("duration");
+        if (!(durationValue instanceof Number durationNumber)
+                || !Double.isFinite(durationNumber.doubleValue())
+                || durationNumber.doubleValue() <= 0
+                || durationNumber.doubleValue() > Integer.MAX_VALUE) {
+            throw new IllegalStateException("Cloudinary did not return a valid video duration");
+        }
+
+        return new CloudinaryUploadResult(
+                secureUrl,
+                (int) Math.ceil(durationNumber.doubleValue())
+        );
+    }
+
+    private String secureUrl(Map<?, ?> uploadResult) {
+        Object secureUrl = uploadResult.get("secure_url");
+        if (!(secureUrl instanceof String url) || url.isBlank()) {
+            throw new IllegalStateException("Cloudinary response did not contain a secure URL");
+        }
+        return url;
+    }
+
+    private Map<?, ?> upload(MultipartFile file, String resourceType) {
         try {
-            String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "";
-            String resourceType = "auto";
-            if (isVideo(originalFilename)) {
-                resourceType = "video";
-            } else if (isRawDocument(originalFilename)) {
-                resourceType = "raw";
-            }
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resourceType));
-            String url = (String) uploadResult.get("secure_url");
+            String url = secureUrl(uploadResult);
             log.info("Upload file lên Cloudinary thành công: {}", url);
-            return url;
+            return uploadResult;
         } catch (Exception e) {
-            log.warn("Không kết nối được Cloudinary thật, trả về URL mock giả lập: {}", e.getMessage());
-            return "https://res.cloudinary.com/demo/image/upload/sample_" + System.currentTimeMillis() + ".jpg";
+            log.error("Cloudinary upload failed", e);
+            throw new IllegalStateException("Cloudinary upload failed", e);
         }
     }
 

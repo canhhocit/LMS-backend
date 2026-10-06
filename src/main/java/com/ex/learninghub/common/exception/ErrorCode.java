@@ -55,6 +55,8 @@ public enum ErrorCode {
     VIDEO_TOO_LARGE(3020, "Video file exceeds maximum allowed size", HttpStatus.PAYLOAD_TOO_LARGE),
     VIDEO_INVALID_FORMAT(3021, "Unsupported video format", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     VIDEO_UPLOAD_FAILED(3022, "Failed to upload video to storage", HttpStatus.INTERNAL_SERVER_ERROR),
+    VIDEO_DURATION_UNAVAILABLE(3027, "Video duration is unavailable", HttpStatus.BAD_REQUEST),
+    LESSON_NOT_COMPLETED(3028, "Video progress does not meet the lesson completion requirement", HttpStatus.BAD_REQUEST),
     SUBMISSION_FILE_EMPTY(3023, "Submission file is empty", HttpStatus.BAD_REQUEST),
     SUBMISSION_FILE_TOO_LARGE(3024, "Submission file exceeds maximum allowed size", HttpStatus.PAYLOAD_TOO_LARGE),
     SUBMISSION_INVALID_FORMAT(3025, "Unsupported submission file format", HttpStatus.UNSUPPORTED_MEDIA_TYPE),

@@ -63,12 +63,13 @@ public class VideoUploadService {
         }
 
         try {
-            String secureUrl = fileStorageRouterService.uploadFile(file);
-            lesson.setVideoUrl(secureUrl);
+            var uploadResult = fileStorageRouterService.uploadVideo(file);
+            lesson.setVideoUrl(uploadResult.secureUrl());
+            lesson.setDuration(uploadResult.durationSeconds());
             lessonRepository.save(lesson);
-            return secureUrl;
+            return uploadResult.secureUrl();
         } catch (Exception ex) {
-            throw new AppException(ErrorCode.VIDEO_UPLOAD_FAILED);
+            throw new AppException(ErrorCode.VIDEO_UPLOAD_FAILED, ex);
         }
     }
 
