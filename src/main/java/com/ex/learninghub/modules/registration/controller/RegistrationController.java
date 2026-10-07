@@ -135,6 +135,19 @@ public class RegistrationController {
         return ResponseEntity.ok(ApiResponse.success(registrationService.register(clazzId, principal)));
     }
 
+
+    @PostMapping("/registration/batch")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(
+            summary = "Sinh viên đăng ký nhiều lớp học phần",
+            description = "Sinh viên đăng ký vào nhiều lớp học phần cùng lúc trong đợt đăng ký hiện tại."
+    )
+    public ResponseEntity<ApiResponse<List<RegistrationResponse>>> batchRegister(
+            @RequestBody List<Long> clazzIds,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(registrationService.batchRegister(clazzIds, principal)));
+    }
+
     @DeleteMapping("/registration/{clazzId}")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(

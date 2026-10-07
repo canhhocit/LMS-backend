@@ -213,10 +213,8 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     // =================== STUDENT OPERATIONS ===================
 
-    @Override
-    @Transactional
-    public RegistrationResponse register(Long clazzId, UserPrincipal principal) {
-        RegistrationPeriod period = getOpenPeriod();
+        @Transactional
+    public RegistrationResponse registerInternal(Long clazzId, UserPrincipal principal, RegistrationPeriod period) {
         User student = principal.getUser();
 
         if (enrollmentRepository.existsByStudentIdAndClazzId(student.getId(), clazzId)) {
@@ -225,6 +223,14 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         Clazz clazz = clazzRepository.findById(clazzId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+
+        // Check if class is in the allowed classes for this period
+        RegistrationPeriod activePeriodWithClasses = periodRepository.findActiveWithClasses().orElse(period);
+        boolean isAllowed = activePeriodWithClasses.getAllowedClasses().stream()
+                .anyMatch(c -> c.getId().equals(clazzId));
+        if (!isAllowed && !activePeriodWithClasses.getAllowedClasses().isEmpty()) {
+            throw new AppException(ErrorCode.FORBIDDEN); // Class is not in the allowed list for this period
+        }
 
         if (period.getAcademicSemester() != null && clazz.getAcademicSemester() != null) {
             if (!period.getAcademicSemester().getId().equals(clazz.getAcademicSemester().getId())) {
@@ -239,7 +245,6 @@ public class RegistrationServiceImpl implements RegistrationService {
             }
         }
 
-        // Tín chỉ của lớp muốn đăng ký
         int addingCredits = clazz.getCourse() != null && clazz.getCourse().getCredit() != null
                 ? clazz.getCourse().getCredit() : 0;
         if (period.getMaxCredits() != null) {
@@ -250,10 +255,8 @@ public class RegistrationServiceImpl implements RegistrationService {
             }
         }
 
-        // Kiểm tra trùng lịch với các lớp đã đăng ký trong cùng kỳ
         checkScheduleConflict(student.getId(), clazzId);
 
-        // Kiểm tra môn tiên quyết
         if (clazz.getCourse() != null) {
             List<CoursePrerequisite> prereqs = prerequisiteRepository.findByCourseId(clazz.getCourse().getId());
             if (!prereqs.isEmpty()) {
@@ -288,7 +291,6 @@ public class RegistrationServiceImpl implements RegistrationService {
             lessonProgressRepository.saveAll(progressRecords);
         }
         
-        // Notify student about enrollment confirmation
         notificationService.notifyUser(
             student.getId(),
             NotificationType.COURSE_REGISTERED,
@@ -297,7 +299,6 @@ public class RegistrationServiceImpl implements RegistrationService {
             clazz.getId()
         );
         
-        // Notify lecturer about new student enrollment
         if (clazz.getLecturer() != null) {
             notificationService.notifyUser(
                 clazz.getLecturer().getId(),
@@ -307,22 +308,52 @@ public class RegistrationServiceImpl implements RegistrationService {
                 clazz.getId()
             );
         }
+        
+        return RegistrationResponse.from(savedEnrollment);
+    }
 
-        // Tự động sinh invoice học phí nếu đã có TuitionRate cho năm học này
+    @Override
+    @Transactional
+    public RegistrationResponse register(Long clazzId, UserPrincipal principal) {
+        RegistrationPeriod period = getOpenPeriod();
+        RegistrationResponse resp = registerInternal(clazzId, principal, period);
+        
         if (period.getEffectiveSemester() != null && period.getEffectiveAcademicYear() != null) {
             try {
-                tuitionService.generateInvoice(student.getId(), period.getEffectiveSemester(), period.getEffectiveAcademicYear());
-            } catch (Exception ignored) {
-                // Nếu chưa có TuitionRate thì bỏ qua, Admin tạo sau
+                tuitionService.generateInvoice(principal.getUser().getId(), period.getEffectiveSemester(), period.getEffectiveAcademicYear());
+            } catch (Exception ignored) {}
+        }
+        
+        Clazz clazz = clazzRepository.findById(clazzId).orElse(null);
+        if (clazz != null) {
+            emailService.sendCourseRegistrationEmail(principal.getUser(), clazz, period);
+        }
+        return resp;
+    }
+
+    @Override
+    @Transactional
+    public List<RegistrationResponse> batchRegister(List<Long> clazzIds, UserPrincipal principal) {
+        RegistrationPeriod period = getOpenPeriod();
+        List<RegistrationResponse> responses = new java.util.ArrayList<>();
+        
+        for (Long clazzId : clazzIds) {
+            RegistrationResponse resp = registerInternal(clazzId, principal, period);
+            responses.add(resp);
+            
+            Clazz clazz = clazzRepository.findById(clazzId).orElse(null);
+            if (clazz != null) {
+                emailService.sendCourseRegistrationEmail(principal.getUser(), clazz, period);
             }
         }
-
-        // Gửi email xác nhận đăng ký học phần + hạn đóng học phí về email cá nhân (personalEmail) của SV
-        try {
-            emailService.sendCourseRegistrationEmail(student, clazz, period);
-        } catch (Exception ignored) {}
-
-        return RegistrationResponse.from(savedEnrollment);
+        
+        if (period.getEffectiveSemester() != null && period.getEffectiveAcademicYear() != null) {
+            try {
+                tuitionService.generateInvoice(principal.getUser().getId(), period.getEffectiveSemester(), period.getEffectiveAcademicYear());
+            } catch (Exception ignored) {}
+        }
+        
+        return responses;
     }
 
     @Override

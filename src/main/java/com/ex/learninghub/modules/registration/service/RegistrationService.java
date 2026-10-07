@@ -25,6 +25,7 @@ public interface RegistrationService {
 
     // STUDENT: tự đăng ký / hủy
     RegistrationResponse register(Long clazzId, UserPrincipal principal);
+    List<RegistrationResponse> batchRegister(List<Long> clazzIds, UserPrincipal principal);
     void unregister(Long clazzId, UserPrincipal principal);
 
     // STUDENT: xem lớp đã đăng ký trong đợt hiện tại

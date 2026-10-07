@@ -128,9 +128,6 @@ public class TuitionServiceImpl implements TuitionService {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
         var existing = invoiceRepository.findByStudentIdAndSemesterAndAcademicYear(studentId, semester, academicYear);
-        if (existing.isPresent()) {
-            return TuitionInvoiceResponse.from(existing.get());
-        }
 
         LocalDate rateDate = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         TuitionRate rate = rateRepository
@@ -151,6 +148,20 @@ public class TuitionServiceImpl implements TuitionService {
         BigDecimal amount = rate.getPricePerCredit()
                 .multiply(BigDecimal.valueOf(totalCredits))
                 .setScale(2, RoundingMode.HALF_UP);
+
+        if (existing.isPresent()) {
+            TuitionInvoice inv = existing.get();
+            if (inv.getTotalCredits() == totalCredits) {
+                return TuitionInvoiceResponse.from(inv);
+            }
+            inv.setTotalCredits(totalCredits);
+            inv.setAmount(amount);
+            if ("PAID".equals(inv.getStatus())) {
+                inv.setStatus("UNPAID");
+                inv.setPaidAt(null);
+            }
+            return TuitionInvoiceResponse.from(invoiceRepository.save(inv));
+        }
 
         TuitionInvoice inv = TuitionInvoice.builder()
                 .student(student)
