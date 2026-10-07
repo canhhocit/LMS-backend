@@ -359,7 +359,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     @Transactional
     public void unregister(Long clazzId, UserPrincipal principal) {
-        getOpenPeriod(); // Kiểm tra đợt đăng ký đang mở
+        RegistrationPeriod period = getOpenPeriod(); // Kiểm tra đợt đăng ký đang mở
         User student = principal.getUser();
 
         Enrollment e = enrollmentRepository.findByStudentIdAndClazzId(student.getId(), clazzId)
@@ -369,6 +369,14 @@ public class RegistrationServiceImpl implements RegistrationService {
         lessonProgressRepository.findByEnrollmentId(e.getId())
                 .forEach(lessonProgressRepository::delete);
         enrollmentRepository.delete(e);
+        enrollmentRepository.flush(); // Ensure deletion is visible to subsequent queries
+
+        // Cập nhật lại học phí sau khi hủy lớp
+        if (period.getEffectiveSemester() != null && period.getEffectiveAcademicYear() != null) {
+            try {
+                tuitionService.generateInvoice(student.getId(), period.getEffectiveSemester(), period.getEffectiveAcademicYear());
+            } catch (Exception ignored) {}
+        }
     }
 
     @Override
