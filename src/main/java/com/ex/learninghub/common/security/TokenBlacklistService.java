@@ -35,7 +35,7 @@ public class TokenBlacklistService {
             return Boolean.TRUE.equals(hasKey);
         } catch (Exception e) {
             log.warn("Đọc Redis blacklist thất bại: {}", e.getMessage());
-            return false;
+            throw new com.ex.learninghub.common.exception.AppException(com.ex.learninghub.common.exception.ErrorCode.UNAUTHORIZED);
         }
     }
 }

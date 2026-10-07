@@ -39,6 +39,7 @@ public class AssessmentServiceImpl implements AssessmentService {
     private final AssignmentRepository assignmentRepository;
     private final SubmissionRepository submissionRepository;
     private final ClazzRepository clazzRepository;
+    private final com.ex.learninghub.modules.enrollment.repository.EnrollmentRepository enrollmentRepository;
     private final NotificationService notificationService;
     private final com.ex.learninghub.modules.storage.service.FileStorageRouterService fileStorageRouterService;
 
@@ -66,6 +67,13 @@ public class AssessmentServiceImpl implements AssessmentService {
             "image/jpg",
             "image/pjpeg"
     );
+
+    
+    private void checkStudentEnrollment(Long classId, Long studentId) {
+        if (!enrollmentRepository.existsByStudentIdAndClazzId(studentId, classId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
 
     private void verifyLecturerOwnsClazz(Clazz clazz, UserPrincipal userPrincipal) {
         if (clazz.getLecturer() == null ||
@@ -125,7 +133,10 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     @Override
-    public List<AssignmentResponse> getAssignmentsByClass(Long classId) {
+    public List<AssignmentResponse> getAssignmentsByClass(Long classId, UserPrincipal userPrincipal) {
+        if (userPrincipal.getUser().getRole() == com.ex.learninghub.common.enums.Role.STUDENT) {
+            checkStudentEnrollment(classId, userPrincipal.getUser().getId());
+        }
         return assignmentRepository.findByClazzId(classId).stream()
                 .map(AssignmentResponse::from)
                 .collect(Collectors.toList());

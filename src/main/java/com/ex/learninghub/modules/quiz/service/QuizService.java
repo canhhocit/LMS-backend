@@ -15,14 +15,14 @@ public interface QuizService {
 
     // Quiz CRUD
     QuizResponse createQuiz(Long classId, QuizRequest request, UserPrincipal userPrincipal);
-    QuizResponse getQuizById(Long quizId);
+    QuizResponse getQuizById(Long quizId, UserPrincipal userPrincipal);
     List<QuizResponse> getQuizzesByClassId(Long classId, UserPrincipal userPrincipal);
     QuizResponse updateQuiz(Long quizId, QuizRequest request, UserPrincipal userPrincipal);
     void deleteQuiz(Long quizId, UserPrincipal userPrincipal);
 
     // Question CRUD
     QuestionResponse createQuestion(Long quizId, QuestionRequest request, UserPrincipal userPrincipal);
-    List<QuestionResponse> getQuestionsByQuizId(Long quizId);
+    List<QuestionResponse> getQuestionsByQuizId(Long quizId, UserPrincipal userPrincipal);
     QuestionResponse updateQuestion(Long questionId, QuestionRequest request, UserPrincipal userPrincipal);
     void deleteQuestion(Long questionId, UserPrincipal userPrincipal);
 

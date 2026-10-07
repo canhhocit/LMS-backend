@@ -18,7 +18,7 @@ public interface AssessmentService {
 
     void deleteAssignment(Long id, UserPrincipal userPrincipal);
 
-    List<AssignmentResponse> getAssignmentsByClass(Long classId);
+    List<AssignmentResponse> getAssignmentsByClass(Long classId, UserPrincipal userPrincipal);
 
     SubmissionResponse submitAssignment(Long assignmentId, SubmissionRequest request, UserPrincipal userPrincipal);
 

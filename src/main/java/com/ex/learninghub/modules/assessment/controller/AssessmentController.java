@@ -74,8 +74,8 @@ public class AssessmentController {
             description = "Trả về danh sách tất cả bài tập thuộc về một lớp học phần."
     )
     public ApiResponse<List<AssignmentResponse>> getAssignmentsByClass(
-            @PathVariable Long classId) {
-        return ApiResponse.success(assessmentService.getAssignmentsByClass(classId));
+            @PathVariable Long classId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(assessmentService.getAssignmentsByClass(classId, userPrincipal));
     }
 
     // ─── Submissions ─────────────────────────────────────────────────────────────

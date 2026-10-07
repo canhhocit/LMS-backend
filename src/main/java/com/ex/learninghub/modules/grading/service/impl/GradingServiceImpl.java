@@ -197,6 +197,9 @@ public class GradingServiceImpl implements GradingService {
 
     @Override
     public List<AttendanceResponse> getMyAttendance(Long classId, UserPrincipal userPrincipal) {
+        if (!enrollmentRepository.existsByStudentIdAndClazzId(userPrincipal.getUser().getId(), classId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
         return attendanceRepository.findByClazzIdAndStudentId(classId, userPrincipal.getUser().getId()).stream()
                 .map(AttendanceResponse::from)
                 .collect(Collectors.toList());

@@ -42,14 +42,21 @@ public class QrCodeAttendanceServiceImpl implements QrCodeAttendanceService {
 
     @Override
     public QrSessionResponse generateQrSession(Long classId, UserPrincipal lecturerPrincipal) {
-        if (!clazzRepository.existsById(classId)) {
+        Clazz clazz = clazzRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+        if (lecturerPrincipal.getUser().getRole() == com.ex.learninghub.common.enums.Role.LECTURER) {
+            if (clazz.getLecturer() == null || !clazz.getLecturer().getId().equals(lecturerPrincipal.getUser().getId())) {
+                throw new AppException(ErrorCode.FORBIDDEN);
+            }
+        }
+        if (false) {
             throw new AppException(ErrorCode.CLAZZ_NOT_FOUND);
         }
 
         String sessionToken = UUID.randomUUID().toString();
         // Generate 6-digit dynamic OTP
         long timeWindow = System.currentTimeMillis() / 10000; // Changes every 10s
-        String otpCode = String.format("%06d", Math.abs((sessionToken + timeWindow).hashCode() % 1000000));
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        String otpCode = String.format("%06d", random.nextInt(1000000));
 
         String redisKey = QR_PREFIX + sessionToken;
         try {

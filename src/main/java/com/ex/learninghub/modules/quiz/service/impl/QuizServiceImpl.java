@@ -37,6 +37,29 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class QuizServiceImpl implements QuizService {
+    private void checkAuthorization(Quiz quiz, UserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new AppException(com.ex.learninghub.common.exception.ErrorCode.UNAUTHORIZED);
+        }
+        com.ex.learninghub.common.enums.Role role = userPrincipal.getUser().getRole();
+        if (role == com.ex.learninghub.common.enums.Role.ADMIN) {
+            return;
+        }
+        if (role == com.ex.learninghub.common.enums.Role.LECTURER) {
+            if (!quiz.getClazz().getLecturer().getId().equals(userPrincipal.getUser().getId())) {
+                throw new AppException(com.ex.learninghub.common.exception.ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+        if (role == com.ex.learninghub.common.enums.Role.STUDENT) {
+            if (!enrollmentRepository.existsByStudentIdAndClazzId(userPrincipal.getUser().getId(), quiz.getClazz().getId())) {
+                throw new AppException(com.ex.learninghub.common.exception.ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+        throw new AppException(com.ex.learninghub.common.exception.ErrorCode.FORBIDDEN);
+    }
+
 
     private final QuizRepository quizRepository;
     private final QuestionRepository questionRepository;
@@ -74,13 +97,26 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public QuizResponse getQuizById(Long quizId) {
+    public QuizResponse getQuizById(Long quizId, UserPrincipal userPrincipal) {
         Quiz quiz = findQuizOrThrow(quizId);
+        checkAuthorization(quiz, userPrincipal);
         return QuizResponse.from(quiz);
     }
 
     @Override
     public List<QuizResponse> getQuizzesByClassId(Long classId, UserPrincipal userPrincipal) {
+        // Check authorization
+        if (userPrincipal.getUser().getRole() == com.ex.learninghub.common.enums.Role.STUDENT) {
+            if (!enrollmentRepository.existsByStudentIdAndClazzId(userPrincipal.getUser().getId(), classId)) {
+                throw new AppException(com.ex.learninghub.common.exception.ErrorCode.FORBIDDEN);
+            }
+        } else if (userPrincipal.getUser().getRole() == com.ex.learninghub.common.enums.Role.LECTURER) {
+            com.ex.learninghub.modules.course.entity.Clazz clazz = clazzRepository.findById(classId).orElseThrow(() -> new AppException(com.ex.learninghub.common.exception.ErrorCode.CLAZZ_NOT_FOUND));
+            if (!clazz.getLecturer().getId().equals(userPrincipal.getUser().getId())) {
+                throw new AppException(com.ex.learninghub.common.exception.ErrorCode.FORBIDDEN);
+            }
+        }
+
         List<QuizResponse> responses = quizRepository.findByClazzId(classId).stream()
                 .map(QuizResponse::from)
                 .collect(Collectors.toList());
@@ -153,9 +189,10 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public List<QuestionResponse> getQuestionsByQuizId(Long quizId) {
+    public List<QuestionResponse> getQuestionsByQuizId(Long quizId, UserPrincipal userPrincipal) {
         // Verify quiz exists
-        findQuizOrThrow(quizId);
+        Quiz quiz = findQuizOrThrow(quizId);
+        checkAuthorization(quiz, userPrincipal);
         return questionRepository.findByQuizId(quizId).stream()
                 .map(QuestionResponse::from)
                 .collect(Collectors.toList());
@@ -191,6 +228,7 @@ public class QuizServiceImpl implements QuizService {
     @Transactional
     public LocalDateTime startQuiz(Long quizId, UserPrincipal userPrincipal) {
         Quiz quiz = findQuizOrThrow(quizId);
+        checkAuthorization(quiz, userPrincipal);
         Long studentId = userPrincipal.getUser().getId();
 
         // Verify student is enrolled

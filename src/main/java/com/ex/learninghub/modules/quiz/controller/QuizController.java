@@ -41,8 +41,8 @@ public class QuizController {
 
     @GetMapping("/{quizId}")
     @Operation(summary = "Lấy chi tiết Quiz", description = "Trả về thông tin chi tiết của một Quiz.")
-    public ApiResponse<QuizResponse> getQuiz(@PathVariable Long quizId) {
-        return ApiResponse.success(quizService.getQuizById(quizId));
+    public ApiResponse<QuizResponse> getQuiz(@PathVariable Long quizId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.getQuizById(quizId, userPrincipal));
     }
 
     @GetMapping("/class/{classId}")
@@ -87,8 +87,8 @@ public class QuizController {
 
     @GetMapping("/{quizId}/questions")
     @Operation(summary = "Lấy danh sách câu hỏi của Quiz", description = "Trả về danh sách câu hỏi của một Quiz.")
-    public ApiResponse<List<QuestionResponse>> getQuestionsByQuiz(@PathVariable Long quizId) {
-        return ApiResponse.success(quizService.getQuestionsByQuizId(quizId));
+    public ApiResponse<List<QuestionResponse>> getQuestionsByQuiz(@PathVariable Long quizId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ApiResponse.success(quizService.getQuestionsByQuizId(quizId, userPrincipal));
     }
 
     @PutMapping("/questions/{questionId}")
