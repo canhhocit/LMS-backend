@@ -148,6 +148,17 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional(readOnly = true)
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ScheduleResponse> getAllAdminSchedules(UserPrincipal principal) {
+        return scheduleRepository.findAll().stream()
+                .map(ScheduleResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ScheduleResponse> getMyWeeklySchedule(UserPrincipal principal) {
         Long userId = principal.getUser().getId();
         Role role = principal.getUser().getRole();

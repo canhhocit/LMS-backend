@@ -22,6 +22,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Lịch học", description = "Các API quản lý và xem lịch học (thời khóa biểu) của lớp học phần và cá nhân")
 public class ScheduleController {
+    @GetMapping("/admin/schedules")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @Operation(summary = "Lấy toàn bộ lịch học (Admin)", description = "Lấy toàn bộ lịch học để vẽ Overview Timetable.")
+    public ResponseEntity<ApiResponse<List<ScheduleResponse>>> getAllAdminSchedules(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(scheduleService.getAllAdminSchedules(principal)));
+    }
 
     private final ScheduleService scheduleService;
     private final com.ex.learninghub.modules.schedule.service.AiScheduleService aiScheduleService;

@@ -17,4 +17,6 @@ public interface ScheduleService {
     List<ScheduleResponse> getSchedulesByClazz(Long clazzId, UserPrincipal principal);
 
     List<ScheduleResponse> getMyWeeklySchedule(UserPrincipal principal);
+
+    List<ScheduleResponse> getAllAdminSchedules(UserPrincipal principal);
 }
