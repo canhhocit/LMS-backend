@@ -95,14 +95,20 @@ public class MyClassController {
         }
         final Set<Long> finalCurrIds = curriculumCourseIds;
 
-        // 3. Get enrolled class IDs
-        Set<Long> enrolledIds = enrollmentService.getClazzesOfStudent(studentId).stream()
+        // 3. Get enrolled classes and courses
+        List<ClazzResponse> enrolledClasses = enrollmentService.getClazzesOfStudent(studentId);
+        Set<Long> enrolledIds = enrolledClasses.stream()
                 .map(ClazzResponse::getId)
+                .collect(Collectors.toSet());
+        Set<Long> enrolledCourseIds = enrolledClasses.stream()
+                .filter(c -> c.getCourseId() != null)
+                .map(ClazzResponse::getCourseId)
                 .collect(Collectors.toSet());
 
         // 4. Filter and map
         List<ClazzResponse> available = allowedClasses.stream()
-                .filter(c -> !enrolledIds.contains(c.getId()))
+                .filter(c -> !enrolledIds.contains(c.getId())) // Remove exact class
+                .filter(c -> c.getCourse() == null || !enrolledCourseIds.contains(c.getCourse().getId())) // Remove other classes of SAME course
                 .filter(c -> finalCurrIds.isEmpty() || 
                     (c.getCourse() != null && finalCurrIds.contains(c.getCourse().getId())))
                 .map(c -> ClazzResponse.from(c, 0L))
