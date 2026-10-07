@@ -182,19 +182,47 @@ public class RegistrationServiceImpl implements RegistrationService {
                 .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION)));
 
         Clazz clazz = clazzRepository.findById(clazzId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
 
-        // Check if already enrolled in another class of the SAME course in this semester
-        if (clazz.getCourse() != null) {
-            boolean duplicateCourse = enrollmentRepository.findByStudentId(student.getId()).stream()
-                    .anyMatch(e -> e.getClazz().getCourse() != null 
-                            && e.getClazz().getCourse().getId().equals(clazz.getCourse().getId())
-                            && e.getSemester().equals(period.getEffectiveSemester())
-                            && e.getAcademicYear().equals(period.getEffectiveAcademicYear()));
-            if (duplicateCourse) {
-                throw new AppException(ErrorCode.ENROLLMENT_EXISTS);
-            }
+        period.getAllowedClasses().add(clazz);
+        periodRepository.save(period);
+    }
+
+    @Override
+    @Transactional
+    public void removeClazzFromPeriod(Long periodId, Long clazzId) {
+        RegistrationPeriod period = periodRepository.findById(periodId)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
+        period.getAllowedClasses().removeIf(c -> c.getId().equals(clazzId));
+        periodRepository.save(period);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClazzResponse> getClazzesInPeriod(Long periodId) {
+        RegistrationPeriod period = periodRepository.findById(periodId)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
+        return period.getAllowedClasses().stream()
+                .map(c -> {
+                    long currentStudents = enrollmentRepository.findByClazzId(c.getId()).stream()
+                            .filter(e -> "ACTIVE".equals(e.getStatus())).count();
+                    return ClazzResponse.from(c, currentStudents);
+                })
+                .collect(Collectors.toList());
+    }
+
+    // =================== STUDENT OPERATIONS ===================
+
+        @Transactional
+    public RegistrationResponse registerInternal(Long clazzId, UserPrincipal principal, RegistrationPeriod period) {
+        User student = principal.getUser();
+
+        if (enrollmentRepository.existsByStudentIdAndClazzId(student.getId(), clazzId)) {
+            throw new AppException(ErrorCode.ENROLLMENT_EXISTS);
         }
+
+        Clazz clazz = clazzRepository.findById(clazzId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLAZZ_NOT_FOUND));
 
         // Check if class is in the allowed classes for this period
         RegistrationPeriod activePeriodWithClasses = periodRepository.findActiveWithClasses().orElse(period);
