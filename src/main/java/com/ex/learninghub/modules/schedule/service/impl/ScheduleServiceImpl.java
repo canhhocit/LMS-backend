@@ -148,9 +148,6 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional(readOnly = true)
-    
-    @Override
-    @Transactional(readOnly = true)
     public List<ScheduleResponse> getAllAdminSchedules(UserPrincipal principal) {
         return scheduleRepository.findAll().stream()
                 .map(ScheduleResponse::from)
