@@ -17,10 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,8 +28,8 @@ public class RagServiceImpl implements RagService {
 
     private final AiClientService aiClientService;
 
-    /** In-Memory Chunked Document Store với tagging metadata (sẵn sàng nâng cấp kết nối PgVectorStore) */
-    private final List<DocumentChunk> documentStore = new java.util.concurrent.CopyOnWriteArrayList<>();
+    /** In-Memory Chunked Document Store với tagging metadata */
+    private final List<DocumentChunk> documentStore = new CopyOnWriteArrayList<>();
 
     @Data
     @NoArgsConstructor
@@ -51,40 +50,40 @@ public class RagServiceImpl implements RagService {
             throw new AppException(ErrorCode.KEY_INVALID);
         }
 
-        // Chunking document content by lines/paragraphs
-        String[] paragraphs = request.getDocumentContent().split("\\r?\\n\\s*\\r?\\n|(?<=\\.)\\s+");
+        // Improved chunking: Overlap 100 chars to keep context
+        String content = request.getDocumentContent().replaceAll("\\s+", " ");
         List<String> validChunks = new ArrayList<>();
-        StringBuilder currentChunk = new StringBuilder();
-
-        for (String p : paragraphs) {
-            String trimmed = p.trim();
-            if (trimmed.length() < 10) continue;
-
-            if (currentChunk.length() + trimmed.length() > 500) {
-                validChunks.add(currentChunk.toString());
-                currentChunk = new StringBuilder(trimmed);
-            } else {
-                if (currentChunk.length() > 0) currentChunk.append(" ");
-                currentChunk.append(trimmed);
+        int chunkSize = 600;
+        int overlap = 100;
+        
+        int start = 0;
+        while (start < content.length()) {
+            int end = Math.min(start + chunkSize, content.length());
+            if (end < content.length()) {
+                int lastPeriod = content.lastIndexOf(". ", end);
+                if (lastPeriod > start + chunkSize / 2) {
+                    end = lastPeriod + 1;
+                }
             }
-        }
-        if (currentChunk.length() > 0) {
-            validChunks.add(currentChunk.toString());
+            validChunks.add(content.substring(start, end).trim());
+            start = end - overlap;
+            if (start < 0) start = 0;
+            if (end == content.length()) break;
         }
 
-        for (int i = 0; i < validChunks.size(); i++) {
+        for (String chunkText : validChunks) {
             DocumentChunk chunk = DocumentChunk.builder()
-                    .id(java.util.UUID.randomUUID().toString())
+                    .id(UUID.randomUUID().toString())
                     .clazzId(request.getClazzId())
                     .lessonId(request.getLessonId())
-                    .sourceName(request.getSourceName() != null ? request.getSourceName() : "Bài giảng LMS")
-                    .content(validChunks.get(i))
+                    .sourceName(request.getSourceName() != null ? request.getSourceName() : "Tài liệu học tập")
+                    .content(chunkText)
                     .ingestedAt(LocalDateTime.now())
                     .build();
             documentStore.add(chunk);
         }
 
-        log.info("RAG Ingestion: Đã nạp thành công {} đoạn văn bản từ nguồn '{}' cho ClassId={}", 
+        log.info("RAG Ingestion: Đã nạp thành công {} đoạn văn bản từ '{}' cho ClassId={}", 
                 validChunks.size(), request.getSourceName(), request.getClazzId());
     }
 
@@ -98,13 +97,21 @@ public class RagServiceImpl implements RagService {
         List<DocumentChunk> matchedChunks = retrieveRelevantChunks(request.getQuestion(), request.getClazzId(), request.getLessonId(), topK);
 
         List<String> sources = matchedChunks.stream()
-                .map(c -> String.format("[%s] %s", c.getSourceName(), c.getContent()))
+                .map(c -> String.format("[%s]", c.getSourceName()))
+                .distinct()
                 .toList();
 
-        if (aiClientService.isAiConfigured()) {
+        if (aiClientService.isAiConfigured() && !matchedChunks.isEmpty()) {
             try {
+                String systemPrompt = "Bạn là Trợ lý AI của hệ thống LMS. Nhiệm vụ của bạn là trả lời câu hỏi dựa CHÍNH XÁC vào dữ liệu tài liệu được cung cấp. Không bịa đặt thông tin. Nếu tài liệu không đủ thông tin, hãy nói rõ 'Tài liệu hiện tại không đề cập đến vấn đề này'.";
                 String prompt = buildAugmentedPrompt(request.getQuestion(), matchedChunks);
-                String aiAnswer = aiClientService.generateContent(prompt);
+                
+                long startTime = System.currentTimeMillis();
+                String aiAnswer = aiClientService.generateContent(systemPrompt, prompt);
+                long duration = System.currentTimeMillis() - startTime;
+                
+                log.info("RAG Generation: {}ms, Retrieved: {} chunks", duration, matchedChunks.size());
+
                 return RagQueryResponse.builder()
                         .question(request.getQuestion())
                         .answer(aiAnswer)
@@ -113,7 +120,7 @@ public class RagServiceImpl implements RagService {
                         .retrievedCount(matchedChunks.size())
                         .build();
             } catch (Exception e) {
-                log.warn("Gọi AI RAG API thất bại, chuyển sang chế độ phản hồi quy tắc RAG: {}", e.getMessage());
+                log.warn("Gọi AI RAG API thất bại: {}", e.getMessage());
             }
         }
 
@@ -122,34 +129,35 @@ public class RagServiceImpl implements RagService {
 
     private List<DocumentChunk> retrieveRelevantChunks(String question, Long clazzId, Long lessonId, int topK) {
         String queryLower = question.toLowerCase();
-        String[] keywords = queryLower.split("\\s+");
+        Set<String> queryWords = Arrays.stream(queryLower.split("[\\s\\p{Punct}]+"))
+                .filter(w -> w.length() > 2)
+                .collect(Collectors.toSet());
 
         List<DocumentChunk> candidates = documentStore.stream()
                 .filter(c -> clazzId == null || clazzId.equals(c.getClazzId()))
                 .filter(c -> lessonId == null || lessonId.equals(c.getLessonId()))
                 .toList();
 
-        if (candidates.isEmpty()) {
-            // If store is empty, fallback to searching all candidates
-            candidates = documentStore;
-        }
+        if (candidates.isEmpty()) candidates = documentStore;
 
-        // Simple Keyword Relevance Scoring (Simulating Cosine Similarity for fallback mode)
-        List<Map.Entry<DocumentChunk, Integer>> scored = new ArrayList<>();
+        // Improved TF-like Scoring
+        List<Map.Entry<DocumentChunk, Double>> scored = new ArrayList<>();
         for (DocumentChunk chunk : candidates) {
             String contentLower = chunk.getContent().toLowerCase();
-            int score = 0;
-            for (String kw : keywords) {
-                if (kw.length() > 2 && contentLower.contains(kw)) {
-                    score += 2;
+            double score = 0;
+            for (String w : queryWords) {
+                int index = 0;
+                while ((index = contentLower.indexOf(w, index)) != -1) {
+                    score += 1.0;
+                    index += w.length();
                 }
             }
-            if (score > 0 || scored.size() < topK) {
+            if (score > 0) {
                 scored.add(Map.entry(chunk, score));
             }
         }
 
-        scored.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        scored.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
 
         return scored.stream()
                 .limit(topK)
@@ -161,31 +169,22 @@ public class RagServiceImpl implements RagService {
         StringBuilder contextBuilder = new StringBuilder();
         for (int i = 0; i < chunks.size(); i++) {
             DocumentChunk c = chunks.get(i);
-            contextBuilder.append(String.format("[%d] (Nguồn: %s)\n%s\n\n", i + 1, c.getSourceName(), c.getContent()));
+            contextBuilder.append(String.format("TÀI LIỆU [%d] (Nguồn: %s):\n%s\n\n", i + 1, c.getSourceName(), c.getContent()));
         }
 
-        return String.format("""
-            Bạn là Trợ lý Học tập AI dành cho môn học. Dưới đây là các đoạn văn bản tài liệu bài giảng được trích xuất từ hệ thống:
-            
-            %s
-            
-            Dựa CHÍNH XÁC vào các đoạn tài liệu tham khảo ở trên, hãy trả lời câu hỏi sau của sinh viên:
-            "%s"
-            
-            Yêu cầu: Trả lời ngắn gọn, chính xác, súc tích và ghi rõ số thứ tự tài liệu tham khảo [1], [2] nếu áp dụng.
-            """, 
-            contextBuilder.toString(),
-            question
+        return String.format(
+            "CÂU HỎI CỦA NGƯỜI DÙNG: \"%s\"\n\n---\nNGỮ CẢNH TRÍCH XUẤT TỪ HỆ THỐNG:\n%s\n---\nHãy trả lời câu hỏi dựa trên Ngữ cảnh trên. Đừng quên trích dẫn nguồn (VD: Theo tài liệu [1]).", 
+            question, contextBuilder.toString()
         );
     }
 
     private RagQueryResponse generateRuleBasedRagResponse(String question, List<DocumentChunk> chunks, List<String> sources) {
         String answerText;
         if (!chunks.isEmpty()) {
-            answerText = String.format("Dựa trên %d đoạn tài liệu trích xuất từ bài giảng, nội dung liên quan tới '%s' là:\n%s", 
-                    chunks.size(), question, chunks.get(0).getContent());
+            answerText = String.format("Dựa trên %d đoạn tài liệu từ %s, nội dung liên quan tới '%s' là:\n\n%s", 
+                    chunks.size(), String.join(", ", sources), question, chunks.get(0).getContent());
         } else {
-            answerText = String.format("Hệ thống RAG đã tiếp nhận câu hỏi '%s'. Hiện tại tài liệu bài giảng chưa được nạp hoặc chưa tìm thấy đoạn trùng khớp.", question);
+            answerText = "Hiện tại tài liệu bài giảng chưa có nội dung nào khớp với câu hỏi của bạn.";
         }
 
         return RagQueryResponse.builder()
