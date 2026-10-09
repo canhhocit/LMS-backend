@@ -53,11 +53,13 @@ class RagServiceImplTest {
 
         User student = new User();
         student.setId(100L);
-        studentPrincipal = new UserPrincipal(student, List.of(new SimpleGrantedAuthority("ROLE_STUDENT")));
+        student.setRole(com.ex.learninghub.common.enums.Role.STUDENT);
+        studentPrincipal = new UserPrincipal(student);
 
         User admin = new User();
         admin.setId(999L);
-        adminPrincipal = new UserPrincipal(admin, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        admin.setRole(com.ex.learninghub.common.enums.Role.ADMIN);
+        adminPrincipal = new UserPrincipal(admin);
     }
 
     @Test
